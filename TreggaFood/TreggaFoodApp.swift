@@ -7,9 +7,12 @@ import SwiftUI
 
 @main
 struct TreggaFoodApp: App {
+    @State private var deps = AppDependencies()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(\.appDependencies, deps)
         }
     }
 }
