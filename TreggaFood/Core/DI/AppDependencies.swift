@@ -16,6 +16,9 @@ public final class AppDependencies {
     public let catalogRepository: CatalogRepository
     public let pedidoRepository: PedidoRepository
     public let direccionRepository: DireccionClienteRepository
+    public let trackingRepository: TrackingRepository
+    public let mensajeRepository: MensajeRepository
+    public let calificacionRepository: CalificacionRepository
 
     public init(defaults: UserDefaults = .standard) {
         let useSupabase = defaults.bool(forKey: "USE_SUPABASE_BACKEND")
@@ -27,6 +30,9 @@ public final class AppDependencies {
             self.catalogRepository = SupabaseCatalogRepository()
             self.pedidoRepository = SupabasePedidoRepository()
             self.direccionRepository = SupabaseDireccionClienteRepository()
+            self.trackingRepository = SupabaseTrackingRepository()
+            self.mensajeRepository = SupabaseMensajeRepository()
+            self.calificacionRepository = SupabaseCalificacionRepository()
         } else {
             self.authService = MockAuthService()
             self.authStorage = MockAuthStorage()
@@ -34,6 +40,9 @@ public final class AppDependencies {
             self.catalogRepository = MockCatalogRepository()
             self.pedidoRepository = MockPedidoRepository()
             self.direccionRepository = MockDireccionClienteRepository()
+            self.trackingRepository = MockTrackingRepository()
+            self.mensajeRepository = MockMensajeRepository()
+            self.calificacionRepository = MockCalificacionRepository()
         }
         self.authSession = AuthSession(storage: self.authStorage)
     }

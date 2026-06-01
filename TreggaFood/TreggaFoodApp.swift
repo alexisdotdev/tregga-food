@@ -4,10 +4,15 @@
 //
 
 import SwiftUI
+import TreggaCore
 
 @main
 struct TreggaFoodApp: App {
     @State private var deps = AppDependencies()
+
+    init() {
+        GoogleMapsBootstrap.configure()
+    }
 
     var body: some Scene {
         WindowGroup {

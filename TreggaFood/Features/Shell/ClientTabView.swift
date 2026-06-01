@@ -19,12 +19,8 @@ struct ClientTabView: View {
             )
             .tabItem { Label("Buscar", systemImage: "magnifyingglass") }
 
-            PlaceholderTab(
-                icon: "bag.fill",
-                title: "Pedidos",
-                message: "Aquí verás tus pedidos en curso e historial."
-            )
-            .tabItem { Label("Pedidos", systemImage: "bag.fill") }
+            OrdersTab()
+                .tabItem { Label("Pedidos", systemImage: "bag.fill") }
 
             PlaceholderTab(
                 icon: "person.crop.circle.fill",

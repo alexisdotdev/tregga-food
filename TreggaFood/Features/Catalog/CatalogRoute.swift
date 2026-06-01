@@ -6,4 +6,6 @@ enum CatalogRoute: Hashable {
     case itemDetail(Producto, negocioName: String)
     case cart
     case checkout
+    case tracking(pedidoId: UUID)
+    case chat(pedidoId: UUID, repartidorName: String)
 }

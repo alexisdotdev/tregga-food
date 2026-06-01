@@ -7,6 +7,7 @@ struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var path: [CatalogRoute] = []
     @State private var clienteId: UUID?
+    @State private var pedidoEntregado: PedidoTracking?
     private let catalog: CatalogRepository
 
     @Environment(\.cartStore) private var cartEnv
@@ -59,6 +60,18 @@ struct HomeView: View {
         } message: {
             Text("Tu carrito tiene productos de \(cart.negocioName). Para pedir de otro negocio vaciaremos el carrito actual.")
         }
+        .fullScreenCover(item: $pedidoEntregado) { pedido in
+            DeliveryRatingFlow(
+                pedido: pedido,
+                clienteId: clienteId,
+                repo: deps?.calificacionRepository ?? MockCalificacionRepository(),
+                onDone: {
+                    pedidoEntregado = nil
+                    cart.clear()
+                    path.removeAll()
+                }
+            )
+        }
     }
 
     @ViewBuilder
@@ -86,10 +99,30 @@ struct HomeView: View {
                     pedidoRepo: deps?.pedidoRepository ?? MockPedidoRepository(),
                     direccionRepo: deps?.direccionRepository ?? MockDireccionClienteRepository()
                 ),
-                onFinish: {
+                onFinish: { resultado in
                     cart.clear()
-                    path.removeAll()
+                    path = [.tracking(pedidoId: resultado.id)]
                 }
+            )
+        case .tracking(let pedidoId):
+            TrackingView(
+                viewModel: TrackingViewModel(
+                    pedidoId: pedidoId,
+                    repo: deps?.trackingRepository ?? MockTrackingRepository()
+                ),
+                onChat: { name in path.append(.chat(pedidoId: pedidoId, repartidorName: name)) },
+                onCompleted: { pedido in pedidoEntregado = pedido },
+                onBack: { path.removeAll() }
+            )
+        case .chat(let pedidoId, let repartidorName):
+            ChatView(
+                viewModel: ChatViewModel(
+                    pedidoId: pedidoId,
+                    senderId: deps?.authSession.tokens?.userId,
+                    repo: deps?.mensajeRepository ?? MockMensajeRepository()
+                ),
+                repartidorName: repartidorName,
+                onBack: { if !path.isEmpty { path.removeLast() } }
             )
         }
     }

@@ -6,11 +6,11 @@ import TreggaDesignSystem
 /// Al confirmar muestra HangTight y luego la confirmación con order_number.
 struct CheckoutView: View {
     @State private var viewModel: CheckoutViewModel
-    /// Llamado al cerrar la confirmación: limpia carrito y vuelve a Inicio.
-    let onFinish: () -> Void
+    /// Llamado al cerrar la confirmación: navega al tracking del pedido creado.
+    let onFinish: (ResultadoPedido) -> Void
     @Environment(\.dismiss) private var dismiss
 
-    init(viewModel: CheckoutViewModel, onFinish: @escaping () -> Void) {
+    init(viewModel: CheckoutViewModel, onFinish: @escaping (ResultadoPedido) -> Void) {
         _viewModel = State(initialValue: viewModel)
         self.onFinish = onFinish
     }
@@ -26,7 +26,7 @@ struct CheckoutView: View {
                 OrderSuccessOverlay(
                     resultado: resultado,
                     avisoTarjeta: avisoTarjeta,
-                    onDone: onFinish
+                    onDone: { onFinish(resultado) }
                 )
                 .transition(.opacity)
             default:
@@ -472,7 +472,7 @@ private struct OrderSuccessOverlay: View {
                     .padding(.top, 4)
                 }
                 Spacer()
-                TreggaButton("Entendido", kind: .primary, height: 56) { onDone() }
+                TreggaButton("Seguir mi pedido", kind: .primary, height: 56) { onDone() }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 16)
             }
