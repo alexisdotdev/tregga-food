@@ -4,4 +4,6 @@ import Foundation
 enum CatalogRoute: Hashable {
     case restaurant(Negocio)
     case itemDetail(Producto, negocioName: String)
+    case cart
+    case checkout
 }

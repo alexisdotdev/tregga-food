@@ -8,6 +8,7 @@ struct ContentView: View {
     @Environment(\.appDependencies) private var deps
     @State private var phase: Phase = .loading
     @State private var coordinator: OnboardingCoordinator?
+    @State private var cart = CartStore()
 
     enum Phase { case loading, unauthenticated, authenticated }
 
@@ -24,6 +25,7 @@ struct ContentView: View {
                 }
             case .authenticated:
                 ClientTabView()
+                    .environment(\.cartStore, cart)
             }
         }
         .task {

@@ -6,45 +6,98 @@ import TreggaDesignSystem
 struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var path: [CatalogRoute] = []
+    @State private var clienteId: UUID?
     private let catalog: CatalogRepository
+
+    @Environment(\.cartStore) private var cartEnv
+    @Environment(\.appDependencies) private var deps
 
     init(catalog: CatalogRepository) {
         self.catalog = catalog
         _viewModel = State(initialValue: HomeViewModel(repository: catalog))
     }
 
+    private var cart: CartStore { cartEnv ?? CartStore() }
+
     var body: some View {
         NavigationStack(path: $path) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    header
-                    SearchBar(placeholder: "Carnitas, pizza, tacos…")
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                    content
-                        .padding(.top, 18)
+            ZStack(alignment: .bottom) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        header
+                        SearchBar(placeholder: "Carnitas, pizza, tacos…")
+                            .padding(.horizontal, 16)
+                            .padding(.top, 12)
+                        content
+                            .padding(.top, 18)
+                    }
+                    .padding(.top, 8)
+                    .padding(.bottom, cart.isEmpty ? 24 : 88)
                 }
-                .padding(.top, 8)
-                .padding(.bottom, 24)
-            }
-            .background(TreggaColors.bg)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: CatalogRoute.self) { route in
-                switch route {
-                case .restaurant(let negocio):
-                    RestaurantView(negocio: negocio, catalog: catalog, path: $path)
-                case .itemDetail(let producto, let negocioName):
-                    ItemDetailView(
-                        producto: producto,
-                        negocioName: negocioName,
-                        catalog: catalog,
-                        onAdd: { _ in path.removeLast() }
-                    )
+                .background(TreggaColors.bg)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar(.hidden, for: .navigationBar)
+                .navigationDestination(for: CatalogRoute.self) { route in
+                    destination(for: route)
                 }
+
+                CartFloatingBar(cart: cart) { path.append(.cart) }
+                    .animation(.spring(response: 0.35, dampingFraction: 0.85), value: cart.count)
             }
         }
         .task { await viewModel.load() }
+        .task { await resolveCliente() }
+        .alert(
+            "Carrito de otro negocio",
+            isPresented: Binding(
+                get: { cart.pendingConflict != nil },
+                set: { if !$0 { cart.resolverConflicto(reemplazar: false) } }
+            )
+        ) {
+            Button("Vaciar y agregar", role: .destructive) { cart.resolverConflicto(reemplazar: true) }
+            Button("Cancelar", role: .cancel) { cart.resolverConflicto(reemplazar: false) }
+        } message: {
+            Text("Tu carrito tiene productos de \(cart.negocioName). Para pedir de otro negocio vaciaremos el carrito actual.")
+        }
+    }
+
+    @ViewBuilder
+    private func destination(for route: CatalogRoute) -> some View {
+        switch route {
+        case .restaurant(let negocio):
+            RestaurantView(negocio: negocio, catalog: catalog, path: $path)
+        case .itemDetail(let producto, let negocioName):
+            ItemDetailView(
+                producto: producto,
+                negocioName: negocioName,
+                catalog: catalog,
+                onAdd: { selection in
+                    cart.add(selection: selection, negocioId: producto.negocioId, negocioName: negocioName)
+                    path.removeLast()
+                }
+            )
+        case .cart:
+            CartView(cart: cart, onCheckout: { path.append(.checkout) })
+        case .checkout:
+            CheckoutView(
+                viewModel: CheckoutViewModel(
+                    cart: cart,
+                    clienteId: clienteId ?? UUID(),
+                    pedidoRepo: deps?.pedidoRepository ?? MockPedidoRepository(),
+                    direccionRepo: deps?.direccionRepository ?? MockDireccionClienteRepository()
+                ),
+                onFinish: {
+                    cart.clear()
+                    path.removeAll()
+                }
+            )
+        }
+    }
+
+    private func resolveCliente() async {
+        guard clienteId == nil, let deps,
+              let userId = deps.authSession.tokens?.userId else { return }
+        clienteId = try? await deps.clienteRepository.fetchByUserId(userId)?.id
     }
 
     private var header: some View {

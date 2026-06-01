@@ -10,6 +10,7 @@ struct RestaurantView: View {
 
     @State private var viewModel: RestaurantViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.cartStore) private var cartEnv
 
     init(negocio: Negocio, catalog: CatalogRepository, path: Binding<[CatalogRoute]>) {
         self.negocio = negocio
@@ -18,21 +19,28 @@ struct RestaurantView: View {
         _viewModel = State(initialValue: RestaurantViewModel(negocioId: negocio.id, repository: catalog))
     }
 
+    private var cart: CartStore { cartEnv ?? CartStore() }
+
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                hero
-                infoCard
-                    .padding(.horizontal, 16)
-                    .offset(y: -22)
-                    .padding(.bottom, -22)
-                menu
-                    .padding(.top, 16)
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    hero
+                    infoCard
+                        .padding(.horizontal, 16)
+                        .offset(y: -22)
+                        .padding(.bottom, -22)
+                    menu
+                        .padding(.top, 16)
+                }
+                .padding(.bottom, cart.isEmpty ? 24 : 88)
             }
-            .padding(.bottom, 24)
+            .background(TreggaColors.bg)
+            .ignoresSafeArea(edges: .top)
+
+            CartFloatingBar(cart: cart) { path.append(.cart) }
+                .animation(.spring(response: 0.35, dampingFraction: 0.85), value: cart.count)
         }
-        .background(TreggaColors.bg)
-        .ignoresSafeArea(edges: .top)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .task { await viewModel.load() }
