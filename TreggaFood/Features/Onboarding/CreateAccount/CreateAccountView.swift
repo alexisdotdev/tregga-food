@@ -61,9 +61,7 @@ public struct CreateAccountView: View {
     private var header: some View {
         HStack {
             Button { viewModel.coordinator?.goToWelcome() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(TreggaColors.text)
+                TreggaIcon(.chevL, size: 20, color: TreggaColors.text)
                     .frame(width: 40, height: 40)
                     .background(TreggaColors.surface)
                     .clipShape(Circle())
@@ -126,9 +124,7 @@ public struct CreateAccountView: View {
                     }
                 }
                 if !text.wrappedValue.isEmpty {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(TreggaColors.primary)
+                    TreggaIcon(.check, size: 16, color: TreggaColors.primary)
                 }
             }
             .padding(.horizontal, 14)
@@ -155,9 +151,7 @@ public struct CreateAccountView: View {
                     RoundedRectangle(cornerRadius: 6)
                         .fill(viewModel.newsletterOptIn ? TreggaColors.primary : TreggaColors.surface2)
                     if viewModel.newsletterOptIn {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .heavy))
-                            .foregroundStyle(.white)
+                        TreggaIcon(.check, size: 13, color: .white)
                     }
                 }
                 .frame(width: 22, height: 22)
@@ -182,9 +176,7 @@ public struct CreateAccountView: View {
                         .font(.system(size: 16, weight: .heavy))
                         .foregroundStyle(.white)
                     if !viewModel.loading {
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 16, weight: .heavy))
-                            .foregroundStyle(.white)
+                        TreggaIcon(.arrow, size: 18, color: .white)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -260,9 +252,7 @@ private struct AccountMatchSheet: View {
                     Text("Sí, soy yo")
                         .font(.system(size: 16, weight: .heavy))
                         .foregroundStyle(.white)
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 16, weight: .heavy))
-                        .foregroundStyle(.white)
+                    TreggaIcon(.arrow, size: 18, color: .white)
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 54)

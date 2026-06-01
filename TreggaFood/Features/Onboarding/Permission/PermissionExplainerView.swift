@@ -43,9 +43,7 @@ public struct PermissionExplainerView: View {
                     HStack {
                         Spacer()
                         Button(action: onClose) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundStyle(TreggaColors.text)
+                            TreggaIcon(.close, size: 18, color: TreggaColors.text)
                                 .frame(width: 36, height: 36)
                                 .background(TreggaColors.surface)
                                 .clipShape(Circle())
@@ -56,9 +54,7 @@ public struct PermissionExplainerView: View {
 
                     ZStack {
                         RoundedRectangle(cornerRadius: 22).fill(TreggaColors.primarySoft)
-                        Image(systemName: "mappin.and.ellipse")
-                            .font(.system(size: 34, weight: .bold))
-                            .foregroundStyle(TreggaColors.primaryDeep)
+                        TreggaIcon(.pin, size: 36, color: TreggaColors.primaryDeep)
                     }
                     .frame(width: 76, height: 76)
                     .padding(.top, 8)
@@ -114,9 +110,7 @@ public struct PermissionExplainerView: View {
                         Text("Permitir ubicación")
                             .font(.system(size: 16, weight: .heavy))
                             .foregroundStyle(.white)
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 16, weight: .heavy))
-                            .foregroundStyle(.white)
+                        TreggaIcon(.arrow, size: 18, color: .white)
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)

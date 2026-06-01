@@ -55,9 +55,7 @@ public struct OTPView: View {
     private var header: some View {
         HStack {
             Button { viewModel.coordinator?.cancelOTP() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(TreggaColors.text)
+                TreggaIcon(.chevL, size: 20, color: TreggaColors.text)
                     .frame(width: 40, height: 40)
                     .background(TreggaColors.surface)
                     .clipShape(Circle())
@@ -150,9 +148,7 @@ public struct OTPView: View {
                     .font(.system(size: 16, weight: .heavy))
                     .foregroundStyle(.white)
                 if !viewModel.loading {
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 16, weight: .heavy))
-                        .foregroundStyle(.white)
+                    TreggaIcon(.arrow, size: 18, color: .white)
                 }
             }
             .frame(maxWidth: .infinity)

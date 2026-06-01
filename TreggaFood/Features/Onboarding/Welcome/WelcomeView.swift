@@ -141,9 +141,7 @@ public struct WelcomeView: View {
                     .font(.system(size: 16, weight: .heavy))
                     .foregroundStyle(.white)
                 if !viewModel.loading {
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 16, weight: .heavy))
-                        .foregroundStyle(.white)
+                    TreggaIcon(.arrow, size: 18, color: .white)
                 }
             }
             .frame(maxWidth: .infinity)
