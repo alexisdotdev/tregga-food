@@ -153,9 +153,9 @@ struct AccountHubView: View {
                     }
                 }
 
-                Button { showSignOutConfirm = true } label: {
+                Button { withAnimation(.easeInOut(duration: 0.25)) { showSignOutConfirm = true } } label: {
                     HStack(spacing: 8) {
-                        TreggaIcon(.refresh, size: 18, color: TreggaColors.danger)
+                        TreggaIcon(.logout, size: 18, color: TreggaColors.danger)
                         Text("Cerrar sesión")
                             .font(.system(size: 15, weight: .bold))
                             .foregroundStyle(TreggaColors.danger)
@@ -175,9 +175,10 @@ struct AccountHubView: View {
         }
         .background(TreggaColors.bg)
         .refreshable { await viewModel.cargar() }
-        .confirmationDialog("¿Cerrar sesión?", isPresented: $showSignOutConfirm, titleVisibility: .visible) {
-            Button("Cerrar sesión", role: .destructive) { onSignOut() }
-            Button("Cancelar", role: .cancel) {}
+        .overlay {
+            if showSignOutConfirm {
+                LogoutConfirmDialog(isPresented: $showSignOutConfirm, onConfirm: onSignOut)
+            }
         }
     }
 

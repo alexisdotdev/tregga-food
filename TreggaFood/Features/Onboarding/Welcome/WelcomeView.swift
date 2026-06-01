@@ -3,8 +3,8 @@ import TreggaCore
 import AuthenticationServices
 import TreggaDesignSystem
 
-/// Pantalla Welcome del diseño client-v2. Hero de marca + input unificado
-/// teléfono/correo + botón Google + link a crear cuenta.
+/// Login de Tregga Food. Mismo diseño que Tregga Delivery: brand header +
+/// input unificado teléfono/correo + botón Google + link a crear cuenta.
 public struct WelcomeView: View {
     @State private var viewModel: WelcomeViewModel
     @State private var googleError: String?
@@ -18,29 +18,27 @@ public struct WelcomeView: View {
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                hero
-                VStack(alignment: .leading, spacing: 0) {
-                    headline
-                    Spacer().frame(height: 22)
-                    contactField
-                    Spacer().frame(height: 12)
-                    continueButton
-                    Spacer().frame(height: 20)
-                    divider
-                    Spacer().frame(height: 16)
-                    googleButton
-                    Spacer().frame(height: 20)
-                    createAccountLink
-                    Spacer().frame(height: 16)
-                    disclaimer
-                }
-                .padding(.horizontal, 24)
-                .padding(.top, 26)
-                .padding(.bottom, 40)
+                brandHeader
+                Spacer().frame(height: 28)
+                headline
+                Spacer().frame(height: 18)
+                contactField
+                Spacer().frame(height: 12)
+                continueButton
+                Spacer().frame(height: 22)
+                divider
+                Spacer().frame(height: 18)
+                googleButton
+                Spacer().frame(height: 18)
+                createAccountLink
+                Spacer().frame(height: 22)
+                disclaimer
+                Spacer().frame(height: 28)
+                recaptchaFootnote
             }
+            .padding(.bottom, 40)
         }
         .background(TreggaColors.bg)
-        .ignoresSafeArea(edges: .top)
         .alert("No pudimos iniciar sesión", isPresented: Binding(
             get: { googleError != nil },
             set: { if !$0 { googleError = nil } }
@@ -52,52 +50,37 @@ public struct WelcomeView: View {
             isPresented: $showNotRegisteredDialog,
             titleVisibility: .visible
         ) {
-            Button("Crear cuenta nueva") { viewModel.irACrearCuenta() }
+            Button("Crear cuenta con correo") { viewModel.irACrearCuenta() }
             Button("Continuar con Google") { runGoogle() }
             Button("Cancelar", role: .cancel) {}
         } message: {
-            Text("Puedes crear una cuenta nueva o continuar con Google.")
+            Text("Puedes crear una cuenta nueva con tu correo o continuar con Google.")
         }
     }
 
-    // MARK: - Hero
-
-    private var hero: some View {
-        ZStack(alignment: .top) {
-            LinearGradient(
-                colors: [TreggaColors.primary, TreggaColors.primaryDark, TreggaColors.primaryDeep],
-                startPoint: .top, endPoint: .bottom
-            )
-            MotionStripes(color: TreggaColors.primaryDeep, tint: TreggaColors.primary)
-                .opacity(0.35)
-
-            VStack(spacing: 14) {
-                Image("logo-tregga")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 40)
-                Text("tregga")
-                    .font(.system(size: 30, weight: .heavy))
-                    .tracking(-0.4)
-                    .foregroundStyle(.white)
-            }
-            .padding(.top, 96)
+    private var brandHeader: some View {
+        HStack(spacing: 10) {
+            Image("logo-tregga")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 28)
+            Text("TREGGA FOOD")
+                .font(.system(size: 10.5, weight: .heavy))
+                .tracking(2.5)
+                .foregroundStyle(TreggaColors.textSec)
+            Spacer()
         }
-        .frame(height: 320)
-        .clipped()
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
     }
 
     private var headline: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Comida que llega rápido")
-                .font(.system(size: 28, weight: .heavy))
-                .tracking(-0.5)
-                .foregroundStyle(TreggaColors.text)
-            Text("Pide de tus negocios favoritos. Solo te toma un minuto crear tu cuenta.")
-                .font(.system(size: 15))
-                .foregroundStyle(TreggaColors.textSec)
-                .lineSpacing(2)
-        }
+        Text("¿Cuál es tu número o correo?")
+            .font(.system(size: 26, weight: .heavy))
+            .tracking(-0.4)
+            .lineSpacing(26 * 0.2)
+            .foregroundStyle(TreggaColors.text)
+            .padding(.horizontal, 20)
     }
 
     private var contactField: some View {
@@ -110,13 +93,14 @@ public struct WelcomeView: View {
                         let formatted = PhoneFormatter.format(new)
                         if formatted != new { viewModel.contactInput = formatted }
                     }
-                    .font(.system(size: 15.5, weight: .semibold))
+                    .font(.system(size: 15.5, weight: .heavy))
+                    .foregroundStyle(TreggaColors.text)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled(true)
             }
             .padding(.horizontal, 16)
-            .frame(height: 54)
+            .frame(height: 56)
             .background(TreggaColors.surface)
             .clipShape(RoundedRectangle(cornerRadius: 14))
 
@@ -126,6 +110,7 @@ public struct WelcomeView: View {
                     .foregroundStyle(TreggaColors.danger)
             }
         }
+        .padding(.horizontal, 20)
     }
 
     private var continueButton: some View {
@@ -145,11 +130,12 @@ public struct WelcomeView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
+            .frame(height: 56)
             .background(viewModel.canContinue ? TreggaColors.primary : TreggaColors.primary.opacity(0.3))
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }
         .disabled(!viewModel.canContinue || viewModel.loading)
+        .padding(.horizontal, 20)
     }
 
     private var divider: some View {
@@ -158,6 +144,7 @@ public struct WelcomeView: View {
             Text("o").font(.system(size: 12.5, weight: .heavy)).foregroundStyle(TreggaColors.textSec)
             Rectangle().fill(TreggaColors.border).frame(height: 1)
         }
+        .padding(.horizontal, 20)
     }
 
     private var googleButton: some View {
@@ -169,34 +156,54 @@ public struct WelcomeView: View {
                     .foregroundStyle(TreggaColors.text)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
-            .background(TreggaColors.card)
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(TreggaColors.border, lineWidth: 1))
+            .frame(height: 56)
+            .background(TreggaColors.surface)
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(TreggaColors.primary, lineWidth: 1.5))
             .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(alignment: .topTrailing) {
+                Text("RECOMENDADO")
+                    .font(.system(size: 10, weight: .heavy))
+                    .tracking(0.4)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(TreggaColors.primary)
+                    .clipShape(Capsule())
+                    .offset(x: -14, y: -10)
+            }
         }
+        .padding(.horizontal, 20)
     }
 
     private var createAccountLink: some View {
         Button { viewModel.irACrearCuenta() } label: {
             HStack(spacing: 4) {
-                Text("¿Aún no tienes cuenta? ")
+                Text("¿Primera vez en Tregga? ")
                     .font(.system(size: 14))
                     .foregroundStyle(TreggaColors.textSec)
-                Text("Crear cuenta nueva")
+                Text("Crear cuenta con correo")
                     .font(.system(size: 14, weight: .heavy))
                     .foregroundStyle(TreggaColors.primary)
             }
             .frame(maxWidth: .infinity)
         }
+        .padding(.horizontal, 20)
     }
 
     private var disclaimer: some View {
-        Text("Al continuar aceptas los Términos y la Política de privacidad de Tregga.")
-            .font(.system(size: 11.5))
+        Text("Al continuar, aceptas recibir llamadas, WhatsApp o SMS — incluyendo mensajes automatizados — de Tregga y sus afiliados al número proporcionado.")
+            .font(.system(size: 12))
+            .foregroundStyle(TreggaColors.textSec)
+            .lineSpacing(2)
+            .padding(.horizontal, 20)
+    }
+
+    private var recaptchaFootnote: some View {
+        Text("Este sitio está protegido por reCAPTCHA, y aplican la **Política de privacidad** y los **Términos del servicio** de Google.")
+            .font(.system(size: 11))
             .foregroundStyle(TreggaColors.textTer)
             .lineSpacing(2)
-            .frame(maxWidth: .infinity)
-            .multilineTextAlignment(.center)
+            .padding(.horizontal, 20)
     }
 
     private func runGoogle() {
