@@ -21,7 +21,11 @@ enum AccountRoute: Hashable {
 /// Tab Cuenta: hub + stack de subvistas (F6).
 struct CuentaTab: View {
     @Environment(\.appDependencies) private var deps
+    /// Acción real de cierre de sesión (usada por eliminar cuenta).
     let onSignOut: () -> Void
+    /// Pide mostrar el diálogo de confirmación — se presenta a nivel del TabView
+    /// (por encima del bottom bar), no como overlay dentro del tab.
+    var onRequestSignOut: () -> Void = {}
 
     @State private var viewModel: AccountViewModel?
     @State private var path: [AccountRoute] = []
@@ -31,7 +35,7 @@ struct CuentaTab: View {
         NavigationStack(path: $path) {
             Group {
                 if let viewModel {
-                    AccountHubView(viewModel: viewModel, onSignOut: onSignOut, onHelp: { showHelp = true })
+                    AccountHubView(viewModel: viewModel, onRequestSignOut: onRequestSignOut, onHelp: { showHelp = true })
                 } else {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(TreggaColors.bg)
@@ -40,6 +44,7 @@ struct CuentaTab: View {
             .navigationDestination(for: AccountRoute.self) { route in
                 if let viewModel {
                     destination(route, viewModel: viewModel)
+                        .toolbar(.hidden, for: .tabBar)
                 }
             }
         }
@@ -102,9 +107,8 @@ struct CuentaTab: View {
 
 struct AccountHubView: View {
     @Bindable var viewModel: AccountViewModel
-    let onSignOut: () -> Void
+    let onRequestSignOut: () -> Void
     var onHelp: () -> Void = {}
-    @State private var showSignOutConfirm = false
 
     var body: some View {
         ScrollView {
@@ -153,7 +157,7 @@ struct AccountHubView: View {
                     }
                 }
 
-                Button { withAnimation(.easeInOut(duration: 0.25)) { showSignOutConfirm = true } } label: {
+                Button { onRequestSignOut() } label: {
                     HStack(spacing: 8) {
                         TreggaIcon(.logout, size: 18, color: TreggaColors.danger)
                         Text("Cerrar sesión")
@@ -175,11 +179,6 @@ struct AccountHubView: View {
         }
         .background(TreggaColors.bg)
         .refreshable { await viewModel.cargar() }
-        .overlay {
-            if showSignOutConfirm {
-                LogoutConfirmDialog(isPresented: $showSignOutConfirm, onConfirm: onSignOut)
-            }
-        }
     }
 
     private var header: some View {

@@ -8,26 +8,39 @@ struct ClientTabView: View {
     @Environment(\.appDependencies) private var deps
     /// Callback hacia ContentView para volver la app a `.unauthenticated`.
     var onSignOut: () -> Void = {}
+    @State private var showSignOut = false
 
     var body: some View {
-        TabView {
-            HomeView(catalog: catalog)
-                .tabItem { Label("Inicio", systemImage: "house.fill") }
+        // El diálogo de cerrar sesión se presenta a nivel del TabView (en un
+        // ZStack por encima) para que cubra el bottom bar Liquid Glass; si se
+        // mostrara dentro de un tab, la barra flotante quedaría encima.
+        ZStack {
+            TabView {
+                HomeView(catalog: catalog)
+                    .tabItem { Label("Inicio", systemImage: "house.fill") }
 
-            PlaceholderTab(
-                icon: "magnifyingglass",
-                title: "Buscar",
-                message: "Pronto podrás explorar negocios por tipo de comida."
-            )
-            .tabItem { Label("Buscar", systemImage: "magnifyingglass") }
+                PlaceholderTab(
+                    icon: "magnifyingglass",
+                    title: "Buscar",
+                    message: "Pronto podrás explorar negocios por tipo de comida."
+                )
+                .tabItem { Label("Buscar", systemImage: "magnifyingglass") }
 
-            OrdersTab()
-                .tabItem { Label("Pedidos", systemImage: "bag.fill") }
+                OrdersTab()
+                    .tabItem { Label("Pedidos", systemImage: "bag.fill") }
 
-            CuentaTab(onSignOut: onSignOut)
+                CuentaTab(
+                    onSignOut: onSignOut,
+                    onRequestSignOut: { withAnimation(.easeInOut(duration: 0.25)) { showSignOut = true } }
+                )
                 .tabItem { Label("Cuenta", systemImage: "person.crop.circle.fill") }
+            }
+            .tint(TreggaColors.primary)
+
+            if showSignOut {
+                LogoutConfirmDialog(isPresented: $showSignOut, onConfirm: onSignOut)
+            }
         }
-        .tint(TreggaColors.primary)
     }
 
     private var catalog: CatalogRepository {

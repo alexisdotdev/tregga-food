@@ -42,6 +42,10 @@ struct HomeView: View {
                 .toolbar(.hidden, for: .navigationBar)
                 .navigationDestination(for: CatalogRoute.self) { route in
                     destination(for: route)
+                        // Oculta el bottom bar flotante en los flujos con CTA al
+                        // fondo (restaurante/item/carrito/checkout/tracking/chat)
+                        // para que los botones no queden detrás de la barra.
+                        .toolbar(.hidden, for: .tabBar)
                 }
 
                 CartFloatingBar(cart: cart) { path.append(.cart) }

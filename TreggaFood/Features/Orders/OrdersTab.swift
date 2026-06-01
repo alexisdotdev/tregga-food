@@ -30,6 +30,7 @@ struct OrdersTab: View {
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: OrdersRoute.self) { route in
                 destination(for: route)
+                    .toolbar(.hidden, for: .tabBar)
             }
         }
         .task { await setup() }
