@@ -9,8 +9,14 @@ struct ContentView: View {
     @State private var phase: Phase = .loading
     @State private var coordinator: OnboardingCoordinator?
     @State private var cart = CartStore()
+    /// Apariencia elegida en Cuenta → Preferencias. Persistida local.
+    @AppStorage("APPEARANCE_MODE") private var appearanceRaw: String = AppearanceMode.system.rawValue
 
     enum Phase { case loading, unauthenticated, authenticated }
+
+    private var appearance: AppearanceMode {
+        AppearanceMode(rawValue: appearanceRaw) ?? .system
+    }
 
     var body: some View {
         Group {
@@ -24,10 +30,11 @@ struct ContentView: View {
                     SplashScreen()
                 }
             case .authenticated:
-                ClientTabView()
+                ClientTabView(onSignOut: signOut)
                     .environment(\.cartStore, cart)
             }
         }
+        .preferredColorScheme(appearance.colorScheme)
         .task {
             guard coordinator == nil, let deps else { return }
             coordinator = OnboardingCoordinator(
@@ -46,6 +53,23 @@ struct ContentView: View {
                 await deps.authSession.clear()
             }
             phase = deps.authSession.isAuthenticated ? .authenticated : .unauthenticated
+        }
+    }
+
+    /// Cierra sesión: revoca en el servicio auth, limpia la sesión local y
+    /// recrea el coordinator para volver el flujo a Welcome.
+    private func signOut() {
+        guard let deps else { return }
+        Task {
+            try? await deps.authService.signOut()
+            await deps.authSession.clear()
+            coordinator = OnboardingCoordinator(
+                authService: deps.authService,
+                authSession: deps.authSession,
+                clienteRepository: deps.clienteRepository,
+                onAuthenticated: { phase = .authenticated }
+            )
+            phase = .unauthenticated
         }
     }
 }

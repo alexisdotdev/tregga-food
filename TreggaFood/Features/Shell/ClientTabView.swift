@@ -6,6 +6,8 @@ import TreggaDesignSystem
 /// Inicio es la pantalla real (discovery + menú); el resto son placeholders (F3+).
 struct ClientTabView: View {
     @Environment(\.appDependencies) private var deps
+    /// Callback hacia ContentView para volver la app a `.unauthenticated`.
+    var onSignOut: () -> Void = {}
 
     var body: some View {
         TabView {
@@ -22,12 +24,8 @@ struct ClientTabView: View {
             OrdersTab()
                 .tabItem { Label("Pedidos", systemImage: "bag.fill") }
 
-            PlaceholderTab(
-                icon: "person.crop.circle.fill",
-                title: "Cuenta",
-                message: "Tu perfil, direcciones y métodos de pago."
-            )
-            .tabItem { Label("Cuenta", systemImage: "person.crop.circle.fill") }
+            CuentaTab(onSignOut: onSignOut)
+                .tabItem { Label("Cuenta", systemImage: "person.crop.circle.fill") }
         }
         .tint(TreggaColors.primary)
     }

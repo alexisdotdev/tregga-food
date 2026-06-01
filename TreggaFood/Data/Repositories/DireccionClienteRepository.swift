@@ -13,6 +13,16 @@ public protocol DireccionClienteRepository: Sendable {
         referencias: String?,
         isDefault: Bool
     ) async throws -> DireccionCliente
+    @discardableResult
+    func editar(
+        id: UUID,
+        label: String,
+        address: String,
+        referencias: String?
+    ) async throws -> DireccionCliente
+    func eliminar(id: UUID) async throws
+    /// Marca una dirección como principal y desmarca las demás del cliente.
+    func hacerDefault(id: UUID, clienteId: UUID) async throws
 }
 
 // MARK: - Supabase
@@ -97,6 +107,48 @@ public final class SupabaseDireccionClienteRepository: DireccionClienteRepositor
             .value
         return dto.toDomain()
     }
+
+    @discardableResult
+    public func editar(
+        id: UUID,
+        label: String,
+        address: String,
+        referencias: String?
+    ) async throws -> DireccionCliente {
+        struct Update: Encodable {
+            let label: String
+            let address: String
+            let referencias: String?
+        }
+        let dto: DireccionDTO = try await client.from("direcciones_cliente")
+            .update(Update(label: label, address: address, referencias: referencias))
+            .eq("id", value: id.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+        return dto.toDomain()
+    }
+
+    public func eliminar(id: UUID) async throws {
+        try await client.from("direcciones_cliente")
+            .delete()
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    public func hacerDefault(id: UUID, clienteId: UUID) async throws {
+        struct Flag: Encodable { let is_default: Bool }
+        // Desmarca todas las del cliente, luego marca la elegida.
+        try await client.from("direcciones_cliente")
+            .update(Flag(is_default: false))
+            .eq("cliente_id", value: clienteId.uuidString)
+            .execute()
+        try await client.from("direcciones_cliente")
+            .update(Flag(is_default: true))
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
 }
 
 // MARK: - Mock
@@ -136,4 +188,18 @@ public final class MockDireccionClienteRepository: DireccionClienteRepository {
             isDefault: isDefault
         )
     }
+
+    @discardableResult
+    public func editar(
+        id: UUID,
+        label: String,
+        address: String,
+        referencias: String?
+    ) async throws -> DireccionCliente {
+        DireccionCliente(id: id, clienteId: UUID(), label: label, address: address, referencias: referencias)
+    }
+
+    public func eliminar(id: UUID) async throws {}
+
+    public func hacerDefault(id: UUID, clienteId: UUID) async throws {}
 }

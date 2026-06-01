@@ -19,6 +19,9 @@ public final class AppDependencies {
     public let trackingRepository: TrackingRepository
     public let mensajeRepository: MensajeRepository
     public let calificacionRepository: CalificacionRepository
+    public let profileRepository: ProfileRepository
+    public let preferenciasRepository: PreferenciasRepository
+    public let accountRepository: AccountRepository
 
     public init(defaults: UserDefaults = .standard) {
         let useSupabase = defaults.bool(forKey: "USE_SUPABASE_BACKEND")
@@ -33,6 +36,9 @@ public final class AppDependencies {
             self.trackingRepository = SupabaseTrackingRepository()
             self.mensajeRepository = SupabaseMensajeRepository()
             self.calificacionRepository = SupabaseCalificacionRepository()
+            self.profileRepository = SupabaseProfileRepository()
+            self.preferenciasRepository = SupabasePreferenciasRepository()
+            self.accountRepository = SupabaseAccountRepository()
         } else {
             self.authService = MockAuthService()
             self.authStorage = MockAuthStorage()
@@ -43,6 +49,9 @@ public final class AppDependencies {
             self.trackingRepository = MockTrackingRepository()
             self.mensajeRepository = MockMensajeRepository()
             self.calificacionRepository = MockCalificacionRepository()
+            self.profileRepository = MockProfileRepository()
+            self.preferenciasRepository = MockPreferenciasRepository()
+            self.accountRepository = MockAccountRepository()
         }
         self.authSession = AuthSession(storage: self.authStorage)
     }
