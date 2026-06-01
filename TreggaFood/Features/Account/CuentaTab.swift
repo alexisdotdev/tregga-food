@@ -15,6 +15,7 @@ enum AccountRoute: Hashable {
     case about
     case dataDownload
     case accountDeletion
+    case inbox
 }
 
 /// Tab Cuenta: hub + stack de subvistas (F6).
@@ -24,12 +25,13 @@ struct CuentaTab: View {
 
     @State private var viewModel: AccountViewModel?
     @State private var path: [AccountRoute] = []
+    @State private var showHelp = false
 
     var body: some View {
         NavigationStack(path: $path) {
             Group {
                 if let viewModel {
-                    AccountHubView(viewModel: viewModel, onSignOut: onSignOut)
+                    AccountHubView(viewModel: viewModel, onSignOut: onSignOut, onHelp: { showHelp = true })
                 } else {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(TreggaColors.bg)
@@ -42,6 +44,9 @@ struct CuentaTab: View {
             }
         }
         .tint(TreggaColors.primary)
+        .sheet(isPresented: $showHelp) {
+            ScreenHelpCenter()
+        }
         .task {
             guard viewModel == nil, let deps, let uid = deps.authSession.tokens?.userId else { return }
             let vm = AccountViewModel(
@@ -82,6 +87,13 @@ struct CuentaTab: View {
             DataDownloadView(viewModel: viewModel)
         case .accountDeletion:
             AccountDeletionView(viewModel: viewModel, onDeleted: onSignOut)
+        case .inbox:
+            ScreenInbox(
+                viewModel: NotificationsViewModel(
+                    userId: deps?.authSession.tokens?.userId,
+                    repo: deps?.notificacionRepository ?? MockNotificacionRepository()
+                )
+            )
         }
     }
 }
@@ -91,6 +103,7 @@ struct CuentaTab: View {
 struct AccountHubView: View {
     @Bindable var viewModel: AccountViewModel
     let onSignOut: () -> Void
+    var onHelp: () -> Void = {}
     @State private var showSignOutConfirm = false
 
     var body: some View {
@@ -116,10 +129,29 @@ struct AccountHubView: View {
                     .nav(.message, "Idioma", tail: "Español (MX)", route: .language),
                 ])
 
-                grupo(title: "Soporte y legal", rows: [
-                    .nav(.info, "Acerca de Tregga", tail: nil, route: .about),
-                    .nav(.share, "Descargar mis datos", tail: nil, route: .dataDownload),
+                grupo(title: "Mensajes", rows: [
+                    .nav(.message, "Inbox", tail: nil, route: .inbox),
                 ])
+
+                VStack(alignment: .leading, spacing: 0) {
+                    SectionHeader("Soporte y legal").padding(.top, 16)
+                    AccountCard {
+                        Button { onHelp() } label: {
+                            AccountNavRow(icon: .info, label: "Ayuda y soporte", sub: "Centro de ayuda y contacto")
+                        }
+                        .buttonStyle(.plain)
+                        RowDivider()
+                        NavigationLink(value: AccountRoute.about) {
+                            AccountNavRow(icon: .info, label: "Acerca de Tregga")
+                        }
+                        .buttonStyle(.plain)
+                        RowDivider()
+                        NavigationLink(value: AccountRoute.dataDownload) {
+                            AccountNavRow(icon: .share, label: "Descargar mis datos")
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
 
                 Button { showSignOutConfirm = true } label: {
                     HStack(spacing: 8) {

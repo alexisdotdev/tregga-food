@@ -8,6 +8,8 @@ struct HomeView: View {
     @State private var path: [CatalogRoute] = []
     @State private var clienteId: UUID?
     @State private var pedidoEntregado: PedidoTracking?
+    @State private var showNotifications = false
+    @State private var showOffers = false
     private let catalog: CatalogRepository
 
     @Environment(\.cartStore) private var cartEnv
@@ -72,6 +74,19 @@ struct HomeView: View {
                 }
             )
         }
+        .sheet(isPresented: $showNotifications) {
+            NavigationStack {
+                ScreenNotifications(
+                    viewModel: NotificationsViewModel(
+                        userId: deps?.authSession.tokens?.userId,
+                        repo: deps?.notificacionRepository ?? MockNotificacionRepository()
+                    )
+                )
+            }
+        }
+        .sheet(isPresented: $showOffers) {
+            NavigationStack { ScreenOffers() }
+        }
     }
 
     @ViewBuilder
@@ -134,19 +149,38 @@ struct HomeView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("Entregar ahora")
-                .font(.system(size: 12, weight: .bold))
-                .tracking(0.3)
-                .textCase(.uppercase)
-                .foregroundStyle(TreggaColors.textSec)
-            HStack(spacing: 6) {
-                TreggaIcon(.pin, size: 18, color: TreggaColors.primary)
-                Text("Av. Hidalgo 142, Centro")
-                    .font(.system(size: 17, weight: .heavy))
-                    .tracking(-0.2)
-                    .foregroundStyle(TreggaColors.text)
-                TreggaIcon(.chevD, size: 14, color: TreggaColors.textSec)
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Entregar ahora")
+                    .font(.system(size: 12, weight: .bold))
+                    .tracking(0.3)
+                    .textCase(.uppercase)
+                    .foregroundStyle(TreggaColors.textSec)
+                HStack(spacing: 6) {
+                    TreggaIcon(.pin, size: 18, color: TreggaColors.primary)
+                    Text("Av. Hidalgo 142, Centro")
+                        .font(.system(size: 17, weight: .heavy))
+                        .tracking(-0.2)
+                        .foregroundStyle(TreggaColors.text)
+                    TreggaIcon(.chevD, size: 14, color: TreggaColors.textSec)
+                }
+            }
+            Spacer()
+            HStack(spacing: 10) {
+                Button { showOffers = true } label: {
+                    ZStack {
+                        Circle().fill(TreggaColors.accentSoft).frame(width: 40, height: 40)
+                        TreggaIcon(.gift, size: 20, color: TreggaColors.accent)
+                    }
+                }
+                .buttonStyle(.plain)
+                Button { showNotifications = true } label: {
+                    ZStack {
+                        Circle().fill(TreggaColors.surface).frame(width: 40, height: 40)
+                        TreggaIcon(.bell, size: 20, color: TreggaColors.text)
+                    }
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, 16)
