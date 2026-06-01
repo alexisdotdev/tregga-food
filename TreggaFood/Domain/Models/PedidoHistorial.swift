@@ -1,0 +1,146 @@
+import Foundation
+
+/// Fila del historial de pedidos (lista "Mis pedidos", F5).
+public struct PedidoResumen: Identifiable, Equatable, Sendable {
+    public let id: UUID
+    public let orderNumber: String
+    public let negocioName: String
+    public let itemsResumen: String
+    public let total: Decimal
+    public let status: PedidoStatus
+    public let fecha: Date?
+    public let rating: Int?
+
+    public init(
+        id: UUID,
+        orderNumber: String,
+        negocioName: String,
+        itemsResumen: String,
+        total: Decimal,
+        status: PedidoStatus,
+        fecha: Date?,
+        rating: Int?
+    ) {
+        self.id = id
+        self.orderNumber = orderNumber
+        self.negocioName = negocioName
+        self.itemsResumen = itemsResumen
+        self.total = total
+        self.status = status
+        self.fecha = fecha
+        self.rating = rating
+    }
+
+    /// El pedido sigue en curso (no terminal).
+    public var enCurso: Bool { !status.isTerminal }
+}
+
+/// Item del pedido ya parseado para el detalle (F5).
+public struct PedidoDetalleItem: Identifiable, Equatable, Sendable {
+    public let id: UUID
+    public let nombre: String
+    public let cantidad: Int
+    public let precioUnitario: Decimal
+    public let modificadores: [String]
+    public let subtotal: Decimal
+
+    public init(
+        id: UUID = UUID(),
+        nombre: String,
+        cantidad: Int,
+        precioUnitario: Decimal,
+        modificadores: [String],
+        subtotal: Decimal
+    ) {
+        self.id = id
+        self.nombre = nombre
+        self.cantidad = cantidad
+        self.precioUnitario = precioUnitario
+        self.modificadores = modificadores
+        self.subtotal = subtotal
+    }
+}
+
+/// Calificación que el cliente ya dio a un pedido (tabla `calificaciones`).
+public struct PedidoCalificacion: Equatable, Sendable {
+    public let rating: Int
+    public let comment: String?
+    public let tags: [String]
+
+    public init(rating: Int, comment: String?, tags: [String]) {
+        self.rating = rating
+        self.comment = comment
+        self.tags = tags
+    }
+}
+
+/// Detalle completo de un pedido (pantalla "Detalle del pedido", F5).
+public struct PedidoDetalle: Identifiable, Equatable, Sendable {
+    public let id: UUID
+    public let orderNumber: String
+    public let status: PedidoStatus
+    public let negocioName: String
+    public let negocioId: UUID?
+    public let repartidorId: UUID?
+    public let repartidorName: String?
+    public let items: [PedidoDetalleItem]
+    public let subtotal: Decimal
+    public let deliveryFee: Decimal
+    public let propina: Decimal
+    public let total: Decimal
+    public let metodoPago: MetodoPago
+    public let paymentStatus: String?
+    public let deliveryAddress: String?
+    public let fecha: Date?
+    public let completedAt: Date?
+    public let cancelledAt: Date?
+    public let cancellationReason: String?
+    public let calificacion: PedidoCalificacion?
+
+    public init(
+        id: UUID,
+        orderNumber: String,
+        status: PedidoStatus,
+        negocioName: String,
+        negocioId: UUID?,
+        repartidorId: UUID?,
+        repartidorName: String?,
+        items: [PedidoDetalleItem],
+        subtotal: Decimal,
+        deliveryFee: Decimal,
+        propina: Decimal,
+        total: Decimal,
+        metodoPago: MetodoPago,
+        paymentStatus: String?,
+        deliveryAddress: String?,
+        fecha: Date?,
+        completedAt: Date?,
+        cancelledAt: Date?,
+        cancellationReason: String?,
+        calificacion: PedidoCalificacion?
+    ) {
+        self.id = id
+        self.orderNumber = orderNumber
+        self.status = status
+        self.negocioName = negocioName
+        self.negocioId = negocioId
+        self.repartidorId = repartidorId
+        self.repartidorName = repartidorName
+        self.items = items
+        self.subtotal = subtotal
+        self.deliveryFee = deliveryFee
+        self.propina = propina
+        self.total = total
+        self.metodoPago = metodoPago
+        self.paymentStatus = paymentStatus
+        self.deliveryAddress = deliveryAddress
+        self.fecha = fecha
+        self.completedAt = completedAt
+        self.cancelledAt = cancelledAt
+        self.cancellationReason = cancellationReason
+        self.calificacion = calificacion
+    }
+
+    /// El pedido sigue en curso (no terminal) → permite seguir el tracking.
+    public var enCurso: Bool { !status.isTerminal }
+}

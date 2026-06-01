@@ -12,6 +12,9 @@ public protocol CalificacionRepository: Sendable {
         comment: String?,
         tags: [String]
     ) async throws
+
+    /// Calificación que el cliente ya dio a este pedido (rated_by='cliente'), si existe.
+    func fetchDelPedido(pedidoId: UUID) async throws -> PedidoCalificacion?
 }
 
 // MARK: - Supabase
@@ -52,6 +55,24 @@ public final class SupabaseCalificacionRepository: CalificacionRepository {
             ))
             .execute()
     }
+
+    private struct CalificacionDTO: Decodable {
+        let rating: Int
+        let comment: String?
+        let tags: [String]?
+    }
+
+    public func fetchDelPedido(pedidoId: UUID) async throws -> PedidoCalificacion? {
+        let dtos: [CalificacionDTO] = try await client.from("calificaciones")
+            .select("rating,comment,tags")
+            .eq("pedido_id", value: pedidoId.uuidString)
+            .eq("rated_by", value: "cliente")
+            .limit(1)
+            .execute()
+            .value
+        guard let dto = dtos.first else { return nil }
+        return PedidoCalificacion(rating: dto.rating, comment: dto.comment, tags: dto.tags ?? [])
+    }
 }
 
 // MARK: - Mock
@@ -68,5 +89,9 @@ public final class MockCalificacionRepository: CalificacionRepository {
         tags: [String]
     ) async throws {
         try? await Task.sleep(nanoseconds: 400_000_000)
+    }
+
+    public func fetchDelPedido(pedidoId: UUID) async throws -> PedidoCalificacion? {
+        nil
     }
 }
