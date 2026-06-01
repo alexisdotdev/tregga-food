@@ -43,9 +43,7 @@ private struct PlaceholderTab: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 40, weight: .regular))
-                .foregroundStyle(TreggaColors.textTer)
+            TreggaIcon(sfSymbol: icon, size: 40, color: TreggaColors.textTer)
             Text(title)
                 .treggaStyle(.h3)
                 .foregroundStyle(TreggaColors.text)

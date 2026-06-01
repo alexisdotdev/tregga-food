@@ -26,7 +26,7 @@ struct AddressesView: View {
                     .padding(.horizontal, 16)
                 }
 
-                TreggaButton("Agregar nueva dirección", icon: Image(systemName: "plus")) {
+                TreggaButton("Agregar nueva dirección", icon: TreggaIcon.image(.plus)) {
                     editor = EditorState()
                 }
                 .padding(.horizontal, 16)

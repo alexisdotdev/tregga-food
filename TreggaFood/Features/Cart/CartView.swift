@@ -125,7 +125,7 @@ struct CartView: View {
             TreggaButton(
                 "Ir a pagar · \(PriceFormat.pesos(cart.subtotal + deliveryFeeEstimado))",
                 kind: .dark,
-                iconRight: Image(systemName: "arrow.right"),
+                iconRight: TreggaIcon.image(.arrow),
                 height: 56
             ) { onCheckout() }
         }

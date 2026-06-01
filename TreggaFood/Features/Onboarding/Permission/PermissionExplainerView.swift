@@ -76,9 +76,7 @@ public struct PermissionExplainerView: View {
                             HStack(alignment: .top, spacing: 12) {
                                 ZStack {
                                     Circle().fill(TreggaColors.primarySoft)
-                                    Image(systemName: perk.icon)
-                                        .font(.system(size: 13, weight: .bold))
-                                        .foregroundStyle(TreggaColors.primaryDark)
+                                    TreggaIcon(sfSymbol: perk.icon, size: 13, color: TreggaColors.primaryDark)
                                 }
                                 .frame(width: 28, height: 28)
                                 VStack(alignment: .leading, spacing: 1) {

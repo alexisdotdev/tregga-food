@@ -74,9 +74,7 @@ public struct OTPView: View {
     private var badge: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 16).fill(TreggaColors.primarySoft)
-            Image(systemName: viewModel.email != nil ? "envelope.fill" : "phone.fill")
-                .font(.system(size: 24, weight: .bold))
-                .foregroundStyle(TreggaColors.primaryDeep)
+            TreggaIcon(sfSymbol: viewModel.email != nil ? "envelope.fill" : "phone.fill", size: 24, color: TreggaColors.primaryDeep)
         }
         .frame(width: 56, height: 56)
     }
