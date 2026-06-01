@@ -1,0 +1,695 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		541986072FBBB6D30064A92C /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 541986062FBBB6D30064A92C /* Auth */; };
+		541986092FBBB6D30064A92C /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 541986082FBBB6D30064A92C /* PostgREST */; };
+		5419860B2FBBB6D30064A92C /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 5419860A2FBBB6D30064A92C /* Storage */; };
+		5419860D2FBBB6D30064A92C /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 5419860C2FBBB6D30064A92C /* Supabase */; };
+		5443F4E62FB7F7670027212D /* TreggaDesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 5443F4E52FB7F7670027212D /* TreggaDesignSystem */; };
+		545B2AE82FBAAC2D006A8A95 /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 545B2AE72FBAAC2D006A8A95 /* GoogleMaps */; };
+		C0FFEE0000000000000000B1 /* TreggaCore in Frameworks */ = {isa = PBXBuildFile; productRef = C0FFEE0000000000000000D2 /* TreggaCore */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		540867A52FB7E8BA00FF1584 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5408678F2FB7E8B800FF1584 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 540867962FB7E8B800FF1584;
+			remoteInfo = TreggaFood;
+		};
+		540867AF2FB7E8BA00FF1584 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5408678F2FB7E8B800FF1584 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 540867962FB7E8B800FF1584;
+			remoteInfo = TreggaFood;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		540867972FB7E8B800FF1584 /* TreggaFood.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TreggaFood.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		540867A42FB7E8BA00FF1584 /* TreggaFoodTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TreggaFoodTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		540867AE2FB7E8BA00FF1584 /* TreggaFoodUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TreggaFoodUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5456D8572FBA912A0088157D /* secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = secrets.xcconfig; sourceTree = "<group>"; };
+		5456D8592FBA952F0088157D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		540867992FB7E8B800FF1584 /* TreggaFood */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TreggaFood;
+			sourceTree = "<group>";
+		};
+		540867A72FB7E8BA00FF1584 /* TreggaFoodTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TreggaFoodTests;
+			sourceTree = "<group>";
+		};
+		540867B12FB7E8BA00FF1584 /* TreggaFoodUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = TreggaFoodUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		540867942FB7E8B800FF1584 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				541986092FBBB6D30064A92C /* PostgREST in Frameworks */,
+				545B2AE82FBAAC2D006A8A95 /* GoogleMaps in Frameworks */,
+				5419860D2FBBB6D30064A92C /* Supabase in Frameworks */,
+				5443F4E62FB7F7670027212D /* TreggaDesignSystem in Frameworks */,
+				C0FFEE0000000000000000B1 /* TreggaCore in Frameworks */,
+				5419860B2FBBB6D30064A92C /* Storage in Frameworks */,
+				541986072FBBB6D30064A92C /* Auth in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		540867A12FB7E8BA00FF1584 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		540867AB2FB7E8BA00FF1584 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5408678E2FB7E8B800FF1584 = {
+			isa = PBXGroup;
+			children = (
+				5456D8592FBA952F0088157D /* Info.plist */,
+				540867992FB7E8B800FF1584 /* TreggaFood */,
+				540867A72FB7E8BA00FF1584 /* TreggaFoodTests */,
+				540867B12FB7E8BA00FF1584 /* TreggaFoodUITests */,
+				5443F4E42FB7F7670027212D /* Frameworks */,
+				540867982FB7E8B800FF1584 /* Products */,
+				5456D8572FBA912A0088157D /* secrets.xcconfig */,
+			);
+			sourceTree = "<group>";
+		};
+		540867982FB7E8B800FF1584 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				540867972FB7E8B800FF1584 /* TreggaFood.app */,
+				540867A42FB7E8BA00FF1584 /* TreggaFoodTests.xctest */,
+				540867AE2FB7E8BA00FF1584 /* TreggaFoodUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5443F4E42FB7F7670027212D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		540867962FB7E8B800FF1584 /* TreggaFood */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 540867B82FB7E8BA00FF1584 /* Build configuration list for PBXNativeTarget "TreggaFood" */;
+			buildPhases = (
+				540867932FB7E8B800FF1584 /* Sources */,
+				540867942FB7E8B800FF1584 /* Frameworks */,
+				540867952FB7E8B800FF1584 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				540867992FB7E8B800FF1584 /* TreggaFood */,
+			);
+			name = TreggaFood;
+			packageProductDependencies = (
+				5443F4E52FB7F7670027212D /* TreggaDesignSystem */,
+				C0FFEE0000000000000000D2 /* TreggaCore */,
+				545B2AE72FBAAC2D006A8A95 /* GoogleMaps */,
+				541986062FBBB6D30064A92C /* Auth */,
+				541986082FBBB6D30064A92C /* PostgREST */,
+				5419860A2FBBB6D30064A92C /* Storage */,
+				5419860C2FBBB6D30064A92C /* Supabase */,
+			);
+			productName = TreggaFood;
+			productReference = 540867972FB7E8B800FF1584 /* TreggaFood.app */;
+			productType = "com.apple.product-type.application";
+		};
+		540867A32FB7E8BA00FF1584 /* TreggaFoodTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 540867BB2FB7E8BA00FF1584 /* Build configuration list for PBXNativeTarget "TreggaFoodTests" */;
+			buildPhases = (
+				540867A02FB7E8BA00FF1584 /* Sources */,
+				540867A12FB7E8BA00FF1584 /* Frameworks */,
+				540867A22FB7E8BA00FF1584 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				540867A62FB7E8BA00FF1584 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				540867A72FB7E8BA00FF1584 /* TreggaFoodTests */,
+			);
+			name = TreggaFoodTests;
+			packageProductDependencies = (
+			);
+			productName = TreggaFoodTests;
+			productReference = 540867A42FB7E8BA00FF1584 /* TreggaFoodTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		540867AD2FB7E8BA00FF1584 /* TreggaFoodUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 540867BE2FB7E8BA00FF1584 /* Build configuration list for PBXNativeTarget "TreggaFoodUITests" */;
+			buildPhases = (
+				540867AA2FB7E8BA00FF1584 /* Sources */,
+				540867AB2FB7E8BA00FF1584 /* Frameworks */,
+				540867AC2FB7E8BA00FF1584 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				540867B02FB7E8BA00FF1584 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				540867B12FB7E8BA00FF1584 /* TreggaFoodUITests */,
+			);
+			name = TreggaFoodUITests;
+			packageProductDependencies = (
+			);
+			productName = TreggaFoodUITests;
+			productReference = 540867AE2FB7E8BA00FF1584 /* TreggaFoodUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5408678F2FB7E8B800FF1584 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					540867962FB7E8B800FF1584 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					540867A32FB7E8BA00FF1584 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = 540867962FB7E8B800FF1584;
+					};
+					540867AD2FB7E8BA00FF1584 = {
+						CreatedOnToolsVersion = 26.0;
+						TestTargetID = 540867962FB7E8B800FF1584;
+					};
+				};
+			};
+			buildConfigurationList = 540867922FB7E8B800FF1584 /* Build configuration list for PBXProject "TreggaFood" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 5408678E2FB7E8B800FF1584;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				5443F4DB2FB7F5300027212D /* XCLocalSwiftPackageReference "../tregga-shared/TreggaDesignSystem" */,
+				C0FFEE0000000000000000E3 /* XCLocalSwiftPackageReference "../tregga-shared/TreggaCore" */,
+				5456D8552FBA8EF50088157D /* XCRemoteSwiftPackageReference "ios-maps-sdk" */,
+				541986052FBBB6D30064A92C /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 540867982FB7E8B800FF1584 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				540867962FB7E8B800FF1584 /* TreggaFood */,
+				540867A32FB7E8BA00FF1584 /* TreggaFoodTests */,
+				540867AD2FB7E8BA00FF1584 /* TreggaFoodUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		540867952FB7E8B800FF1584 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		540867A22FB7E8BA00FF1584 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		540867AC2FB7E8BA00FF1584 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		540867932FB7E8B800FF1584 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		540867A02FB7E8BA00FF1584 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		540867AA2FB7E8BA00FF1584 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		540867A62FB7E8BA00FF1584 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 540867962FB7E8B800FF1584 /* TreggaFood */;
+			targetProxy = 540867A52FB7E8BA00FF1584 /* PBXContainerItemProxy */;
+		};
+		540867B02FB7E8BA00FF1584 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 540867962FB7E8B800FF1584 /* TreggaFood */;
+			targetProxy = 540867AF2FB7E8BA00FF1584 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		540867B62FB7E8BA00FF1584 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		540867B72FB7E8BA00FF1584 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		540867B92FB7E8BA00FF1584 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5456D8572FBA912A0088157D /* secrets.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.tregga.food;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		540867BA2FB7E8BA00FF1584 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5456D8572FBA912A0088157D /* secrets.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.tregga.food;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		540867BC2FB7E8BA00FF1584 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5456D8572FBA912A0088157D /* secrets.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.tregga.TreggaFoodTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TreggaFood.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TreggaFood";
+			};
+			name = Debug;
+		};
+		540867BD2FB7E8BA00FF1584 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5456D8572FBA912A0088157D /* secrets.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.tregga.TreggaFoodTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TreggaFood.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/TreggaFood";
+			};
+			name = Release;
+		};
+		540867BF2FB7E8BA00FF1584 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5456D8572FBA912A0088157D /* secrets.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.tregga.TreggaFoodUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TreggaFood;
+			};
+			name = Debug;
+		};
+		540867C02FB7E8BA00FF1584 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5456D8572FBA912A0088157D /* secrets.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.tregga.TreggaFoodUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = TreggaFood;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		540867922FB7E8B800FF1584 /* Build configuration list for PBXProject "TreggaFood" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				540867B62FB7E8BA00FF1584 /* Debug */,
+				540867B72FB7E8BA00FF1584 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		540867B82FB7E8BA00FF1584 /* Build configuration list for PBXNativeTarget "TreggaFood" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				540867B92FB7E8BA00FF1584 /* Debug */,
+				540867BA2FB7E8BA00FF1584 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		540867BB2FB7E8BA00FF1584 /* Build configuration list for PBXNativeTarget "TreggaFoodTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				540867BC2FB7E8BA00FF1584 /* Debug */,
+				540867BD2FB7E8BA00FF1584 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		540867BE2FB7E8BA00FF1584 /* Build configuration list for PBXNativeTarget "TreggaFoodUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				540867BF2FB7E8BA00FF1584 /* Debug */,
+				540867C02FB7E8BA00FF1584 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		5443F4DB2FB7F5300027212D /* XCLocalSwiftPackageReference "../tregga-shared/TreggaDesignSystem" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../tregga-shared/TreggaDesignSystem";
+		};
+		C0FFEE0000000000000000E3 /* XCLocalSwiftPackageReference "../tregga-shared/TreggaCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../tregga-shared/TreggaCore";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		541986052FBBB6D30064A92C /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase-community/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+		5456D8552FBA8EF50088157D /* XCRemoteSwiftPackageReference "ios-maps-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googlemaps/ios-maps-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.13.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		541986062FBBB6D30064A92C /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 541986052FBBB6D30064A92C /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		541986082FBBB6D30064A92C /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 541986052FBBB6D30064A92C /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		5419860A2FBBB6D30064A92C /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 541986052FBBB6D30064A92C /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		5419860C2FBBB6D30064A92C /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 541986052FBBB6D30064A92C /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+		5443F4E52FB7F7670027212D /* TreggaDesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5443F4DB2FB7F5300027212D /* XCLocalSwiftPackageReference "../tregga-shared/TreggaDesignSystem" */;
+			productName = TreggaDesignSystem;
+		};
+		545B2AE72FBAAC2D006A8A95 /* GoogleMaps */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5456D8552FBA8EF50088157D /* XCRemoteSwiftPackageReference "ios-maps-sdk" */;
+			productName = GoogleMaps;
+		};
+		C0FFEE0000000000000000D2 /* TreggaCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0FFEE0000000000000000E3 /* XCLocalSwiftPackageReference "../tregga-shared/TreggaCore" */;
+			productName = TreggaCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 5408678F2FB7E8B800FF1584 /* Project object */;
+}

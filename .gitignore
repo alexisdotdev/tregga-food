@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# Design reference images (watermarked third-party, do not commit)
+.design-reference/
+
+# Xcode artifacts (cuando se cree el proyecto)
+xcuserdata/
+*.xcuserstate
+DerivedData/
+.swiftpm/
+.build/
+Package.resolved
+
+# OMC
+.omc/
