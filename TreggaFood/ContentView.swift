@@ -23,7 +23,7 @@ struct ContentView: View {
                     SplashScreen()
                 }
             case .authenticated:
-                HomePlaceholder()
+                ClientTabView()
             }
         }
         .task {
@@ -107,17 +107,6 @@ struct OnboardingFlowView: View {
 
     private var authService: AuthService {
         deps?.authService ?? MockAuthService()
-    }
-}
-
-/// Placeholder de la app autenticada — se reemplaza por el TabView (F2+).
-struct HomePlaceholder: View {
-    var body: some View {
-        Screen {
-            Text("Home (F2) en construcción")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(TreggaColors.text)
-        }
     }
 }
 
