@@ -26,7 +26,7 @@ public struct PreferenciasUsuario: Equatable, Sendable {
     public var notifPromos: Bool
     public var notifSistema: Bool
 
-    public init(
+    public nonisolated init(
         userId: UUID,
         soundsEnabled: Bool = true,
         vibrationEnabled: Bool = true,

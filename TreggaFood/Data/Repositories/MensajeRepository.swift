@@ -73,28 +73,33 @@ public final class SupabaseMensajeRepository: MensajeRepository {
 
 // MARK: - Mock
 
-public final class MockMensajeRepository: MensajeRepository, @unchecked Sendable {
-    private var mensajes: [Mensaje]
-    private let lock = NSLock()
+/// Mock con almacenamiento en memoria vía actor (evita NSLock en async).
+public final class MockMensajeRepository: MensajeRepository {
+    private actor Store {
+        var mensajes: [Mensaje]
+        init(_ seed: [Mensaje]) { self.mensajes = seed }
+        func all() -> [Mensaje] { mensajes }
+        func append(_ m: Mensaje) { mensajes.append(m) }
+    }
+    private let store: Store
 
     public init() {
         let ahora = Date()
-        mensajes = [
+        store = Store([
             Mensaje(id: UUID(), content: "¡Hola! 👋 Ya estoy recogiendo tu pedido en Carnitas Don Lupe.", senderRole: "repartidor", fecha: ahora.addingTimeInterval(-600), esMio: false),
             Mensaje(id: UUID(), content: "¡Gracias Miguel! Aquí te espero.", senderRole: "cliente", fecha: ahora.addingTimeInterval(-540), esMio: true),
             Mensaje(id: UUID(), content: "Listo, ya tengo todo. Voy en camino 🛵", senderRole: "repartidor", fecha: ahora.addingTimeInterval(-180), esMio: false),
-        ]
+        ])
     }
 
     public func fetch(pedidoId: UUID, miUserId: UUID?) async throws -> [Mensaje] {
-        lock.lock(); defer { lock.unlock() }
-        return mensajes
+        await store.all()
     }
 
     @discardableResult
     public func enviar(pedidoId: UUID, senderId: UUID, content: String) async throws -> Mensaje {
         let m = Mensaje(id: UUID(), content: content, senderRole: "cliente", fecha: Date(), esMio: true)
-        lock.lock(); mensajes.append(m); lock.unlock()
+        await store.append(m)
         return m
     }
 }

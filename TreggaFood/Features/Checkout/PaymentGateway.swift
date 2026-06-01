@@ -18,7 +18,7 @@ public protocol PaymentGateway: Sendable {
 /// Stub: no integra el SDK de Stripe. Siempre responde `.pendienteConfiguracion`
 /// para que el flujo cree el pedido con `payment_method=tarjeta` y muestre el aviso.
 public struct StubStripeGateway: PaymentGateway {
-    public init() {}
+    public nonisolated init() {}
 
     public func cobrarTarjeta(amount: Decimal, currency: String) async -> PaymentGatewayResult {
         .pendienteConfiguracion

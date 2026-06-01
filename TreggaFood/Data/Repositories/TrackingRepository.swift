@@ -104,17 +104,21 @@ public final class SupabaseTrackingRepository: TrackingRepository {
 // MARK: - Mock
 
 /// Mock con un repartidor que se mueve poco a poco del pickup al destino.
-public final class MockTrackingRepository: TrackingRepository, @unchecked Sendable {
+public final class MockTrackingRepository: TrackingRepository {
+    private actor Counter {
+        private var tick = 0
+        func next() -> Int { let v = tick; tick += 1; return v }
+        func current() -> Int { tick }
+    }
     private let pickup = TrackCoord(lat: 19.8530, lng: -100.8210)
     private let delivery = TrackCoord(lat: 19.8480, lng: -100.8290)
     private let repartidorId = UUID()
-    private var tick: Int = 0
-    private let lock = NSLock()
+    private let counter = Counter()
 
     public init() {}
 
     public func fetchPedido(id: UUID) async throws -> PedidoTracking {
-        lock.lock(); let t = tick; tick += 1; lock.unlock()
+        let t = await counter.next()
         let status: PedidoStatus = {
             switch t {
             case 0...1:  return .assigned
@@ -139,7 +143,7 @@ public final class MockTrackingRepository: TrackingRepository, @unchecked Sendab
     }
 
     public func fetchUbicacionRepartidor(repartidorId: UUID) async throws -> UbicacionRepartidor? {
-        lock.lock(); let t = min(tick, 10); lock.unlock()
+        let t = min(await counter.current(), 10)
         let f = Double(t) / 10.0
         let lat = pickup.lat + (delivery.lat - pickup.lat) * f
         let lng = pickup.lng + (delivery.lng - pickup.lng) * f
