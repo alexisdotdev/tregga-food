@@ -8,18 +8,23 @@ public enum MetodoPago: String, CaseIterable, Sendable, Identifiable {
 
     public var id: String { rawValue }
 
+    /// Métodos ofrecidos hoy al cliente. La tarjeta (Stripe) queda fuera hasta
+    /// integrar la pasarela en una sesión posterior; el caso del enum se conserva
+    /// porque el backend ya lo soporta.
+    public static let seleccionables: [MetodoPago] = [.efectivo, .transferencia]
+
     public var titulo: String {
         switch self {
         case .efectivo:      return "Efectivo"
-        case .transferencia: return "Transferencia SPEI"
+        case .transferencia: return "Transferencia"
         case .tarjeta:       return "Tarjeta"
         }
     }
 
     public var subtitulo: String {
         switch self {
-        case .efectivo:      return "Pagas al recibir · llévalo justo"
-        case .transferencia: return "Subes tu comprobante después de confirmar"
+        case .efectivo:      return "Le pagas en efectivo al repartidor al recibir"
+        case .transferencia: return "Le transfieres al repartidor al recibir"
         case .tarjeta:       return "Pasarela en configuración"
         }
     }

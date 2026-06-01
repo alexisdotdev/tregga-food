@@ -22,10 +22,9 @@ struct CheckoutView: View {
             case .confirming:
                 HangTightOverlay()
                     .transition(.opacity)
-            case .success(let resultado, let avisoTarjeta):
+            case .success(let resultado):
                 OrderSuccessOverlay(
                     resultado: resultado,
-                    avisoTarjeta: avisoTarjeta,
                     onDone: { onFinish(resultado) }
                 )
                 .transition(.opacity)
@@ -217,9 +216,9 @@ struct CheckoutView: View {
         VStack(alignment: .leading, spacing: 10) {
             SectionLabel("Método de pago").padding(.horizontal, 16)
             VStack(spacing: 0) {
-                ForEach(Array(MetodoPago.allCases.enumerated()), id: \.element.id) { idx, metodo in
+                ForEach(Array(MetodoPago.seleccionables.enumerated()), id: \.element.id) { idx, metodo in
                     pagoRow(metodo)
-                    if idx < MetodoPago.allCases.count - 1 {
+                    if idx < MetodoPago.seleccionables.count - 1 {
                         Divider().background(TreggaColors.divider).padding(.leading, 62)
                     }
                 }
@@ -432,7 +431,6 @@ private struct HangTightOverlay: View {
 /// Confirmación de pedido creado: order_number + aviso tarjeta + "Entendido".
 private struct OrderSuccessOverlay: View {
     let resultado: ResultadoPedido
-    let avisoTarjeta: Bool
     let onDone: () -> Void
 
     var body: some View {
@@ -457,20 +455,6 @@ private struct OrderSuccessOverlay: View {
                     .foregroundStyle(TreggaColors.textSec)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 36)
-
-                if avisoTarjeta {
-                    HStack(spacing: 8) {
-                        TreggaIcon(.info, size: 16, color: TreggaColors.warning)
-                        Text("Pago con tarjeta: pasarela en configuración. Coordinaremos el cobro contigo.")
-                            .font(.system(size: 12.5, weight: .semibold))
-                            .foregroundStyle(TreggaColors.text)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(12)
-                    .background(TreggaColors.surface, in: RoundedRectangle(cornerRadius: TreggaRadius.md))
-                    .padding(.horizontal, 24)
-                    .padding(.top, 4)
-                }
                 Spacer()
                 TreggaButton("Seguir mi pedido", kind: .primary, height: 56) { onDone() }
                     .padding(.horizontal, 16)

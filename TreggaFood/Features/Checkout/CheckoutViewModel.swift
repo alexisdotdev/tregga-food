@@ -7,7 +7,7 @@ final class CheckoutViewModel {
     enum Phase: Equatable {
         case idle
         case confirming
-        case success(ResultadoPedido, avisoTarjeta: Bool)
+        case success(ResultadoPedido)
         case error(String)
     }
 
@@ -33,20 +33,17 @@ final class CheckoutViewModel {
     private let clienteId: UUID
     private let pedidoRepo: PedidoRepository
     private let direccionRepo: DireccionClienteRepository
-    private let gateway: PaymentGateway
 
     init(
         cart: CartStore,
         clienteId: UUID,
         pedidoRepo: PedidoRepository,
-        direccionRepo: DireccionClienteRepository,
-        gateway: PaymentGateway = StubStripeGateway()
+        direccionRepo: DireccionClienteRepository
     ) {
         self.cart = cart
         self.clienteId = clienteId
         self.pedidoRepo = pedidoRepo
         self.direccionRepo = direccionRepo
-        self.gateway = gateway
     }
 
     var subtotal: Decimal { cart.subtotal }
@@ -117,13 +114,6 @@ final class CheckoutViewModel {
             return
         }
 
-        // Tarjeta: intentar pasarela (stub). No bloquea — solo determina el aviso.
-        var avisoTarjeta = false
-        if metodoPago == .tarjeta {
-            let resultado = await gateway.cobrarTarjeta(amount: total, currency: "MXN")
-            if case .pendienteConfiguracion = resultado { avisoTarjeta = true }
-        }
-
         guard let negocioId = cart.negocioId else {
             phase = .error("Tu carrito está vacío.")
             return
@@ -140,7 +130,7 @@ final class CheckoutViewModel {
                 propina: propinaEfectiva,
                 notes: nil
             )
-            phase = .success(resultado, avisoTarjeta: avisoTarjeta)
+            phase = .success(resultado)
         } catch {
             phase = .error("No pudimos crear tu pedido. Revisa tu conexión e intenta de nuevo.")
         }
