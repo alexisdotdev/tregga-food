@@ -4,8 +4,8 @@ import Observation
 
 /// Coordina el flujo de onboarding/auth de Tregga Food (cliente).
 ///
-/// El cliente no tiene checklist/INE/vehículo: solo se identifica (teléfono o
-/// correo → OTP) o crea cuenta, y al terminar se crea/enlaza el `cliente`.
+/// El cliente no tiene checklist/INE/vehículo: se identifica (teléfono o
+/// correo → OTP), o crea cuenta vía el flujo multi-paso (8 pantallas).
 /// Tras obtener tokens persiste la sesión, llama `clienteRepository.linkOrCreate`
 /// y notifica al ContentView vía `onAuthenticated` para pasar a `.authenticated`.
 @MainActor
@@ -14,25 +14,40 @@ public final class OnboardingCoordinator {
 
     public enum Destination: Equatable, Sendable {
         case welcome
-        case createAccount
         case otp(OTPViewModel.Kind)
         case permissionExplainer
+        // Flujo de alta multi-paso (cliente).
+        case signupIntro
+        case signupName
+        case signupEmail
+        case signupPhoto
+        case signupAddress
+        case signupPassword
+        case signupTerms
+        case signupSuccess
     }
 
     public private(set) var destination: Destination = .welcome
+
+    /// Estado acumulado del flujo de alta multi-paso.
+    public let signup = SignupFlowState()
+
+    /// `true` mientras corre `submitSignup`.
+    public private(set) var signupSubmitting = false
+    /// Error visible para la pantalla de términos si el alta falla.
+    public private(set) var signupError: String?
 
     /// Datos que arrastra el flujo de creación de cuenta para el `linkOrCreate`.
     public var pendingFullName: String = ""
     public var pendingEmail: String?
     public var pendingPhoneE164: String?
 
-    /// Sheet "¿Eres tú?" — se muestra cuando, al crear cuenta, el teléfono ya
-    /// tiene una cuenta cliente existente.
-    public var showAccountMatch = false
-
     private let authService: AuthService
     private let authSession: AuthSession
     private let clienteRepository: ClienteRepository
+    private let profileRepository: ProfileRepository
+    private let direccionRepository: DireccionClienteRepository
+    private let storageService: StorageService
 
     /// Callback que el ContentView inyecta para avanzar a `.authenticated`.
     public var onAuthenticated: (() -> Void)?
@@ -41,19 +56,25 @@ public final class OnboardingCoordinator {
         authService: AuthService,
         authSession: AuthSession,
         clienteRepository: ClienteRepository,
+        profileRepository: ProfileRepository,
+        direccionRepository: DireccionClienteRepository,
+        storageService: StorageService,
         onAuthenticated: (() -> Void)? = nil
     ) {
         self.authService = authService
         self.authSession = authSession
         self.clienteRepository = clienteRepository
+        self.profileRepository = profileRepository
+        self.direccionRepository = direccionRepository
+        self.storageService = storageService
         self.onAuthenticated = onAuthenticated
     }
 
-    // MARK: - Navegación
+    /// `userId` de la sesión actual (anónima durante el alta). Lo usa la pantalla
+    /// de foto para subir al bucket `avatars`.
+    public var currentUserId: UUID? { authSession.tokens?.userId }
 
-    public func goToCreateAccount() {
-        destination = .createAccount
-    }
+    // MARK: - Navegación
 
     public func goToWelcome() {
         destination = .welcome
@@ -67,11 +88,161 @@ public final class OnboardingCoordinator {
         destination = .welcome
     }
 
-    // MARK: - Éxito de auth
+    // MARK: - Flujo de alta multi-paso
 
-    /// Punto único de finalización: persiste tokens, asegura el perfil de
-    /// cliente y dispara la transición a la app. `fullName`/`email`/`phone`
-    /// alimentan el `linkOrCreate`; si vienen vacíos se usan los pendientes.
+    /// Arranca el alta de cuenta en la pantalla intro. Limpia estado previo y
+    /// crea una sesión anónima (si es posible) para que el upload a Storage y los
+    /// RPC tengan `auth.uid()`.
+    public func goToSignup() {
+        signup.reset()
+        signupError = nil
+        if let phone = pendingPhoneE164 { signup.phoneE164 = phone }
+        destination = .signupIntro
+        Task { await ensureAnonymousSession() }
+    }
+
+    private static let order: [Destination] = [
+        .signupIntro, .signupName, .signupEmail, .signupPhoto,
+        .signupAddress, .signupPassword, .signupTerms, .signupSuccess
+    ]
+
+    public func advanceSignup() {
+        guard let idx = Self.order.firstIndex(of: destination), idx + 1 < Self.order.count else { return }
+        destination = Self.order[idx + 1]
+    }
+
+    public func backSignup() {
+        guard let idx = Self.order.firstIndex(of: destination) else { return }
+        if idx == 0 {
+            destination = .welcome
+        } else {
+            destination = Self.order[idx - 1]
+        }
+    }
+
+    /// Crea una sesión anónima si aún no hay sesión, para que el upload de la foto
+    /// y los RPC del alta tengan un `auth.uid()` estable (mismo userId al convertir).
+    private func ensureAnonymousSession() async {
+        guard authSession.tokens == nil else { return }
+        do {
+            let tokens = try await authService.signInAnonymously()
+            await authSession.persist(tokens)
+        } catch {
+            print("[signup] signInAnonymously falló:", error)
+        }
+    }
+
+    // MARK: - Submit del alta
+
+    /// Orquesta el alta real del cliente al terminar el paso de términos:
+    /// 1. Asegura sesión (anónima) para tener `auth.uid()`.
+    /// 2. Sube la foto al bucket `avatars` (si hay).
+    /// 3. Convierte el anónimo a cuenta email+password (crítico).
+    /// 4. `linkOrCreate` del cliente (RPC `vincular_cliente`).
+    /// 5. Actualiza el perfil (apellidos, fecha, avatar, dirección).
+    /// 6. Crea la dirección principal.
+    /// 7. Avanza a `signupSuccess`.
+    /// Los pasos secundarios (2, 5, 6) no bloquean el alta si fallan; solo el
+    /// registro de credenciales (3) es crítico.
+    public func submitSignup() async {
+        signupSubmitting = true
+        signupError = nil
+        defer { signupSubmitting = false }
+
+        // 1 — sesión
+        await ensureAnonymousSession()
+        guard let userId = authSession.tokens?.userId else {
+            signupError = "No se pudo iniciar la sesión. Revisa tu conexión e intenta de nuevo."
+            return
+        }
+
+        // 2 — foto: ya fue subida en la pantalla de foto; aquí solo su URL.
+        let avatarURL: String? = signup.fotoPerfilURL?.absoluteString
+
+        // 3 — credenciales (crítico)
+        do {
+            try await authService.registerEmailPassword(
+                email: signup.email.trimmingCharacters(in: .whitespacesAndNewlines),
+                password: signup.password
+            )
+        } catch {
+            print("[submitSignup] registerEmailPassword falló:", error)
+            signupError = "No pudimos crear tu cuenta con ese correo. Quizá ya está registrado o hubo un problema de conexión."
+            return
+        }
+
+        let fullName = signup.nombres.trimmingCharacters(in: .whitespaces)
+        let phone = signup.phoneE164Normalized
+        let email = signup.email.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 4 — link/create cliente (no bloqueante: ya hay cuenta)
+        var clienteId: UUID?
+        do {
+            let cliente = try await clienteRepository.linkOrCreate(
+                userId: userId,
+                phone: phone,
+                fullName: fullName,
+                email: email
+            )
+            clienteId = cliente.id
+        } catch {
+            print("[submitSignup] linkOrCreate falló:", error)
+        }
+
+        // 5 — perfil (no bloqueante)
+        do {
+            _ = try await profileRepository.actualizar(
+                userId: userId,
+                fullName: fullName,
+                apellidoPaterno: signup.apellidoPaterno.trimmingCharacters(in: .whitespaces),
+                apellidoMaterno: signup.apellidoMaterno.isEmpty
+                    ? nil : signup.apellidoMaterno.trimmingCharacters(in: .whitespaces),
+                email: email,
+                phone: phone.isEmpty ? nil : phone,
+                fechaNacimiento: signup.fechaNacimiento,
+                avatarUrl: avatarURL,
+                calle: signup.direccionCalle.trimmingCharacters(in: .whitespaces),
+                colonia: signup.colonia.trimmingCharacters(in: .whitespaces),
+                codigoPostal: signup.codigoPostal.filter(\.isNumber),
+                municipio: signup.municipio.trimmingCharacters(in: .whitespaces),
+                estado: signup.estado.trimmingCharacters(in: .whitespaces)
+            )
+        } catch {
+            print("[submitSignup] profile actualizar falló:", error)
+        }
+
+        // 6 — dirección principal (no bloqueante)
+        if let clienteId {
+            let calle = signup.direccionCalle.trimmingCharacters(in: .whitespaces)
+            let colonia = signup.colonia.trimmingCharacters(in: .whitespaces)
+            let address = [calle, colonia].filter { !$0.isEmpty }.joined(separator: ", ")
+            let refs = signup.referencias.trimmingCharacters(in: .whitespaces)
+            do {
+                _ = try await direccionRepository.crear(
+                    clienteId: clienteId,
+                    label: "Casa",
+                    address: address,
+                    referencias: refs.isEmpty ? nil : refs,
+                    isDefault: true
+                )
+            } catch {
+                print("[submitSignup] crear dirección falló:", error)
+            }
+        }
+
+        // 7 — éxito
+        destination = .signupSuccess
+    }
+
+    /// "Continuar" de la pantalla de éxito → entra a la app.
+    public func finishSignup() {
+        onAuthenticated?()
+    }
+
+    // MARK: - Éxito de auth (login OTP / Google)
+
+    /// Punto único de finalización para login: persiste tokens, asegura el perfil
+    /// de cliente y dispara la transición a la app.
     public func completeAuth(
         tokens: AuthSession.Tokens,
         fullName: String? = nil,
@@ -82,8 +253,6 @@ public final class OnboardingCoordinator {
 
         let name = fullName ?? (pendingFullName.isEmpty ? "Cliente" : pendingFullName)
         let mail = email ?? pendingEmail
-        // El teléfono puede no conocerse en login por correo/Google; en ese caso
-        // pasamos cadena vacía y el RPC reconcilia por user_id.
         let phone = phoneE164 ?? pendingPhoneE164 ?? ""
 
         do {
@@ -94,8 +263,7 @@ public final class OnboardingCoordinator {
                 email: mail
             )
         } catch {
-            // No bloqueamos el acceso si el enlace falla: el perfil puede
-            // reconciliarse luego. El usuario ya tiene sesión válida.
+            // No bloqueamos el acceso si el enlace falla.
         }
 
         onAuthenticated?()

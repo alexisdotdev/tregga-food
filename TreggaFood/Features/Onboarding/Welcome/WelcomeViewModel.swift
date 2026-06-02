@@ -116,7 +116,7 @@ public final class WelcomeViewModel {
     }
 
     public func irACrearCuenta() {
-        coordinator?.goToCreateAccount()
+        coordinator?.goToSignup()
     }
 
     private func emailLooksValid(_ s: String) -> Bool {

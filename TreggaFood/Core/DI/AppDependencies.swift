@@ -23,6 +23,7 @@ public final class AppDependencies {
     public let preferenciasRepository: PreferenciasRepository
     public let accountRepository: AccountRepository
     public let notificacionRepository: NotificacionRepository
+    public let storageService: StorageService
 
     public init(defaults: UserDefaults = .standard) {
         let useSupabase = defaults.bool(forKey: "USE_SUPABASE_BACKEND")
@@ -41,6 +42,7 @@ public final class AppDependencies {
             self.preferenciasRepository = SupabasePreferenciasRepository()
             self.accountRepository = SupabaseAccountRepository()
             self.notificacionRepository = SupabaseNotificacionRepository()
+            self.storageService = SupabaseStorageService()
         } else {
             self.authService = MockAuthService()
             self.authStorage = MockAuthStorage()
@@ -55,6 +57,7 @@ public final class AppDependencies {
             self.preferenciasRepository = MockPreferenciasRepository()
             self.accountRepository = MockAccountRepository()
             self.notificacionRepository = MockNotificacionRepository()
+            self.storageService = MockStorageService()
         }
         self.authSession = AuthSession(storage: self.authStorage)
     }

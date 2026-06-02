@@ -41,6 +41,9 @@ struct ContentView: View {
                 authService: deps.authService,
                 authSession: deps.authSession,
                 clienteRepository: deps.clienteRepository,
+                profileRepository: deps.profileRepository,
+                direccionRepository: deps.direccionRepository,
+                storageService: deps.storageService,
                 onAuthenticated: { phase = .authenticated }
             )
         }
@@ -67,6 +70,9 @@ struct ContentView: View {
                 authService: deps.authService,
                 authSession: deps.authSession,
                 clienteRepository: deps.clienteRepository,
+                profileRepository: deps.profileRepository,
+                direccionRepository: deps.direccionRepository,
+                storageService: deps.storageService,
                 onAuthenticated: { phase = .authenticated }
             )
             phase = .unauthenticated
@@ -132,7 +138,7 @@ struct SplashScreen: View {
     }
 }
 
-/// Flujo de onboarding/auth (F1). Enruta entre Welcome, CreateAccount y OTP
+/// Flujo de onboarding/auth (F1). Enruta entre Welcome, el alta multi-paso y OTP
 /// según el destino del `OnboardingCoordinator`.
 struct OnboardingFlowView: View {
     @Environment(\.appDependencies) private var deps
@@ -145,10 +151,6 @@ struct OnboardingFlowView: View {
                 WelcomeView(viewModel: WelcomeViewModel(
                     authService: authService, coordinator: coordinator
                 ))
-            case .createAccount:
-                CreateAccountView(viewModel: CreateAccountViewModel(
-                    authService: authService, coordinator: coordinator
-                ))
             case .otp(let kind):
                 OTPView(viewModel: OTPViewModel(
                     kind: kind,
@@ -158,6 +160,58 @@ struct OnboardingFlowView: View {
                 ))
             case .permissionExplainer:
                 PermissionExplainerView(onAllow: {})
+
+            // MARK: Alta multi-paso (cliente)
+            case .signupIntro:
+                SignupIntroView(
+                    onBack: { coordinator.backSignup() },
+                    onContinue: { coordinator.advanceSignup() }
+                )
+            case .signupName:
+                SignupNameView(
+                    state: coordinator.signup,
+                    onBack: { coordinator.backSignup() },
+                    onContinue: { coordinator.advanceSignup() }
+                )
+            case .signupEmail:
+                SignupEmailView(
+                    state: coordinator.signup,
+                    onBack: { coordinator.backSignup() },
+                    onContinue: { coordinator.advanceSignup() }
+                )
+            case .signupPhoto:
+                SignupPhotoView(
+                    state: coordinator.signup,
+                    storage: storageService,
+                    userId: coordinator.currentUserId,
+                    onBack: { coordinator.backSignup() },
+                    onContinue: { coordinator.advanceSignup() }
+                )
+            case .signupAddress:
+                SignupAddressView(
+                    state: coordinator.signup,
+                    onBack: { coordinator.backSignup() },
+                    onContinue: { coordinator.advanceSignup() }
+                )
+            case .signupPassword:
+                SignupPasswordView(
+                    state: coordinator.signup,
+                    onBack: { coordinator.backSignup() },
+                    onContinue: { coordinator.advanceSignup() }
+                )
+            case .signupTerms:
+                SignupTermsView(
+                    state: coordinator.signup,
+                    submitting: coordinator.signupSubmitting,
+                    errorMessage: coordinator.signupError,
+                    onBack: { coordinator.backSignup() },
+                    onCrearCuenta: { Task { await coordinator.submitSignup() } }
+                )
+            case .signupSuccess:
+                SignupSuccessView(
+                    nombres: coordinator.signup.nombres,
+                    onContinuar: { coordinator.finishSignup() }
+                )
             }
         }
         .animation(.easeInOut(duration: 0.25), value: coordinator.destination)
@@ -165,6 +219,10 @@ struct OnboardingFlowView: View {
 
     private var authService: AuthService {
         deps?.authService ?? MockAuthService()
+    }
+
+    private var storageService: StorageService {
+        deps?.storageService ?? MockStorageService()
     }
 }
 

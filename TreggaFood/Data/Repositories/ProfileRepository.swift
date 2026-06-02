@@ -15,8 +15,45 @@ public protocol ProfileRepository: Sendable {
         apellidoMaterno: String?,
         email: String?,
         phone: String?,
-        fechaNacimiento: Date?
+        fechaNacimiento: Date?,
+        avatarUrl: String?,
+        calle: String?,
+        colonia: String?,
+        codigoPostal: String?,
+        municipio: String?,
+        estado: String?
     ) async throws -> PerfilCliente
+}
+
+public extension ProfileRepository {
+    /// Sobrecarga de conveniencia para callers que solo editan datos personales
+    /// (sin avatar/dirección), como la pantalla de Cuenta.
+    @discardableResult
+    func actualizar(
+        userId: UUID,
+        fullName: String?,
+        apellidoPaterno: String?,
+        apellidoMaterno: String?,
+        email: String?,
+        phone: String?,
+        fechaNacimiento: Date?
+    ) async throws -> PerfilCliente {
+        try await actualizar(
+            userId: userId,
+            fullName: fullName,
+            apellidoPaterno: apellidoPaterno,
+            apellidoMaterno: apellidoMaterno,
+            email: email,
+            phone: phone,
+            fechaNacimiento: fechaNacimiento,
+            avatarUrl: nil,
+            calle: nil,
+            colonia: nil,
+            codigoPostal: nil,
+            municipio: nil,
+            estado: nil
+        )
+    }
 }
 
 // MARK: - Supabase
@@ -91,7 +128,13 @@ public final class SupabaseProfileRepository: ProfileRepository {
         apellidoMaterno: String?,
         email: String?,
         phone: String?,
-        fechaNacimiento: Date?
+        fechaNacimiento: Date?,
+        avatarUrl: String?,
+        calle: String?,
+        colonia: String?,
+        codigoPostal: String?,
+        municipio: String?,
+        estado: String?
     ) async throws -> PerfilCliente {
         struct Update: Encodable {
             var full_name: String?
@@ -100,6 +143,12 @@ public final class SupabaseProfileRepository: ProfileRepository {
             var email: String?
             var phone: String?
             var fecha_nacimiento: String?
+            var avatar_url: String?
+            var calle: String?
+            var colonia: String?
+            var codigo_postal: String?
+            var municipio: String?
+            var estado: String?
         }
         let update = Update(
             full_name: fullName,
@@ -107,7 +156,13 @@ public final class SupabaseProfileRepository: ProfileRepository {
             apellido_materno: apellidoMaterno,
             email: email,
             phone: phone,
-            fecha_nacimiento: fechaNacimiento.map { ProfileDTO.dateFormatter.string(from: $0) }
+            fecha_nacimiento: fechaNacimiento.map { ProfileDTO.dateFormatter.string(from: $0) },
+            avatar_url: avatarUrl,
+            calle: calle,
+            colonia: colonia,
+            codigo_postal: codigoPostal,
+            municipio: municipio,
+            estado: estado
         )
         let dto: ProfileDTO = try await client.from("profiles")
             .update(update)
@@ -146,7 +201,13 @@ public final class MockProfileRepository: ProfileRepository {
         apellidoMaterno: String?,
         email: String?,
         phone: String?,
-        fechaNacimiento: Date?
+        fechaNacimiento: Date?,
+        avatarUrl: String?,
+        calle: String?,
+        colonia: String?,
+        codigoPostal: String?,
+        municipio: String?,
+        estado: String?
     ) async throws -> PerfilCliente {
         PerfilCliente(
             id: userId,
@@ -155,7 +216,13 @@ public final class MockProfileRepository: ProfileRepository {
             apellidoMaterno: apellidoMaterno ?? "Vega",
             email: email ?? "juan.ramirez@gmail.com",
             phone: phone ?? "+524431234567",
-            fechaNacimiento: fechaNacimiento
+            avatarUrl: avatarUrl,
+            fechaNacimiento: fechaNacimiento,
+            codigoPostal: codigoPostal,
+            estado: estado,
+            municipio: municipio,
+            colonia: colonia,
+            calle: calle
         )
     }
 }
