@@ -21,7 +21,7 @@ public struct CreateAccountView: View {
                     header
                     Spacer().frame(height: 18)
                     field(label: "NOMBRE COMPLETO", text: $viewModel.fullName,
-                          placeholder: "Juan Ramírez", field: .name)
+                          placeholder: "Juan Ramírez", field: .name, capitalizeName: true)
                     field(label: "CORREO ELECTRÓNICO", text: $viewModel.email,
                           placeholder: "tu@correo.com", field: .email,
                           keyboard: .emailAddress, autocap: false)
@@ -92,7 +92,8 @@ public struct CreateAccountView: View {
         keyboard: UIKeyboardType = .default,
         autocap: Bool = true,
         hint: String? = nil,
-        formatPhone: Bool = false
+        formatPhone: Bool = false,
+        capitalizeName: Bool = false
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
@@ -121,6 +122,9 @@ public struct CreateAccountView: View {
                     if formatPhone {
                         let f = PhoneFormatter.format(new)
                         if f != new { text.wrappedValue = f }
+                    } else if capitalizeName {
+                        let c = NameFormatter.capitalizedWords(new)
+                        if c != new { text.wrappedValue = c }
                     }
                 }
                 if !text.wrappedValue.isEmpty {

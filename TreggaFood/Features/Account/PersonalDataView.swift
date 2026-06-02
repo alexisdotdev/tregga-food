@@ -31,8 +31,8 @@ struct PersonalDataView: View {
                     campo("Nombre(s)", text: $fullName)
                     campo("Apellido paterno", text: $apellidoPaterno)
                     campo("Apellido materno", text: $apellidoMaterno)
-                    campo("Correo electrónico", text: $email, keyboard: .emailAddress)
-                    campo("Teléfono", text: $phone, keyboard: .phonePad)
+                    campo("Correo electrónico", text: $email, mode: .correo)
+                    campo("Teléfono", text: $phone, mode: .telefono)
                     fechaField
                 }
                 .padding(.horizontal, 16)
@@ -82,14 +82,36 @@ struct PersonalDataView: View {
         }
     }
 
-    private func campo(_ label: String, text: Binding<String>, keyboard: UIKeyboardType = .default) -> some View {
+    /// Modo de campo: aplica las mismas reglas que Tregga Delivery —
+    /// nombres capitalizados, teléfono con máscara, correo sin capitalizar.
+    enum CampoMode { case nombre, correo, telefono, plano }
+
+    private func campo(
+        _ label: String,
+        text: Binding<String>,
+        keyboard: UIKeyboardType = .default,
+        mode: CampoMode = .nombre
+    ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label.uppercased())
                 .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(TreggaColors.textSec)
             TextField("", text: text)
-                .keyboardType(keyboard)
+                .keyboardType(mode == .telefono ? .phonePad : (mode == .correo ? .emailAddress : keyboard))
+                .textInputAutocapitalization(mode == .nombre ? .words : .never)
                 .autocorrectionDisabled()
+                .onChange(of: text.wrappedValue) { _, new in
+                    switch mode {
+                    case .nombre:
+                        let c = NameFormatter.capitalizedWords(new)
+                        if c != new { text.wrappedValue = c }
+                    case .telefono:
+                        let f = PhoneFormatter.format(new)
+                        if f != new { text.wrappedValue = f }
+                    case .correo, .plano:
+                        break
+                    }
+                }
                 .font(.system(size: 15.5, weight: .semibold))
                 .foregroundStyle(TreggaColors.text)
                 .padding(.horizontal, 14)
