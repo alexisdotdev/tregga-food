@@ -227,27 +227,17 @@ public struct SignupEmailView: View {
     private var emailField: some View {
         VStack(alignment: .leading, spacing: 6) {
             fieldLabel("Correo electrónico")
-            // Placeholder propio en gris: iOS pinta el placeholder del sistema en
-            // azul para campos `.emailAddress` enfocados; con prompt vacío lo evitamos.
-            TextField("", text: $state.email)
+            // Placeholder SIN forma de correo: una cadena con `@`/dominio dispara
+            // los data detectors de iOS y se pinta azul (como enlace). Un texto
+            // genérico queda gris, igual que en Tregga Delivery.
+            TextField("Tu correo electrónico", text: $state.email)
                 .keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled(true)
-                .font(.system(size: 15.5, weight: .heavy))
-                .foregroundStyle(TreggaColors.text)
-                .tint(TreggaColors.primary)
                 .padding(14)
                 .background(TreggaColors.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
-                .overlay(alignment: .leading) {
-                    if state.email.isEmpty {
-                        Text("tu@correo.com")
-                            .font(.system(size: 15.5, weight: .heavy))
-                            .foregroundStyle(TreggaColors.textTer)
-                            .padding(.leading, 14)
-                            .allowsHitTesting(false)
-                    }
-                }
+                .font(.system(size: 15.5, weight: .heavy))
         }
     }
 
