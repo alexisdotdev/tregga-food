@@ -6,9 +6,12 @@ import TreggaDesignSystem
 /// splash mientras restaura, luego onboarding (no autenticado) o la app (autenticado).
 struct ContentView: View {
     @Environment(\.appDependencies) private var deps
+    @Environment(\.scenePhase) private var scenePhase
     @State private var phase: Phase = .loading
     @State private var coordinator: OnboardingCoordinator?
     @State private var cart = CartStore()
+    @State private var isLocked = false
+    @State private var showBiometricOffer = false
     /// Apariencia elegida en Cuenta → Preferencias. Persistida local.
     @AppStorage("APPEARANCE_MODE") private var appearanceRaw: String = AppearanceMode.system.rawValue
 
@@ -20,21 +23,47 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            switch phase {
-            case .loading:
-                SplashScreen()
-            case .unauthenticated:
-                if let coordinator {
-                    OnboardingFlowView(coordinator: coordinator)
-                } else {
+            if isLocked {
+                BiometricLockView(
+                    kind: BiometricAuthService.shared.availableKind,
+                    onUnlock: { await tryUnlock() },
+                    onUseOtherAccount: { await useOtherAccount() }
+                )
+            } else {
+                switch phase {
+                case .loading:
                     SplashScreen()
+                case .unauthenticated:
+                    if let coordinator {
+                        OnboardingFlowView(coordinator: coordinator)
+                    } else {
+                        SplashScreen()
+                    }
+                case .authenticated:
+                    ClientTabView(onSignOut: signOut)
+                        .environment(\.cartStore, cart)
                 }
-            case .authenticated:
-                ClientTabView(onSignOut: signOut)
-                    .environment(\.cartStore, cart)
             }
         }
         .preferredColorScheme(appearance.colorScheme)
+        .onChange(of: phase) { _, newValue in
+            if newValue == .authenticated { maybeOfferBiometric() }
+        }
+        .onChange(of: scenePhase) { _, newScene in
+            // Re-bloquear al pasar a segundo plano (oculta contenido en el switcher).
+            if newScene == .background,
+               phase == .authenticated,
+               BiometricLockPreference.isEnabled,
+               BiometricAuthService.shared.isAvailable {
+                isLocked = true
+            }
+        }
+        .alert("Desbloqueo con \(biometricLabel)", isPresented: $showBiometricOffer) {
+            Button("Activar") { Task { await enableBiometric() } }
+            Button("Ahora no", role: .cancel) {}
+        } message: {
+            Text("Protege tu cuenta: la próxima vez que abras Tregga te pediremos \(biometricLabel) para entrar.")
+        }
         .task {
             guard coordinator == nil, let deps else { return }
             coordinator = OnboardingCoordinator(
@@ -55,14 +84,61 @@ struct ContentView: View {
                 try? await deps.authService.signOut()
                 await deps.authSession.clear()
             }
+            // Candado biométrico: si hay sesión y está activado, bloquear ANTES de
+            // mostrar contenido. La BiometricLockView auto-dispara Face ID.
+            if deps.authSession.isAuthenticated,
+               BiometricLockPreference.isEnabled,
+               BiometricAuthService.shared.isAvailable {
+                isLocked = true
+            }
             phase = deps.authSession.isAuthenticated ? .authenticated : .unauthenticated
         }
+    }
+
+    // MARK: - Candado biométrico
+
+    private var biometricLabel: String {
+        BiometricAuthService.shared.availableKind == .touchID ? "Touch ID" : "Face ID"
+    }
+
+    /// Intenta desbloquear. Si la biometría pasa, levanta el candado; si falla,
+    /// la BiometricLockView se queda en estado de reintento (no saca al usuario).
+    private func tryUnlock() async {
+        let ok = await BiometricAuthService.shared.authenticate(
+            reason: "Desbloquea Tregga para continuar"
+        )
+        if ok { withAnimation { isLocked = false } }
+    }
+
+    /// "Usar otra cuenta": fallback elegido → cerrar sesión y volver al login.
+    private func useOtherAccount() async {
+        isLocked = false
+        BiometricLockPreference.reset()
+        signOut()
+    }
+
+    /// Ofrece activar el candado una sola vez, tras el primer login real.
+    private func maybeOfferBiometric() {
+        guard BiometricAuthService.shared.isAvailable,
+              !BiometricLockPreference.isEnabled,
+              !BiometricLockPreference.didPrompt,
+              !isLocked else { return }
+        BiometricLockPreference.didPrompt = true
+        showBiometricOffer = true
+    }
+
+    private func enableBiometric() async {
+        let ok = await BiometricAuthService.shared.authenticate(
+            reason: "Confirma tu identidad para activar el desbloqueo"
+        )
+        if ok { BiometricLockPreference.isEnabled = true }
     }
 
     /// Cierra sesión: revoca en el servicio auth, limpia la sesión local y
     /// recrea el coordinator para volver el flujo a Welcome.
     private func signOut() {
         guard let deps else { return }
+        BiometricLockPreference.reset()
         Task {
             try? await deps.authService.signOut()
             await deps.authSession.clear()

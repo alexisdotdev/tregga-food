@@ -11,7 +11,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Tregga necesita la cámara para que tomes foto de tu INE, vehículo y recibos de pedidos.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Tregga usa Face ID para desbloquear la app y proteger tu cuenta de repartidor.</string>
+	<string>Tregga usa Face ID para desbloquear la app y proteger tu cuenta.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Tregga necesita tu ubicación para guiarte al negocio y al cliente durante tus entregas.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

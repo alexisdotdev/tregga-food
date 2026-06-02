@@ -639,6 +639,7 @@ public struct SignupAddressView: View {
 public struct SignupPasswordView: View {
     @Bindable var state: SignupFlowState
     @State private var revealed = false
+    @State private var faceIDOn = true
     let onBack: () -> Void
     let onContinue: () -> Void
 
@@ -693,11 +694,40 @@ public struct SignupPasswordView: View {
                 Spacer().frame(height: 12)
 
                 requirements
+
+                if BiometricAuthService.shared.isAvailable {
+                    Spacer().frame(height: 14)
+                    faceIDRow
+                }
             }
             .padding(.bottom, 120)
         }
         .safeAreaInset(edge: .bottom) { backContinueBar(canContinue: state.passwordStepValid, onContinue: onContinue) }
         .background(TreggaColors.bg)
+    }
+
+    private var faceIDRow: some View {
+        HStack(spacing: 12) {
+            TreggaIcon(.faceId, size: 22, color: TreggaColors.primary)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Habilitar \(BiometricAuthService.shared.availableKind == .touchID ? "Touch ID" : "Face ID")")
+                    .font(.system(size: 14.5, weight: .heavy))
+                    .foregroundStyle(TreggaColors.primaryDeep)
+                Text("Para entrar más rápido")
+                    .font(.system(size: 12))
+                    .foregroundStyle(TreggaColors.primaryDeep.opacity(0.8))
+            }
+            Spacer()
+            // Visual: el candado real se confirma con la oferta post-registro
+            // (necesita autenticación biométrica para activarse).
+            Toggle("", isOn: $faceIDOn)
+                .labelsHidden()
+                .tint(TreggaColors.primary)
+        }
+        .padding(14)
+        .background(TreggaColors.primarySoft)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .padding(.horizontal, 20)
     }
 
     private var requirements: some View {

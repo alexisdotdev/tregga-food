@@ -69,6 +69,11 @@ struct PaymentMethodsView: View {
 struct SecuritySettingsView: View {
     @Environment(\.appDependencies) private var deps
     @State private var showChangePassword = false
+    @State private var biometricLockOn = false
+
+    private var biometricName: String {
+        BiometricAuthService.shared.availableKind == .touchID ? "Touch ID" : "Face ID"
+    }
 
     var body: some View {
         ScrollView {
@@ -82,9 +87,21 @@ struct SecuritySettingsView: View {
                                       sub: "Si usas correo y contraseña")
                     }
                     .buttonStyle(.plain)
-                    RowDivider()
-                    AccountNavRow(icon: .user, label: "Face ID / Touch ID",
-                                  sub: "Para iniciar y autorizar pagos", tail: "Pronto", showChevron: false)
+                }
+
+                SectionHeader("Desbloqueo de la app").padding(.top, 16)
+                AccountCard {
+                    if BiometricAuthService.shared.isAvailable {
+                        AccountToggleRow(
+                            icon: .faceId,
+                            label: "Desbloqueo con \(biometricName)",
+                            sub: "Pide \(biometricName) al abrir Tregga",
+                            isOn: $biometricLockOn
+                        )
+                    } else {
+                        AccountNavRow(icon: .faceId, label: "Desbloqueo con Face ID",
+                                      sub: "No disponible en este dispositivo", showChevron: false)
+                    }
                 }
 
                 Spacer(minLength: 24)
@@ -92,8 +109,29 @@ struct SecuritySettingsView: View {
         }
         .background(TreggaColors.bg)
         .navigationBarBackButtonHidden(true)
+        .onAppear { biometricLockOn = BiometricLockPreference.isEnabled }
+        .onChange(of: biometricLockOn) { _, newValue in
+            Task { await applyBiometricToggle(newValue) }
+        }
         .sheet(isPresented: $showChangePassword) {
             ChangePasswordSheet(authService: deps?.authService ?? MockAuthService())
+        }
+    }
+
+    /// Al activar, confirma identidad antes de habilitar; si falla, revierte.
+    private func applyBiometricToggle(_ on: Bool) async {
+        if on {
+            guard !BiometricLockPreference.isEnabled else { return }
+            let ok = await BiometricAuthService.shared.authenticate(
+                reason: "Confirma tu identidad para activar el desbloqueo"
+            )
+            if ok {
+                BiometricLockPreference.isEnabled = true
+            } else {
+                biometricLockOn = false
+            }
+        } else {
+            BiometricLockPreference.isEnabled = false
         }
     }
 }
