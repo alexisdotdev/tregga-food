@@ -119,6 +119,8 @@ struct SecuritySettingsView: View {
     }
 
     /// Al activar, confirma identidad antes de habilitar; si falla, revierte.
+    /// Al activar recuerda al usuario (para re-login biométrico); al desactivar
+    /// olvida al usuario recordado.
     private func applyBiometricToggle(_ on: Bool) async {
         if on {
             guard !BiometricLockPreference.isEnabled else { return }
@@ -127,12 +129,24 @@ struct SecuritySettingsView: View {
             )
             if ok {
                 BiometricLockPreference.isEnabled = true
+                await captureRememberedUser()
             } else {
                 biometricLockOn = false
             }
         } else {
             BiometricLockPreference.isEnabled = false
+            await RememberedUserStore().clear()
         }
+    }
+
+    private func captureRememberedUser() async {
+        guard let deps, let tokens = deps.authSession.tokens else { return }
+        let name = ((try? await deps.profileRepository.fetch(userId: tokens.userId)) ?? nil)?.fullName ?? ""
+        await RememberedUserStore().save(
+            displayName: name,
+            refreshToken: tokens.refreshToken,
+            userId: tokens.userId
+        )
     }
 }
 

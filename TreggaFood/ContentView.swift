@@ -12,10 +12,11 @@ struct ContentView: View {
     @State private var cart = CartStore()
     @State private var isLocked = false
     @State private var showBiometricOffer = false
+    private let remembered = RememberedUserStore()
     /// Apariencia elegida en Cuenta → Preferencias. Persistida local.
     @AppStorage("APPEARANCE_MODE") private var appearanceRaw: String = AppearanceMode.system.rawValue
 
-    enum Phase { case loading, unauthenticated, authenticated }
+    enum Phase { case loading, unauthenticated, welcomeBack, authenticated }
 
     private var appearance: AppearanceMode {
         AppearanceMode(rawValue: appearanceRaw) ?? .system
@@ -39,6 +40,13 @@ struct ContentView: View {
                     } else {
                         SplashScreen()
                     }
+                case .welcomeBack:
+                    WelcomeBackView(
+                        displayName: remembered.displayName ?? "",
+                        kind: BiometricAuthService.shared.availableKind,
+                        onIngresar: { await ingresarConBiometria() },
+                        onUseAccount: { phase = .unauthenticated }
+                    )
                 case .authenticated:
                     ClientTabView(onSignOut: signOut)
                         .environment(\.cartStore, cart)
@@ -84,14 +92,55 @@ struct ContentView: View {
                 try? await deps.authService.signOut()
                 await deps.authSession.clear()
             }
-            // Candado biométrico: si hay sesión y está activado, bloquear ANTES de
-            // mostrar contenido. La BiometricLockView auto-dispara Face ID.
-            if deps.authSession.isAuthenticated,
-               BiometricLockPreference.isEnabled,
-               BiometricAuthService.shared.isAvailable {
-                isLocked = true
+            if deps.authSession.isAuthenticated {
+                // Candado biométrico: si está activado, bloquear ANTES de mostrar
+                // contenido. La BiometricLockView auto-dispara Face ID.
+                if BiometricLockPreference.isEnabled, BiometricAuthService.shared.isAvailable {
+                    isLocked = true
+                    await captureRememberedUser()
+                }
+                phase = .authenticated
+            } else if remembered.hasRemembered, BiometricAuthService.shared.isAvailable {
+                // Sesión cerrada/vencida pero el dispositivo recuerda al usuario:
+                // pantalla de bienvenida con re-login biométrico (estilo Banamex).
+                phase = .welcomeBack
+            } else {
+                phase = .unauthenticated
             }
-            phase = deps.authSession.isAuthenticated ? .authenticated : .unauthenticated
+        }
+    }
+
+    /// Guarda al usuario recordado (nombre + refresh token actual) para el
+    /// re-login biométrico. Se llama cuando hay sesión activa y Face ID activado.
+    private func captureRememberedUser() async {
+        guard let deps, let tokens = deps.authSession.tokens else { return }
+        let name = ((try? await deps.profileRepository.fetch(userId: tokens.userId)) ?? nil)?.fullName ?? ""
+        await remembered.save(displayName: name, refreshToken: tokens.refreshToken, userId: tokens.userId)
+    }
+
+    /// Re-login biométrico desde la pantalla de bienvenida. Pide Face ID, lee el
+    /// refresh token recordado y restaura la sesión. Devuelve false si falla (la
+    /// vista queda en reintento y ofrece entrar con correo/teléfono).
+    private func ingresarConBiometria() async -> Bool {
+        guard let deps else { return false }
+        let ok = await BiometricAuthService.shared.authenticate(
+            reason: "Ingresa a Tregga con \(biometricLabel)"
+        )
+        guard ok, let token = await remembered.refreshToken() else { return false }
+        do {
+            let tokens = try await deps.authService.restoreSession(refreshToken: token)
+            await deps.authSession.persist(tokens)
+            await remembered.save(
+                displayName: remembered.displayName ?? "",
+                refreshToken: tokens.refreshToken,
+                userId: tokens.userId
+            )
+            phase = .authenticated
+            return true
+        } catch {
+            // Token expirado o revocado: olvidamos al usuario y caemos al login.
+            await remembered.clear()
+            return false
         }
     }
 
@@ -131,28 +180,47 @@ struct ContentView: View {
         let ok = await BiometricAuthService.shared.authenticate(
             reason: "Confirma tu identidad para activar el desbloqueo"
         )
-        if ok { BiometricLockPreference.isEnabled = true }
+        if ok {
+            BiometricLockPreference.isEnabled = true
+            await captureRememberedUser()
+        }
     }
 
-    /// Cierra sesión: revoca en el servicio auth, limpia la sesión local y
-    /// recrea el coordinator para volver el flujo a Welcome.
+    /// Cierra sesión. Si Face ID está activado, recuerda al usuario y hace un
+    /// cierre **local** (sin revocar el token) para permitir re-login biométrico
+    /// → pantalla de bienvenida. Si no, cierre completo (revoca) → Welcome.
     private func signOut() {
         guard let deps else { return }
-        BiometricLockPreference.reset()
         Task {
-            try? await deps.authService.signOut()
-            await deps.authSession.clear()
-            coordinator = OnboardingCoordinator(
-                authService: deps.authService,
-                authSession: deps.authSession,
-                clienteRepository: deps.clienteRepository,
-                profileRepository: deps.profileRepository,
-                direccionRepository: deps.direccionRepository,
-                storageService: deps.storageService,
-                onAuthenticated: { phase = .authenticated }
-            )
-            phase = .unauthenticated
+            if BiometricLockPreference.isEnabled,
+               BiometricAuthService.shared.isAvailable,
+               deps.authSession.tokens != nil {
+                await captureRememberedUser()
+                try? await deps.authService.signOutLocal()
+                await deps.authSession.clear()
+                recreateCoordinator(deps)
+                phase = .welcomeBack
+            } else {
+                BiometricLockPreference.reset()
+                await remembered.clear()
+                try? await deps.authService.signOut()
+                await deps.authSession.clear()
+                recreateCoordinator(deps)
+                phase = .unauthenticated
+            }
         }
+    }
+
+    private func recreateCoordinator(_ deps: AppDependencies) {
+        coordinator = OnboardingCoordinator(
+            authService: deps.authService,
+            authSession: deps.authSession,
+            clienteRepository: deps.clienteRepository,
+            profileRepository: deps.profileRepository,
+            direccionRepository: deps.direccionRepository,
+            storageService: deps.storageService,
+            onAuthenticated: { phase = .authenticated }
+        )
     }
 }
 
