@@ -740,6 +740,8 @@ public struct SignupTermsView: View {
     let submitting: Bool
     let errorMessage: String?
 
+    @State private var selectedDoc: LegalDocument? = nil
+
     public init(
         state: SignupFlowState,
         submitting: Bool,
@@ -806,23 +808,28 @@ public struct SignupTermsView: View {
             .background(TreggaColors.bg)
         }
         .background(TreggaColors.bg)
+        .sheet(item: $selectedDoc) { doc in
+            LegalDocumentView(document: doc, onBack: { selectedDoc = nil })
+        }
     }
 
     private var documentLinks: some View {
-        let rows: [(title: String, sub: String, url: String)] = [
-            ("Términos del servicio", "Las reglas para usar Tregga Food", "https://tregga.app/legal/terminos"),
-            ("Política de privacidad", "Cómo cuidamos tus datos", "https://tregga.app/legal/privacidad")
+        let rows: [(id: String, sub: String)] = [
+            ("terminos-servicio", "Cómo funciona Tregga y tus responsabilidades"),
+            ("politica-privacidad", "Cómo cuidamos tus datos"),
         ]
+        let docs = rows.compactMap { row -> (doc: LegalDocument, sub: String)? in
+            guard let doc = FoodLegalContent.document(id: row.id) else { return nil }
+            return (doc, row.sub)
+        }
         return VStack(spacing: 0) {
-            ForEach(Array(rows.enumerated()), id: \.offset) { _, item in
-                if let url = URL(string: item.url) {
-                    Link(destination: url) {
-                        documentRow(title: item.title, sub: item.sub)
-                    }
-                    .buttonStyle(.plain)
-                    .overlay(alignment: .bottom) {
-                        Rectangle().fill(TreggaColors.divider).frame(height: 1)
-                    }
+            ForEach(Array(docs.enumerated()), id: \.offset) { _, item in
+                Button { selectedDoc = item.doc } label: {
+                    documentRow(title: item.doc.title, sub: item.sub)
+                }
+                .buttonStyle(.plain)
+                .overlay(alignment: .bottom) {
+                    Rectangle().fill(TreggaColors.divider).frame(height: 1)
                 }
             }
         }

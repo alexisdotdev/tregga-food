@@ -223,6 +223,8 @@ struct LanguageSettingsView: View {
 // MARK: - Acerca de (sin RFC ni dirección fija)
 
 struct AboutAppView: View {
+    @State private var selectedDoc: LegalDocument? = nil
+
     private var version: String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
@@ -250,11 +252,11 @@ struct AboutAppView: View {
 
                 SectionHeader("Información").padding(.top, 4)
                 AccountCard {
-                    AccountNavRow(icon: .info, label: "Términos de servicio", showChevron: true)
+                    legalRow("Términos de servicio", id: "terminos-servicio")
                     RowDivider()
-                    AccountNavRow(icon: .info, label: "Política de privacidad", showChevron: true)
+                    legalRow("Política de privacidad", id: "politica-privacidad")
                     RowDivider()
-                    AccountNavRow(icon: .info, label: "Licencias de software libre", showChevron: true)
+                    legalRow("Licencias de software libre", id: "licencias-oss")
                 }
 
                 Text("Hecho con 🍊 en México")
@@ -268,6 +270,17 @@ struct AboutAppView: View {
         }
         .background(TreggaColors.bg)
         .navigationBarBackButtonHidden(true)
+        .sheet(item: $selectedDoc) { doc in
+            LegalDocumentView(document: doc, onBack: { selectedDoc = nil })
+        }
+    }
+
+    @ViewBuilder
+    private func legalRow(_ label: String, id: String) -> some View {
+        Button { selectedDoc = FoodLegalContent.document(id: id) } label: {
+            AccountNavRow(icon: .info, label: label, showChevron: true)
+        }
+        .buttonStyle(.plain)
     }
 }
 
