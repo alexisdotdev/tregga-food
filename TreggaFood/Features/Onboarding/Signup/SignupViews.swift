@@ -227,14 +227,27 @@ public struct SignupEmailView: View {
     private var emailField: some View {
         VStack(alignment: .leading, spacing: 6) {
             fieldLabel("Correo electrónico")
-            TextField("tu@correo.com", text: $state.email)
+            // Placeholder propio en gris: iOS pinta el placeholder del sistema en
+            // azul para campos `.emailAddress` enfocados; con prompt vacío lo evitamos.
+            TextField("", text: $state.email)
                 .keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled(true)
+                .font(.system(size: 15.5, weight: .heavy))
+                .foregroundStyle(TreggaColors.text)
+                .tint(TreggaColors.primary)
                 .padding(14)
                 .background(TreggaColors.surface)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
-                .font(.system(size: 15.5, weight: .heavy))
+                .overlay(alignment: .leading) {
+                    if state.email.isEmpty {
+                        Text("tu@correo.com")
+                            .font(.system(size: 15.5, weight: .heavy))
+                            .foregroundStyle(TreggaColors.textTer)
+                            .padding(.leading, 14)
+                            .allowsHitTesting(false)
+                    }
+                }
         }
     }
 
@@ -467,11 +480,23 @@ public struct SignupPhotoView: View {
 
 public struct SignupAddressView: View {
     @Bindable var state: SignupFlowState
+    let postalCodeRepo: PostalCodeRepository?
     let onBack: () -> Void
     let onContinue: () -> Void
 
-    public init(state: SignupFlowState, onBack: @escaping () -> Void, onContinue: @escaping () -> Void) {
+    @State private var colonias: [String] = []
+    @State private var lookupTask: Task<Void, Never>?
+    @State private var lookupError: String?
+    @State private var loadingCP = false
+
+    public init(
+        state: SignupFlowState,
+        postalCodeRepo: PostalCodeRepository? = nil,
+        onBack: @escaping () -> Void,
+        onContinue: @escaping () -> Void
+    ) {
         self.state = state
+        self.postalCodeRepo = postalCodeRepo
         self.onBack = onBack
         self.onContinue = onContinue
     }
@@ -484,7 +509,7 @@ public struct SignupAddressView: View {
 
                 Group {
                     Text("¿Dónde te entregamos?").treggaStyle(.h3)
-                    Text("La usamos como tu dirección principal de entrega. Podrás agregar más después.")
+                    Text("Escribe tu C.P. y autocompletamos estado, municipio y colonias. Podrás agregar más direcciones después.")
                         .font(.system(size: 13.5))
                         .foregroundStyle(TreggaColors.textSec)
                         .lineSpacing(13.5 * 0.5)
@@ -496,12 +521,33 @@ public struct SignupAddressView: View {
 
                 VStack(spacing: 14) {
                     plainField("Calle y número", text: $state.direccionCalle)
-                    plainField("Colonia", text: $state.colonia)
                     plainField("C.P.", text: $state.codigoPostal, keyboard: .numberPad)
-                    HStack(spacing: 10) {
-                        plainField("Municipio", text: $state.municipio)
-                        plainField("Estado", text: $state.estado)
+                        .onChange(of: state.codigoPostal) { _, new in handleCPChange(new) }
+
+                    if loadingCP {
+                        HStack(spacing: 8) {
+                            ProgressView().controlSize(.small)
+                            Text("Buscando colonias…")
+                                .font(.system(size: 12.5))
+                                .foregroundStyle(TreggaColors.textSec)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    } else if let lookupError {
+                        Text(lookupError)
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(TreggaColors.danger)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
+
+                    coloniaField
+
+                    if !state.municipio.isEmpty || !state.estado.isEmpty {
+                        HStack(spacing: 10) {
+                            readonlyField("Municipio", value: state.municipio)
+                            readonlyField("Estado", value: state.estado)
+                        }
+                    }
+
                     plainField("Referencias (opcional)", text: $state.referencias, autocapitalization: .sentences)
                 }
                 .padding(.horizontal, 20)
@@ -510,6 +556,91 @@ public struct SignupAddressView: View {
         }
         .safeAreaInset(edge: .bottom) { backContinueBar(canContinue: state.addressStepValid, onContinue: onContinue) }
         .background(TreggaColors.bg)
+    }
+
+    @ViewBuilder
+    private var coloniaField: some View {
+        if colonias.isEmpty {
+            plainField("Colonia", text: $state.colonia)
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("COLONIA")
+                    .font(.system(size: 11, weight: .heavy))
+                    .tracking(0.4)
+                    .foregroundStyle(TreggaColors.textSec)
+                Menu {
+                    ForEach(colonias, id: \.self) { c in
+                        Button(c) { state.colonia = c }
+                    }
+                } label: {
+                    HStack {
+                        Text(state.colonia.isEmpty ? "Selecciona…" : state.colonia)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(state.colonia.isEmpty ? TreggaColors.textTer : TreggaColors.text)
+                        Spacer()
+                        TreggaIcon(.chevUD, size: 13, color: TreggaColors.textSec)
+                    }
+                    .padding(.horizontal, 14)
+                    .frame(height: 50)
+                    .background(TreggaColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func readonlyField(_ label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label.uppercased())
+                .font(.system(size: 11, weight: .heavy))
+                .tracking(0.4)
+                .foregroundStyle(TreggaColors.textSec)
+            Text(value)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(TreggaColors.text)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .frame(height: 50)
+                .background(TreggaColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+    }
+
+    private func handleCPChange(_ raw: String) {
+        let digits = raw.filter(\.isNumber)
+        lookupError = nil
+        guard digits.count == 5, let repo = postalCodeRepo else {
+            if digits.count < 5 {
+                colonias = []
+                state.municipio = ""
+                state.estado = ""
+            }
+            return
+        }
+        lookupTask?.cancel()
+        lookupTask = Task {
+            loadingCP = true
+            defer { loadingCP = false }
+            do {
+                if let info = try await repo.lookup(cp: digits) {
+                    guard !Task.isCancelled else { return }
+                    colonias = info.colonias
+                    state.municipio = info.municipio
+                    state.estado = info.estado
+                    if !info.colonias.contains(state.colonia) { state.colonia = "" }
+                } else {
+                    colonias = []
+                    state.municipio = ""
+                    state.estado = ""
+                    lookupError = "Código postal no encontrado"
+                }
+            } catch PostalCodeError.invalidFormat {
+                lookupError = "C.P. inválido"
+            } catch {
+                lookupError = "Error al consultar el C.P."
+            }
+        }
     }
 }
 

@@ -190,6 +190,7 @@ struct OnboardingFlowView: View {
             case .signupAddress:
                 SignupAddressView(
                     state: coordinator.signup,
+                    postalCodeRepo: deps?.postalCodeRepository,
                     onBack: { coordinator.backSignup() },
                     onContinue: { coordinator.advanceSignup() }
                 )

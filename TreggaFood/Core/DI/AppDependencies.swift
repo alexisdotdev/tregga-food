@@ -24,6 +24,8 @@ public final class AppDependencies {
     public let accountRepository: AccountRepository
     public let notificacionRepository: NotificacionRepository
     public let storageService: StorageService
+    /// Lookup de CP (SEPOMEX, servicio público) → estado/municipio/colonias.
+    public let postalCodeRepository: PostalCodeRepository
 
     public init(defaults: UserDefaults = .standard) {
         let useSupabase = defaults.bool(forKey: "USE_SUPABASE_BACKEND")
@@ -59,6 +61,8 @@ public final class AppDependencies {
             self.notificacionRepository = MockNotificacionRepository()
             self.storageService = MockStorageService()
         }
+        // SEPOMEX es un servicio público (sin auth): se usa igual en ambos modos.
+        self.postalCodeRepository = SepomexPostalCodeRepository()
         self.authSession = AuthSession(storage: self.authStorage)
     }
 }
