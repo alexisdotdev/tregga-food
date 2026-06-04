@@ -307,6 +307,7 @@ public struct SignupPhotoView: View {
     @Bindable var state: SignupFlowState
     @State private var pickerItem: PhotosPickerItem?
     @State private var previewImage: UIImage?
+    @State private var cropImage: AvatarCropImage?
     @State private var uploading = false
     @State private var uploadError: String?
     let onBack: () -> Void
@@ -391,12 +392,20 @@ public struct SignupPhotoView: View {
             guard let newItem else { return }
             Task { await handlePicked(newItem) }
         }
+        .fullScreenCover(item: $cropImage) { item in
+            AvatarCropView(
+                image: item.image,
+                onCancel: { cropImage = nil },
+                onDone: { cropped in
+                    cropImage = nil
+                    Task { await uploadImage(cropped) }
+                }
+            )
+        }
     }
 
     private func handlePicked(_ item: PhotosPickerItem) async {
         uploadError = nil
-        uploading = true
-        defer { uploading = false }
         do {
             guard let raw = try await item.loadTransferable(type: Data.self) else {
                 uploadError = "No se pudo leer la imagen seleccionada."
@@ -406,25 +415,32 @@ public struct SignupPhotoView: View {
                 uploadError = "Formato de imagen no soportado."
                 return
             }
-            let resized = resizeIfNeeded(uiImage, maxSide: 1080)
-            guard let jpeg = resized.jpegData(compressionQuality: 0.85), !jpeg.isEmpty else {
-                uploadError = "No se pudo convertir la imagen a JPEG."
-                return
-            }
-            previewImage = resized
-            guard let uid = userId else {
-                uploadError = "Sin sesión. Reabre la app."
-                return
-            }
-            do {
-                let url = try await storage.uploadAvatar(data: jpeg, userId: uid, fileName: "avatar.jpg")
-                state.fotoPerfilURL = url
-            } catch {
-                print("[SignupPhoto] storage upload error:", error)
-                uploadError = "No se pudo subir la foto: \(error.localizedDescription)"
-            }
+            cropImage = AvatarCropImage(image: uiImage)
         } catch {
             uploadError = "Error al cargar la foto: \(error.localizedDescription)"
+        }
+    }
+
+    private func uploadImage(_ uiImage: UIImage) async {
+        uploadError = nil
+        uploading = true
+        defer { uploading = false }
+        let resized = resizeIfNeeded(uiImage, maxSide: 1080)
+        guard let jpeg = resized.jpegData(compressionQuality: 0.85), !jpeg.isEmpty else {
+            uploadError = "No se pudo convertir la imagen a JPEG."
+            return
+        }
+        previewImage = resized
+        guard let uid = userId else {
+            uploadError = "Sin sesión. Reabre la app."
+            return
+        }
+        do {
+            let url = try await storage.uploadAvatar(data: jpeg, userId: uid, fileName: "avatar.jpg")
+            state.fotoPerfilURL = url
+        } catch {
+            print("[SignupPhoto] storage upload error:", error)
+            uploadError = "No se pudo subir la foto: \(error.localizedDescription)"
         }
     }
 
