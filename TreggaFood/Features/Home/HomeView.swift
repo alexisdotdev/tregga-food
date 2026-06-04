@@ -7,6 +7,7 @@ struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var path: [CatalogRoute] = []
     @State private var clienteId: UUID?
+    @State private var direccionDefault: DireccionCliente?
     @State private var pedidoEntregado: PedidoTracking?
     @State private var showNotifications = false
     @State private var showOffers = false
@@ -150,6 +151,9 @@ struct HomeView: View {
         guard clienteId == nil, let deps,
               let userId = deps.authSession.tokens?.userId else { return }
         clienteId = try? await deps.clienteRepository.fetchByUserId(userId)?.id
+        guard let cid = clienteId else { return }
+        let direcciones = try? await deps.direccionRepository.fetchDelCliente(clienteId: cid)
+        direccionDefault = direcciones?.first(where: \.isDefault) ?? direcciones?.first
     }
 
     private var header: some View {
@@ -162,10 +166,12 @@ struct HomeView: View {
                     .foregroundStyle(TreggaColors.textSec)
                 HStack(spacing: 6) {
                     TreggaIcon(.pin, size: 18, color: TreggaColors.primary)
-                    Text("Av. Hidalgo 142, Centro")
+                    Text(direccionDefault?.address ?? "Agrega tu dirección")
                         .font(.system(size: 17, weight: .heavy))
                         .tracking(-0.2)
                         .foregroundStyle(TreggaColors.text)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                     TreggaIcon(.chevD, size: 14, color: TreggaColors.textSec)
                 }
             }
