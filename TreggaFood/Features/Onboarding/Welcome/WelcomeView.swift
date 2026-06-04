@@ -3,13 +3,16 @@ import TreggaCore
 import AuthenticationServices
 import TreggaDesignSystem
 
-/// Login de Tregga Food. Mismo diseño que Tregga Delivery: brand header +
-/// input unificado teléfono/correo + botón Google + link a crear cuenta.
+/// Login de Tregga Food. Diseño del cliente: hero ilustrado + input unificado
+/// teléfono/correo + botón Google + link a crear cuenta.
 public struct WelcomeView: View {
     @State private var viewModel: WelcomeViewModel
     @State private var googleError: String?
     @State private var showNotRegisteredDialog = false
+    @State private var selectedDoc: LegalDocument?
     @Environment(\.webAuthenticationSession) private var webAuth
+
+    private let heroHeight: CGFloat = 320
 
     public init(viewModel: WelcomeViewModel) {
         self._viewModel = State(initialValue: viewModel)
@@ -17,26 +20,29 @@ public struct WelcomeView: View {
 
     public var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                brandHeader
-                Spacer().frame(height: 28)
-                headline
-                Spacer().frame(height: 18)
-                contactField
-                Spacer().frame(height: 12)
-                continueButton
-                Spacer().frame(height: 22)
-                divider
-                Spacer().frame(height: 18)
-                googleButton
-                Spacer().frame(height: 18)
-                createAccountLink
-                Spacer().frame(height: 22)
-                disclaimer
-                Spacer().frame(height: 28)
-                recaptchaFootnote
+            VStack(spacing: 0) {
+                hero
+                VStack(alignment: .leading, spacing: 0) {
+                    brandLogo
+                    Spacer().frame(height: 16)
+                    headline
+                    Spacer().frame(height: 6)
+                    subtitle
+                    Spacer().frame(height: 18)
+                    contactField
+                    Spacer().frame(height: 12)
+                    continueButton
+                    Spacer().frame(height: 20)
+                    divider
+                    Spacer().frame(height: 16)
+                    googleButton
+                    Spacer().frame(height: 18)
+                    createAccountLink
+                    Spacer().frame(height: 22)
+                    disclaimer
+                }
             }
-            .padding(.bottom, 40)
+            .padding(.bottom, 30)
         }
         .background(TreggaColors.bg)
         .alert("No pudimos iniciar sesión", isPresented: Binding(
@@ -56,30 +62,43 @@ public struct WelcomeView: View {
         } message: {
             Text("Puedes crear una cuenta nueva con tu correo o continuar con Google.")
         }
+        .sheet(item: $selectedDoc) { doc in
+            LegalDocumentView(document: doc, onBack: { selectedDoc = nil })
+        }
     }
 
-    private var brandHeader: some View {
-        HStack(spacing: 10) {
-            Image("logo-tregga")
-                .resizable()
-                .scaledToFit()
-                .frame(height: 28)
-            Text("TREGGA FOOD")
-                .font(.system(size: 10.5, weight: .heavy))
-                .tracking(2.5)
-                .foregroundStyle(TreggaColors.textSec)
-            Spacer()
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
+    private var hero: some View {
+        Image("hero-login-cliente")
+            .resizable()
+            .scaledToFit()
+            .frame(maxWidth: .infinity)
+            .frame(height: heroHeight)
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity)
+            .background(TreggaColors.bg)
+    }
+
+    private var brandLogo: some View {
+        Image("logo-tregga")
+            .resizable()
+            .scaledToFit()
+            .frame(height: 30)
+            .padding(.horizontal, 20)
     }
 
     private var headline: some View {
-        Text("¿Cuál es tu número o correo?")
-            .font(.system(size: 26, weight: .heavy))
-            .tracking(-0.4)
-            .lineSpacing(26 * 0.2)
+        Text("¿Qué se te antoja hoy?")
+            .font(.system(size: 28, weight: .heavy))
+            .tracking(-0.5)
             .foregroundStyle(TreggaColors.text)
+            .padding(.horizontal, 20)
+    }
+
+    private var subtitle: some View {
+        Text("Pide de tus negocios favoritos en Zinapécuaro.")
+            .font(.system(size: 14.5))
+            .foregroundStyle(TreggaColors.textSec)
+            .lineSpacing(3)
             .padding(.horizontal, 20)
     }
 
@@ -181,7 +200,7 @@ public struct WelcomeView: View {
                 Text("¿Primera vez en Tregga? ")
                     .font(.system(size: 14))
                     .foregroundStyle(TreggaColors.textSec)
-                Text("Crear cuenta con correo")
+                Text("Crear cuenta")
                     .font(.system(size: 14, weight: .heavy))
                     .foregroundStyle(TreggaColors.primary)
             }
@@ -191,19 +210,35 @@ public struct WelcomeView: View {
     }
 
     private var disclaimer: some View {
-        Text("Al continuar, aceptas recibir llamadas, WhatsApp o SMS — incluyendo mensajes automatizados — de Tregga y sus afiliados al número proporcionado.")
-            .font(.system(size: 12))
-            .foregroundStyle(TreggaColors.textSec)
-            .lineSpacing(2)
+        Text(disclaimerText)
+            .font(.system(size: 11.5))
+            .foregroundStyle(TreggaColors.textTer)
+            .tint(TreggaColors.text)
+            .lineSpacing(3)
             .padding(.horizontal, 20)
+            .environment(\.openURL, OpenURLAction { url in
+                switch url.host {
+                case "terminos": selectedDoc = FoodLegalContent.document(id: "terminos-servicio")
+                case "privacidad": selectedDoc = FoodLegalContent.document(id: "politica-privacidad")
+                default: break
+                }
+                return .handled
+            })
     }
 
-    private var recaptchaFootnote: some View {
-        Text("Este sitio está protegido por reCAPTCHA, y aplican la **Política de privacidad** y los **Términos del servicio** de Google.")
-            .font(.system(size: 11))
-            .foregroundStyle(TreggaColors.textTer)
-            .lineSpacing(2)
-            .padding(.horizontal, 20)
+    private var disclaimerText: AttributedString {
+        func link(_ text: String, _ host: String) -> AttributedString {
+            var s = AttributedString(text)
+            s.link = URL(string: "tregga://\(host)")
+            s.font = .system(size: 11.5, weight: .bold)
+            s.underlineStyle = .single
+            return s
+        }
+        return AttributedString("Al continuar aceptas los ")
+            + link("Términos", "terminos")
+            + AttributedString(" y la ")
+            + link("Política de privacidad", "privacidad")
+            + AttributedString(".")
     }
 
     private func runGoogle() {
