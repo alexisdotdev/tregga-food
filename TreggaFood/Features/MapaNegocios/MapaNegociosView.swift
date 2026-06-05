@@ -52,6 +52,7 @@ struct MapaNegociosView: View {
                     controller: mapController
                 )
                 .ignoresSafeArea()
+                .overlay(alignment: .bottomTrailing) { mapControls }
 
                 topBar
 
@@ -94,6 +95,30 @@ struct MapaNegociosView: View {
             .padding(.top, 8)
             Spacer()
         }
+    }
+
+    private var mapControls: some View {
+        VStack(spacing: 8) {
+            mapControlButton("plus") { mapController.zoomIn() }
+            mapControlButton("minus") { mapController.zoomOut() }
+            mapControlButton("location.fill") {
+                mapController.recenter(to: viewModel.conCoords.compactMap { n in
+                    guard let la = n.lat, let lo = n.lng else { return nil }
+                    return TrackCoord(lat: la, lng: lo)
+                })
+            }
+        }
+        .padding(.trailing, 14)
+        .padding(.bottom, seleccionado != nil ? 200 : 120)
+    }
+
+    private func mapControlButton(_ icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            TreggaIcon(sfSymbol: icon, size: 16, color: TreggaColors.text)
+                .frame(width: 42, height: 42)
+                .treggaGlass(in: Circle())
+        }
+        .buttonStyle(.plain)
     }
 
     private func negocioCard(_ negocio: Negocio) -> some View {
