@@ -55,4 +55,11 @@ final class NotificationsViewModel {
         state = .loaded(items)
         try? await repo.marcarTodasLeidas(userId: userId)
     }
+
+    func eliminar(_ id: UUID) async {
+        guard case var .loaded(items) = state else { return }
+        items.removeAll { $0.id == id }
+        state = items.isEmpty ? .empty : .loaded(items)
+        try? await repo.eliminar(id: id)
+    }
 }

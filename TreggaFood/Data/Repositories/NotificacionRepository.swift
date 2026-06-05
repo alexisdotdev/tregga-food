@@ -8,6 +8,7 @@ public protocol NotificacionRepository: Sendable {
     func fetch(userId: UUID) async throws -> [Notificacion]
     func marcarLeida(id: UUID) async throws
     func marcarTodasLeidas(userId: UUID) async throws
+    func eliminar(id: UUID) async throws
 }
 
 // MARK: - Supabase
@@ -68,6 +69,13 @@ public final class SupabaseNotificacionRepository: NotificacionRepository {
             .eq("read", value: false)
             .execute()
     }
+
+    public func eliminar(id: UUID) async throws {
+        try await client.from("notificaciones")
+            .delete()
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
 }
 
 // MARK: - Mock
@@ -87,6 +95,10 @@ public final class MockNotificacionRepository: NotificacionRepository {
 
         func marcarTodas() {
             for i in items.indices { items[i].read = true }
+        }
+
+        func eliminar(_ id: UUID) {
+            items.removeAll { $0.id == id }
         }
     }
 
@@ -124,5 +136,9 @@ public final class MockNotificacionRepository: NotificacionRepository {
 
     public func marcarTodasLeidas(userId: UUID) async throws {
         await store.marcarTodas()
+    }
+
+    public func eliminar(id: UUID) async throws {
+        await store.eliminar(id)
     }
 }

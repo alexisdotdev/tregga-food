@@ -2,7 +2,7 @@ import Foundation
 
 /// Notificación del usuario (tabla `notificaciones`).
 /// Categorías de negocio: ofertas, pagos, promos, sistema.
-public struct Notificacion: Identifiable, Equatable, Sendable {
+public struct Notificacion: Identifiable, Equatable, Hashable, Sendable {
     public let id: UUID
     public let title: String
     public let body: String?

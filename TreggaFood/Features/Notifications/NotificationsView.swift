@@ -8,6 +8,7 @@ import TreggaDesignSystem
 /// no-leída y "marcar todas leídas".
 struct ScreenNotifications: View {
     @Bindable var viewModel: NotificationsViewModel
+    @State private var selected: Notificacion?
 
     var body: some View {
         ScrollView {
@@ -20,6 +21,9 @@ struct ScreenNotifications: View {
         .background(TreggaColors.bg)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)
+        .navigationDestination(item: $selected) { n in
+            NotificationDetailView(notificacion: n, onEliminar: { Task { await viewModel.eliminar(n.id) } })
+        }
         .refreshable { await viewModel.cargar() }
         .task { await viewModel.cargar() }
     }
@@ -66,7 +70,10 @@ struct ScreenNotifications: View {
             LazyVStack(spacing: 0) {
                 ForEach(items) { n in
                     NotificacionRow(notificacion: n)
-                        .onTapGesture { Task { await viewModel.marcarLeida(n.id) } }
+                        .onTapGesture {
+                            selected = n
+                            Task { await viewModel.marcarLeida(n.id) }
+                        }
                 }
             }
         }
