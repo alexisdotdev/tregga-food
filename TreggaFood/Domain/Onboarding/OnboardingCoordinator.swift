@@ -78,6 +78,7 @@ public final class OnboardingCoordinator {
 
     public func goToWelcome() {
         destination = .welcome
+        Task { await cleanupAnonymousSessionIfNeeded() }
     }
 
     public func startOTP(_ kind: OTPViewModel.Kind) {
@@ -148,6 +149,7 @@ public final class OnboardingCoordinator {
         guard let idx = Self.order.firstIndex(of: destination) else { return }
         if idx == 0 {
             destination = .welcome
+            Task { await cleanupAnonymousSessionIfNeeded() }
         } else {
             destination = Self.order[idx - 1]
         }

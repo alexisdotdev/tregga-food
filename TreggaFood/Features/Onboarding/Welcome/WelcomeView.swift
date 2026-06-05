@@ -143,14 +143,14 @@ public struct WelcomeView: View {
             HStack(spacing: 8) {
                 Text(viewModel.loading ? "Enviando..." : "Continuar")
                     .font(.system(size: 16, weight: .heavy))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(viewModel.canContinue ? .white : TreggaColors.textTer)
                 if !viewModel.loading {
-                    TreggaIcon(.arrow, size: 18, color: .white)
+                    TreggaIcon(.arrow, size: 18, color: viewModel.canContinue ? .white : TreggaColors.textTer)
                 }
             }
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .background(viewModel.canContinue ? TreggaColors.primary : TreggaColors.primary.opacity(0.3))
+            .background(viewModel.canContinue ? TreggaColors.primary : TreggaColors.surface)
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }
         .disabled(!viewModel.canContinue || viewModel.loading)
