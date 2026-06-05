@@ -97,39 +97,42 @@ struct ScreenOffers: View {
     }
 
     private func promoCard(_ promo: Promocion) -> some View {
-        HStack(spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 14).fill(TreggaColors.accentSoft).frame(width: 52, height: 52)
-                TreggaIcon(icono(promo.tipo), size: 24, color: TreggaColors.accent)
-            }
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(promo.titulo)
-                        .font(.system(size: 15, weight: .heavy))
-                        .foregroundStyle(TreggaColors.text)
-                    if let tag = promo.tag, !tag.isEmpty {
-                        Tag(tag, tone: .accent)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14).fill(TreggaColors.accentSoft).frame(width: 52, height: 52)
+                    TreggaIcon(icono(promo.tipo), size: 24, color: TreggaColors.accent)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(promo.titulo)
+                            .font(.system(size: 15, weight: .heavy))
+                            .foregroundStyle(TreggaColors.text)
+                            .lineLimit(1)
+                        if let tag = promo.tag, !tag.isEmpty {
+                            Tag(tag, tone: .accent)
+                        }
+                    }
+                    if let descripcion = promo.descripcion, !descripcion.isEmpty {
+                        Text(descripcion)
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(TreggaColors.textSec)
+                            .lineLimit(2)
                     }
                 }
-                if let descripcion = promo.descripcion, !descripcion.isEmpty {
-                    Text(descripcion)
-                        .font(.system(size: 12.5))
-                        .foregroundStyle(TreggaColors.textSec)
-                        .lineLimit(2)
-                }
+                Spacer(minLength: 4)
             }
-            Spacer(minLength: 4)
+            HStack {
+                Spacer()
+                Text("Aprovechar")
+                    .font(.system(size: 12.5, weight: .heavy))
+                    .foregroundStyle(TreggaColors.primary)
+            }
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 16).fill(TreggaColors.card))
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(TreggaColors.border, lineWidth: 1))
-        .overlay(alignment: .bottomTrailing) {
-            Text("Aprovechar")
-                .font(.system(size: 12, weight: .heavy))
-                .foregroundStyle(TreggaColors.primary)
-                .padding(12)
-        }
     }
 }
 
