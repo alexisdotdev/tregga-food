@@ -37,6 +37,8 @@ struct CuentaTab: View {
             Group {
                 if let viewModel {
                     AccountHubView(viewModel: viewModel, onRequestSignOut: onRequestSignOut, onHelp: { showHelp = true })
+                } else if deps?.authSession.tokens?.userId == nil {
+                    noSessionState
                 } else {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(TreggaColors.bg)
@@ -54,21 +56,42 @@ struct CuentaTab: View {
         .sheet(isPresented: $showHelp) {
             ScreenHelpCenter()
         }
-        .task {
-            guard viewModel == nil, let deps, let uid = deps.authSession.tokens?.userId else { return }
-            let vm = AccountViewModel(
-                userId: uid,
-                profileRepo: deps.profileRepository,
-                clienteRepo: deps.clienteRepository,
-                direccionRepo: deps.direccionRepository,
-                preferenciasRepo: deps.preferenciasRepository,
-                accountRepo: deps.accountRepository,
-                storageService: deps.storageService,
-                pedidoRepository: deps.pedidoRepository
-            )
-            viewModel = vm
-            await vm.cargar()
+        // Reactivo al userId: carga en cuanto haya sesión (y recarga si cambia),
+        // en vez de rendirse para siempre si aún no estaba lista al montar.
+        .task(id: deps?.authSession.tokens?.userId) {
+            guard let deps, let uid = deps.authSession.tokens?.userId else { return }
+            if viewModel == nil {
+                viewModel = AccountViewModel(
+                    userId: uid,
+                    profileRepo: deps.profileRepository,
+                    clienteRepo: deps.clienteRepository,
+                    direccionRepo: deps.direccionRepository,
+                    preferenciasRepo: deps.preferenciasRepository,
+                    accountRepo: deps.accountRepository,
+                    storageService: deps.storageService,
+                    pedidoRepository: deps.pedidoRepository
+                )
+            }
+            await viewModel?.cargar()
         }
+    }
+
+    /// Sin sesión activa (p.ej. previsualizando el shell sin login): estado neutro
+    /// en vez de un spinner infinito.
+    private var noSessionState: some View {
+        VStack(spacing: 12) {
+            TreggaIcon(.user, size: 44, color: TreggaColors.textTer)
+            Text("Inicia sesión para ver tu cuenta")
+                .font(.system(size: 16, weight: .heavy))
+                .foregroundStyle(TreggaColors.text)
+            Text("Aquí verás tu perfil, direcciones y preferencias.")
+                .font(.system(size: 14))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(TreggaColors.textSec)
+                .padding(.horizontal, 44)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(TreggaColors.bg)
     }
 
     @ViewBuilder
