@@ -15,6 +15,7 @@ public final class AccountViewModel {
     public var cliente: Cliente?
     public var direcciones: [DireccionCliente] = []
     public var prefs: PreferenciasUsuario?
+    public var pedidosCount: Int = 0
 
     private let userId: UUID
     private let profileRepo: ProfileRepository
@@ -23,6 +24,7 @@ public final class AccountViewModel {
     private let preferenciasRepo: PreferenciasRepository
     private let accountRepo: AccountRepository
     private let storageService: StorageService
+    private let pedidoRepository: PedidoRepository
 
     public init(
         userId: UUID,
@@ -31,7 +33,8 @@ public final class AccountViewModel {
         direccionRepo: DireccionClienteRepository,
         preferenciasRepo: PreferenciasRepository,
         accountRepo: AccountRepository,
-        storageService: StorageService
+        storageService: StorageService,
+        pedidoRepository: PedidoRepository
     ) {
         self.userId = userId
         self.profileRepo = profileRepo
@@ -40,6 +43,7 @@ public final class AccountViewModel {
         self.preferenciasRepo = preferenciasRepo
         self.accountRepo = accountRepo
         self.storageService = storageService
+        self.pedidoRepository = pedidoRepository
     }
 
     public var displayName: String {
@@ -52,7 +56,7 @@ public final class AccountViewModel {
 
     public var contactoLine: String {
         let phone = perfil?.phone ?? cliente?.phone
-        let pedidos = cliente?.totalOrders ?? 0
+        let pedidos = pedidosCount
         let phonePart = phone.map { PhoneFormatter.displayMX($0) } ?? perfil?.email ?? ""
         if pedidos > 0 {
             return phonePart.isEmpty ? "\(pedidos) pedidos" : "\(phonePart) · \(pedidos) pedidos"
@@ -74,6 +78,7 @@ public final class AccountViewModel {
             self.prefs = pr
             if let clienteId = c?.id {
                 self.direcciones = (try? await direccionRepo.fetchDelCliente(clienteId: clienteId)) ?? []
+                self.pedidosCount = (try? await pedidoRepository.fetchHistorial(clienteId: clienteId).count) ?? 0
             }
             phase = .cargado
         } catch {

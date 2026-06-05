@@ -165,6 +165,15 @@ public final class OnboardingCoordinator {
         }
     }
 
+    /// Si el alta aborta tras crear la sesión anónima, la cerramos para no dejar
+    /// un perfil de cliente vacío huérfano colgando del usuario anónimo.
+    private func cleanupAnonymousSessionIfNeeded() async {
+        if await authService.currentUserIsAnonymous() {
+            try? await authService.signOut()
+            await authSession.clear()
+        }
+    }
+
     // MARK: - Submit del alta
 
     /// Orquesta el alta real del cliente al terminar el paso de términos:
@@ -185,6 +194,7 @@ public final class OnboardingCoordinator {
         // 1 — sesión
         await ensureAnonymousSession()
         guard let userId = authSession.tokens?.userId else {
+            await cleanupAnonymousSessionIfNeeded()
             signupError = "No se pudo iniciar la sesión. Revisa tu conexión e intenta de nuevo."
             return
         }
@@ -200,6 +210,7 @@ public final class OnboardingCoordinator {
             )
         } catch {
             print("[submitSignup] registerEmailPassword falló:", error)
+            await cleanupAnonymousSessionIfNeeded()
             signupError = "No pudimos crear tu cuenta con ese correo. Quizá ya está registrado o hubo un problema de conexión."
             return
         }

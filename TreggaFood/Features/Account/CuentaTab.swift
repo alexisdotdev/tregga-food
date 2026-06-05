@@ -61,7 +61,8 @@ struct CuentaTab: View {
                 direccionRepo: deps.direccionRepository,
                 preferenciasRepo: deps.preferenciasRepository,
                 accountRepo: deps.accountRepository,
-                storageService: deps.storageService
+                storageService: deps.storageService,
+                pedidoRepository: deps.pedidoRepository
             )
             viewModel = vm
             await vm.cargar()
@@ -120,7 +121,7 @@ struct AccountHubView: View {
                     .padding(.top, 6)
 
                 grupo(title: "Pedidos y pagos", rows: [
-                    .nav(.receipt, "Historial de pedidos", tail: viewModel.cliente.map { "\($0.totalOrders)" }, route: nil),
+                    .nav(.receipt, "Historial de pedidos", tail: "\(viewModel.pedidosCount)", route: nil),
                     .nav(.card, "Métodos de pago", tail: "Efectivo", route: .paymentMethods),
                 ])
 
