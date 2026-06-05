@@ -87,6 +87,21 @@ struct ContentView: View {
         .task {
             guard let deps else { return }
             await deps.authSession.restore()
+            // Validamos la sesión persistida ANTES de conceder acceso: un token del
+            // Keychain podría estar caducado/revocado (sesión "fantasma"). Hacemos un
+            // refresh real contra el backend; si falla por credenciales → a login. Si
+            // falla por red, conservamos la sesión (tolerancia offline).
+            if let refresh = deps.authSession.tokens?.refreshToken {
+                do {
+                    let fresh = try await deps.authService.restoreSession(refreshToken: refresh)
+                    await deps.authSession.persist(fresh)
+                } catch AuthError.networkFailure {
+                    // Sin red: conservamos la sesión persistida.
+                } catch {
+                    try? await deps.authService.signOut()
+                    await deps.authSession.clear()
+                }
+            }
             // Una sesión anónima sobrante del andamiaje de signup no cuenta como login.
             if deps.authSession.isAuthenticated, await deps.authService.currentUserIsAnonymous() {
                 try? await deps.authService.signOut()
