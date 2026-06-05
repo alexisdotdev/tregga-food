@@ -20,7 +20,6 @@ struct BuscarTabView: View {
             SearchBar(placeholder: "Carnitas, pizza, tacos…")
                 .padding(.top, 12)
 
-            Spacer()
             VStack(spacing: 12) {
                 TreggaIcon(.search, size: 40, color: TreggaColors.textTer)
                 Text("Pronto podrás explorar por tipo de comida")
@@ -29,7 +28,7 @@ struct BuscarTabView: View {
                     .foregroundStyle(TreggaColors.textSec)
                     .padding(.horizontal, 40)
             }
-            Spacer()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(TreggaColors.bg)
