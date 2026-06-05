@@ -58,7 +58,9 @@ final class LocationPickerViewModel {
         let q = query
         guard q.count >= 3 else { resultados = []; return }
         buscando = true
-        let r = await geocoder.buscar(q)
+        let contexto = [place?.municipio, place?.estado]
+            .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
+        let r = await geocoder.buscar(q, contexto: contexto.isEmpty ? nil : contexto)
         guard q == query else { return }
         resultados = r
         buscando = false

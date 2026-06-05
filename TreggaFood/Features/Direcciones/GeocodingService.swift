@@ -28,13 +28,17 @@ struct GeocodingService {
         self.bundleId = bundleId
     }
 
-    /// Texto → lista de lugares candidatos.
-    func buscar(_ query: String) async -> [GeocodedPlace] {
-        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard q.count >= 3, var comps = URLComponents(string: "https://maps.googleapis.com/maps/api/geocode/json")
+    /// Texto → lista de lugares candidatos. `contexto` (municipio/estado de la
+    /// zona actual) se anexa a la consulta para resolver nombres de calle sueltos
+    /// (p.ej. "13 de septiembre" → "13 de septiembre, Zinapécuaro, Michoacán").
+    func buscar(_ query: String, contexto: String? = nil) async -> [GeocodedPlace] {
+        let q0 = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard q0.count >= 3, var comps = URLComponents(string: "https://maps.googleapis.com/maps/api/geocode/json")
         else { return [] }
+        let q = (contexto?.isEmpty == false) ? "\(q0), \(contexto!)" : q0
         comps.queryItems = [
             URLQueryItem(name: "address", value: q),
+            URLQueryItem(name: "components", value: "country:MX"),
             URLQueryItem(name: "region", value: "mx"),
             URLQueryItem(name: "language", value: "es"),
             URLQueryItem(name: "key", value: apiKey)
