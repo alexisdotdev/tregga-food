@@ -60,7 +60,8 @@ struct CuentaTab: View {
                 clienteRepo: deps.clienteRepository,
                 direccionRepo: deps.direccionRepository,
                 preferenciasRepo: deps.preferenciasRepository,
-                accountRepo: deps.accountRepository
+                accountRepo: deps.accountRepository,
+                storageService: deps.storageService
             )
             viewModel = vm
             await vm.cargar()

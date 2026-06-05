@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 import TreggaCore
 import TreggaDesignSystem
 
@@ -17,6 +18,10 @@ struct PersonalDataView: View {
     @State private var tieneFecha = false
     @State private var guardando = false
     @State private var showDeleteConfirm = false
+
+    @State private var pickerItem: PhotosPickerItem?
+    @State private var cropImage: AvatarCropImage?
+    @State private var subiendo = false
 
     var body: some View {
         ScrollView {
@@ -66,20 +71,83 @@ struct PersonalDataView: View {
         } message: {
             Text("Esta acción es irreversible.")
         }
+        .onChange(of: pickerItem) { _, newItem in
+            guard let newItem else { return }
+            Task { await handlePicked(newItem) }
+        }
+        .fullScreenCover(item: $cropImage) { item in
+            AvatarCropView(
+                image: item.image,
+                onCancel: { cropImage = nil },
+                onDone: { cropped in
+                    cropImage = nil
+                    Task {
+                        subiendo = true
+                        _ = await viewModel.actualizarAvatar(cropped)
+                        subiendo = false
+                    }
+                }
+            )
+        }
     }
 
     private var avatar: some View {
         VStack(spacing: 10) {
-            ZStack {
-                Circle().fill(TreggaColors.primarySoft).frame(width: 96, height: 96)
-                Text(viewModel.initials)
-                    .font(.system(size: 34, weight: .heavy))
-                    .foregroundStyle(TreggaColors.primaryDeep)
+            ZStack(alignment: .bottomTrailing) {
+                avatarImage
+                    .frame(width: 96, height: 96)
+                    .clipShape(Circle())
+
+                PhotosPicker(selection: $pickerItem, matching: .images, photoLibrary: .shared()) {
+                    ZStack {
+                        Circle().fill(TreggaColors.primary).frame(width: 30, height: 30)
+                        if subiendo {
+                            ProgressView().tint(TreggaColors.onPrimary)
+                        } else {
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(TreggaColors.onPrimary)
+                        }
+                    }
+                    .overlay(Circle().stroke(TreggaColors.bg, lineWidth: 2))
+                }
+                .disabled(subiendo)
             }
             Text(viewModel.displayName)
                 .font(.system(size: 18, weight: .heavy))
                 .foregroundStyle(TreggaColors.text)
         }
+    }
+
+    @ViewBuilder
+    private var avatarImage: some View {
+        if let urlString = viewModel.perfil?.avatarUrl, let url = URL(string: urlString) {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image.resizable().scaledToFill()
+                default:
+                    avatarPlaceholder
+                }
+            }
+        } else {
+            avatarPlaceholder
+        }
+    }
+
+    private var avatarPlaceholder: some View {
+        ZStack {
+            Circle().fill(TreggaColors.primarySoft)
+            Text(viewModel.initials)
+                .font(.system(size: 34, weight: .heavy))
+                .foregroundStyle(TreggaColors.primaryDeep)
+        }
+    }
+
+    private func handlePicked(_ item: PhotosPickerItem) async {
+        guard let raw = try? await item.loadTransferable(type: Data.self),
+              let uiImage = UIImage(data: raw) else { return }
+        cropImage = AvatarCropImage(image: uiImage)
     }
 
     /// Modo de campo: aplica las mismas reglas que Tregga Delivery —
@@ -147,7 +215,7 @@ struct PersonalDataView: View {
 
     private func hidratar() {
         guard let p = viewModel.perfil else {
-            phone = viewModel.cliente?.phone ?? ""
+            phone = PhoneFormatter.displayMX(viewModel.cliente?.phone ?? "")
             fullName = viewModel.cliente?.fullName ?? ""
             return
         }
@@ -155,7 +223,7 @@ struct PersonalDataView: View {
         apellidoPaterno = p.apellidoPaterno
         apellidoMaterno = p.apellidoMaterno
         email = p.email ?? ""
-        phone = p.phone ?? viewModel.cliente?.phone ?? ""
+        phone = PhoneFormatter.displayMX(p.phone ?? viewModel.cliente?.phone ?? "")
         if let f = p.fechaNacimiento {
             fechaNacimiento = f
             tieneFecha = true

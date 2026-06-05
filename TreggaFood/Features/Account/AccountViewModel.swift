@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import UIKit
 import TreggaCore
 
 /// Estado de la sección Cuenta (F6). Carga perfil + cliente + preferencias,
@@ -21,6 +22,7 @@ public final class AccountViewModel {
     private let direccionRepo: DireccionClienteRepository
     private let preferenciasRepo: PreferenciasRepository
     private let accountRepo: AccountRepository
+    private let storageService: StorageService
 
     public init(
         userId: UUID,
@@ -28,7 +30,8 @@ public final class AccountViewModel {
         clienteRepo: ClienteRepository,
         direccionRepo: DireccionClienteRepository,
         preferenciasRepo: PreferenciasRepository,
-        accountRepo: AccountRepository
+        accountRepo: AccountRepository,
+        storageService: StorageService
     ) {
         self.userId = userId
         self.profileRepo = profileRepo
@@ -36,6 +39,7 @@ public final class AccountViewModel {
         self.direccionRepo = direccionRepo
         self.preferenciasRepo = preferenciasRepo
         self.accountRepo = accountRepo
+        self.storageService = storageService
     }
 
     public var displayName: String {
@@ -49,7 +53,7 @@ public final class AccountViewModel {
     public var contactoLine: String {
         let phone = perfil?.phone ?? cliente?.phone
         let pedidos = cliente?.totalOrders ?? 0
-        let phonePart = phone.map { PhoneFormatter.format($0) } ?? perfil?.email ?? ""
+        let phonePart = phone.map { PhoneFormatter.displayMX($0) } ?? perfil?.email ?? ""
         if pedidos > 0 {
             return phonePart.isEmpty ? "\(pedidos) pedidos" : "\(phonePart) · \(pedidos) pedidos"
         }
@@ -95,7 +99,41 @@ public final class AccountViewModel {
                 apellidoMaterno: apellidoMaterno,
                 email: email,
                 phone: phone,
-                fechaNacimiento: fechaNacimiento
+                fechaNacimiento: fechaNacimiento,
+                avatarUrl: perfil?.avatarUrl,
+                calle: perfil?.calle,
+                colonia: perfil?.colonia,
+                codigoPostal: perfil?.codigoPostal,
+                municipio: perfil?.municipio,
+                estado: perfil?.estado
+            )
+            self.perfil = updated
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    /// Sube una nueva foto de perfil al bucket `avatars` y persiste su URL,
+    /// preservando el resto de los campos del perfil.
+    public func actualizarAvatar(_ image: UIImage) async -> Bool {
+        guard let jpeg = image.jpegData(compressionQuality: 0.85), !jpeg.isEmpty else { return false }
+        do {
+            let url = try await storageService.uploadAvatar(data: jpeg, userId: userId, fileName: "avatar.jpg")
+            let updated = try await profileRepo.actualizar(
+                userId: userId,
+                fullName: perfil?.fullName,
+                apellidoPaterno: perfil?.apellidoPaterno,
+                apellidoMaterno: perfil?.apellidoMaterno,
+                email: perfil?.email,
+                phone: perfil?.phone,
+                fechaNacimiento: perfil?.fechaNacimiento,
+                avatarUrl: url.absoluteString,
+                calle: perfil?.calle,
+                colonia: perfil?.colonia,
+                codigoPostal: perfil?.codigoPostal,
+                municipio: perfil?.municipio,
+                estado: perfil?.estado
             )
             self.perfil = updated
             return true
