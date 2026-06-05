@@ -44,24 +44,29 @@ struct ScreenOffers: View {
     }
 
     private var banner: some View {
-        ZStack(alignment: .topLeading) {
-            LinearGradient(
-                colors: [TreggaColors.primary, TreggaColors.primaryDark, TreggaColors.primaryDeep],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            )
-            VStack(alignment: .leading, spacing: 8) {
-                TreggaIcon(.gift, size: 36, color: .white)
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("COMBOS Y PROMOS")
+                    .font(.system(size: 11, weight: .heavy))
+                    .tracking(0.4)
+                    .foregroundStyle(TreggaColors.primaryDark)
                 Text("Antojos con descuento")
-                    .treggaStyle(.h2)
-                    .foregroundStyle(.white)
-                Text("Aprovecha las promos de esta semana en negocios cerca de ti.")
-                    .font(.system(size: 13.5, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.92))
+                    .font(.system(size: 19, weight: .heavy))
+                    .foregroundStyle(TreggaColors.text)
+                Text("Aprovecha las promos de esta semana cerca de ti.")
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(TreggaColors.textSec)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(20)
+            Spacer(minLength: 0)
+            Image("combo-offer")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 124, height: 124)
         }
-        .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
-        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: 22).fill(TreggaColors.primarySoft))
     }
 
     private func promoCard(_ promo: ScreenOffers.Promo) -> some View {
