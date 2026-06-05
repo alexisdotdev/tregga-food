@@ -10,6 +10,7 @@ struct HomeView: View {
     @State private var direccionDefault: DireccionCliente?
     @State private var showNotifications = false
     @State private var showOffers = false
+    @State private var showDirecciones = false
     private let catalog: CatalogRepository
 
     @Environment(\.cartStore) private var cartEnv
@@ -77,6 +78,19 @@ struct HomeView: View {
         .sheet(isPresented: $showOffers) {
             NavigationStack { ScreenOffers() }
         }
+        .sheet(isPresented: $showDirecciones) {
+            if let cid = clienteId {
+                DireccionPickerView(
+                    viewModel: DireccionPickerViewModel(
+                        repo: deps?.direccionRepository ?? MockDireccionClienteRepository(),
+                        clienteId: cid
+                    ),
+                    onSelected: { Task { await resolveCliente() } }
+                )
+            } else {
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity).background(TreggaColors.bg)
+            }
+        }
     }
 
     @ViewBuilder
@@ -112,23 +126,26 @@ struct HomeView: View {
 
     private var header: some View {
         HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Entregar ahora")
-                    .font(.system(size: 12, weight: .bold))
-                    .tracking(0.3)
-                    .textCase(.uppercase)
-                    .foregroundStyle(TreggaColors.textSec)
-                HStack(spacing: 6) {
-                    TreggaIcon(.pin, size: 18, color: TreggaColors.primary)
-                    Text(direccionDefault?.address ?? "Agrega tu dirección")
-                        .font(.system(size: 17, weight: .heavy))
-                        .tracking(-0.2)
-                        .foregroundStyle(TreggaColors.text)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                    TreggaIcon(.chevD, size: 14, color: TreggaColors.textSec)
+            Button { showDirecciones = true } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Entregar ahora")
+                        .font(.system(size: 12, weight: .bold))
+                        .tracking(0.3)
+                        .textCase(.uppercase)
+                        .foregroundStyle(TreggaColors.textSec)
+                    HStack(spacing: 6) {
+                        TreggaIcon(.pin, size: 18, color: TreggaColors.primary)
+                        Text(direccionDefault?.address ?? "Agrega tu dirección")
+                            .font(.system(size: 17, weight: .heavy))
+                            .tracking(-0.2)
+                            .foregroundStyle(TreggaColors.text)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                        TreggaIcon(.chevD, size: 14, color: TreggaColors.textSec)
+                    }
                 }
             }
+            .buttonStyle(.plain)
             Spacer()
             HStack(spacing: 10) {
                 Button { showOffers = true } label: {

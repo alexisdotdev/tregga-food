@@ -136,7 +136,7 @@ struct EditorState: Identifiable {
     }
 }
 
-private struct AddressEditorSheet: View {
+struct AddressEditorSheet: View {
     let state: EditorState
     let onSave: (_ label: String, _ address: String, _ refs: String?, _ isDefault: Bool) -> Void
     @Environment(\.dismiss) private var dismiss
