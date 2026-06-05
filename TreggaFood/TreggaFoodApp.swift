@@ -5,6 +5,7 @@
 
 import SwiftUI
 import TreggaCore
+import UserNotifications
 
 @main
 struct TreggaFoodApp: App {
@@ -12,6 +13,7 @@ struct TreggaFoodApp: App {
 
     init() {
         GoogleMapsBootstrap.configure()
+        UNUserNotificationCenter.current().delegate = NotificationPresenter.shared
     }
 
     var body: some Scene {

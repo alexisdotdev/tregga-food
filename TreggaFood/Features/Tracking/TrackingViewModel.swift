@@ -30,6 +30,10 @@ final class TrackingViewModel {
     /// Origen de la última ruta pedida, para no re-consultar Directions en cada poll.
     private var lastRouteFrom: TrackCoord?
 
+    /// Aviso de aproximación: se dispara una sola vez por pedido al cruzar el umbral.
+    private var proximityNotified = false
+    private let proximityThresholdMeters: Double = 300
+
     init(pedidoId: UUID, repo: TrackingRepository) {
         self.pedidoId = pedidoId
         self.repo = repo
@@ -37,6 +41,7 @@ final class TrackingViewModel {
 
     func start() {
         guard pollingTask == nil else { return }
+        Task { await LocalNotifications.requestAuthorization() }
         pollingTask = Task { [weak self] in
             guard let self else { return }
             await self.refresh(initial: true)
@@ -71,6 +76,7 @@ final class TrackingViewModel {
             }
             phase = .loaded
             await updateRouteIfNeeded(status: p.status)
+            checkProximity(status: p.status)
             if p.status.isCompleted && !didComplete {
                 didComplete = true
             }
@@ -93,6 +99,16 @@ final class TrackingViewModel {
         if let encoded = await routeService.fetchEncodedPolyline(from: from, to: to) {
             routeEncoded = encoded
         }
+    }
+
+    /// Dispara la notificación local de aproximación una sola vez por pedido,
+    /// cuando el repartidor ya lleva el pedido y entra en el radio del domicilio.
+    private func checkProximity(status: PedidoStatus) {
+        guard !proximityNotified, status.driverHeadingToClient,
+              let from = repartidorCoord, let to = pedido?.delivery else { return }
+        guard Self.meters(from, to) <= proximityThresholdMeters else { return }
+        proximityNotified = true
+        LocalNotifications.fireProximity(pedidoId: pedidoId, repartidorName: pedido?.repartidorName)
     }
 
     /// Distancia en metros entre dos coordenadas.
