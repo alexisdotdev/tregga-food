@@ -34,6 +34,8 @@ struct TrackingView: View {
                 pickup: viewModel.pedido?.pickup,
                 delivery: viewModel.pedido?.delivery,
                 repartidor: viewModel.repartidorCoord,
+                routeEncoded: viewModel.routeEncoded,
+                showRoute: viewModel.pedido?.status.driverHeadingToClient ?? false,
                 controller: mapController
             )
             .ignoresSafeArea(edges: .top)

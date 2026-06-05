@@ -63,6 +63,10 @@ public enum PedidoStatus: String, Sendable, CaseIterable {
     public var isCompleted: Bool { self == .completed }
     public var isCancelled: Bool { self == .cancelled }
     public var isTerminal: Bool { isCompleted || isCancelled }
+
+    /// El repartidor ya lleva el pedido y va hacia el cliente: es cuando tiene
+    /// sentido dibujar la ruta hacia la casa y avisar de su aproximación.
+    public var driverHeadingToClient: Bool { self == .recogido || self == .enEntrega }
 }
 
 /// Snapshot del pedido para la pantalla de tracking.

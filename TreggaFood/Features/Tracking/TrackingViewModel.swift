@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import CoreLocation
 
 @MainActor
 @Observable
@@ -14,12 +15,20 @@ final class TrackingViewModel {
     private(set) var pedido: PedidoTracking?
     private(set) var repartidorCoord: TrackCoord?
 
+    /// Polyline codificada de la ruta repartidor → casa (Directions API). El mapa
+    /// la decodifica; si es `nil`, dibuja una recta de respaldo.
+    private(set) var routeEncoded: String?
+
     /// Se activa una vez cuando el pedido pasa a completado, para navegar a éxito.
     var didComplete: Bool = false
 
     private let pedidoId: UUID
     private let repo: TrackingRepository
+    private let routeService = RouteService()
     private var pollingTask: Task<Void, Never>?
+
+    /// Origen de la última ruta pedida, para no re-consultar Directions en cada poll.
+    private var lastRouteFrom: TrackCoord?
 
     init(pedidoId: UUID, repo: TrackingRepository) {
         self.pedidoId = pedidoId
@@ -61,6 +70,7 @@ final class TrackingViewModel {
                 }
             }
             phase = .loaded
+            await updateRouteIfNeeded(status: p.status)
             if p.status.isCompleted && !didComplete {
                 didComplete = true
             }
@@ -69,5 +79,25 @@ final class TrackingViewModel {
                 phase = .error("No pudimos cargar tu pedido. Revisa tu conexión.")
             }
         }
+    }
+
+    /// Pide la ruta por calles repartidor → casa solo cuando el repartidor ya
+    /// lleva el pedido, y evita re-consultar Directions si apenas se movió.
+    private func updateRouteIfNeeded(status: PedidoStatus) async {
+        guard status.driverHeadingToClient,
+              let from = repartidorCoord, let to = pedido?.delivery else { return }
+        // No re-consultamos Directions hasta que el repartidor se mueva >120m,
+        // incluso si el intento previo falló (la recta de respaldo cubre lo visual).
+        if let last = lastRouteFrom, Self.meters(last, from) < 120 { return }
+        lastRouteFrom = from
+        if let encoded = await routeService.fetchEncodedPolyline(from: from, to: to) {
+            routeEncoded = encoded
+        }
+    }
+
+    /// Distancia en metros entre dos coordenadas.
+    static func meters(_ a: TrackCoord, _ b: TrackCoord) -> Double {
+        CLLocation(latitude: a.lat, longitude: a.lng)
+            .distance(from: CLLocation(latitude: b.lat, longitude: b.lng))
     }
 }

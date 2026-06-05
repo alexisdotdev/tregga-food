@@ -8,6 +8,11 @@ struct TrackingMapView: UIViewRepresentable {
     let pickup: TrackCoord?
     let delivery: TrackCoord?
     let repartidor: TrackCoord?
+    /// Ruta repartidor → casa, codificada (Directions). Si es `nil` y `showRoute`,
+    /// se dibuja una recta de respaldo.
+    var routeEncoded: String? = nil
+    /// Solo dibuja la ruta cuando el repartidor ya lleva el pedido hacia el cliente.
+    var showRoute: Bool = false
     let controller: MapController
 
     func makeUIView(context: Context) -> GMSMapView {
@@ -34,6 +39,7 @@ struct TrackingMapView: UIViewRepresentable {
         var pickupMarker: GMSMarker?
         var deliveryMarker: GMSMarker?
         var repartidorMarker: GMSMarker?
+        var routePolyline: GMSPolyline?
         var fitted = false
         var lastRepartidor: TrackCoord?
     }
@@ -62,6 +68,8 @@ struct TrackingMapView: UIViewRepresentable {
             coord.lastRepartidor = repartidor
         }
 
+        updateRoute(on: mapView, coord: coord)
+
         // Encuadre inicial que contiene los puntos disponibles.
         if !coord.fitted {
             let puntos = [pickup, delivery, repartidor].compactMap { $0 }
@@ -77,6 +85,35 @@ struct TrackingMapView: UIViewRepresentable {
                 coord.fitted = true
             }
         }
+    }
+
+    /// Dibuja/actualiza la ruta repartidor → casa. Usa la polyline de Directions
+    /// si llegó; si no, una recta de respaldo. Se oculta si `showRoute` es false.
+    private func updateRoute(on mapView: GMSMapView, coord: Coordinator) {
+        let path: GMSPath? = {
+            guard showRoute else { return nil }
+            if let encoded = routeEncoded, let p = GMSPath(fromEncodedPath: encoded) { return p }
+            if let r = repartidor, let d = delivery {
+                let mp = GMSMutablePath()
+                mp.add(CLLocationCoordinate2D(latitude: r.lat, longitude: r.lng))
+                mp.add(CLLocationCoordinate2D(latitude: d.lat, longitude: d.lng))
+                return mp
+            }
+            return nil
+        }()
+
+        guard let path else {
+            coord.routePolyline?.map = nil
+            coord.routePolyline = nil
+            return
+        }
+        let line = coord.routePolyline ?? GMSPolyline()
+        line.path = path
+        line.strokeColor = UIColor(red: 0.05, green: 0.71, blue: 0.36, alpha: 1)
+        line.strokeWidth = 4
+        line.geodesic = true
+        if line.map == nil { line.map = mapView }
+        coord.routePolyline = line
     }
 
     private func marker(on mapView: GMSMapView, color: UIColor, title: String) -> GMSMarker {
