@@ -7,6 +7,7 @@ import TreggaDesignSystem
 struct TrackingView: View {
     @State private var viewModel: TrackingViewModel
     @State private var showCallSheet = false
+    @State private var mapController = MapController()
     let onChat: (String) -> Void
     let onCompleted: (PedidoTracking) -> Void
     let onBack: () -> Void
@@ -32,9 +33,11 @@ struct TrackingView: View {
             TrackingMapView(
                 pickup: viewModel.pedido?.pickup,
                 delivery: viewModel.pedido?.delivery,
-                repartidor: viewModel.repartidorCoord
+                repartidor: viewModel.repartidorCoord,
+                controller: mapController
             )
             .ignoresSafeArea(edges: .top)
+            .overlay(alignment: .bottomTrailing) { mapControls }
 
             backButton
 
@@ -85,6 +88,33 @@ struct TrackingView: View {
             .padding(.top, 8)
             Spacer()
         }
+    }
+
+    // MARK: - Controles del mapa
+
+    private var mapControls: some View {
+        VStack(spacing: 8) {
+            mapControlButton(icon: "plus") { mapController.zoomIn() }
+            mapControlButton(icon: "minus") { mapController.zoomOut() }
+            mapControlButton(icon: "location.fill") {
+                mapController.recenter(to: [
+                    viewModel.pedido?.pickup,
+                    viewModel.pedido?.delivery,
+                    viewModel.repartidorCoord
+                ].compactMap { $0 })
+            }
+        }
+        .padding(.trailing, 14)
+        .padding(.bottom, 120)
+    }
+
+    private func mapControlButton(icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            TreggaIcon(sfSymbol: icon, size: 16, color: TreggaColors.text)
+                .frame(width: 42, height: 42)
+                .treggaGlass(in: Circle())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Status sheet

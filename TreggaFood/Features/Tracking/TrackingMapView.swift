@@ -8,6 +8,7 @@ struct TrackingMapView: UIViewRepresentable {
     let pickup: TrackCoord?
     let delivery: TrackCoord?
     let repartidor: TrackCoord?
+    let controller: MapController
 
     func makeUIView(context: Context) -> GMSMapView {
         let center = repartidor ?? delivery ?? pickup ?? TrackCoord(lat: 19.4326, lng: -99.1332)
@@ -23,6 +24,7 @@ struct TrackingMapView: UIViewRepresentable {
         mapView.settings.tiltGestures = false
         mapView.settings.rotateGestures = false
         mapView.mapStyle = try? GMSMapStyle(jsonString: MapStyle.light)
+        controller.mapView = mapView
         return mapView
     }
 
