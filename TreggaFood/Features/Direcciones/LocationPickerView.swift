@@ -92,6 +92,9 @@ struct LocationPickerView: View {
     @State private var label = "Casa"
     @State private var referencias = ""
     @State private var searchTask: Task<Void, Never>?
+    @State private var locationProvider = CurrentLocationProvider()
+    @State private var buscandoUbicacion = false
+    @State private var ubicacionDenegada = false
     @Environment(\.dismiss) private var dismiss
 
     let onGuardar: (_ label: String, _ address: String, _ referencias: String?, _ place: GeocodedPlace?) -> Void
@@ -128,6 +131,11 @@ struct LocationPickerView: View {
                     Button("Cancelar") { dismiss() }
                 }
             }
+            .alert("Ubicación desactivada", isPresented: $ubicacionDenegada) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Activa el permiso de ubicación en Ajustes para usar tu ubicación actual.")
+            }
         }
     }
 
@@ -156,6 +164,8 @@ struct LocationPickerView: View {
             .background(TreggaColors.card, in: Capsule())
             .overlay(Capsule().stroke(TreggaColors.border, lineWidth: 1))
             .shadow(color: .black.opacity(0.10), radius: 10, y: 4)
+
+            ubicacionActualButton
 
             if !viewModel.resultados.isEmpty {
                 VStack(spacing: 0) {
@@ -188,6 +198,39 @@ struct LocationPickerView: View {
             }
         }
         .padding(.horizontal, 16)
+        .padding(.top, 8)
+    }
+
+    private var ubicacionActualButton: some View {
+        Button {
+            Task {
+                buscandoUbicacion = true
+                if let c = await locationProvider.current() {
+                    mapController.center(lat: c.lat, lng: c.lng)
+                    await viewModel.mapaQuieto(c)
+                } else {
+                    ubicacionDenegada = true
+                }
+                buscandoUbicacion = false
+            }
+        } label: {
+            HStack(spacing: 8) {
+                if buscandoUbicacion {
+                    ProgressView().controlSize(.mini)
+                } else {
+                    TreggaIcon(.location, size: 16, color: TreggaColors.primary)
+                }
+                Text("Usar mi ubicación actual")
+                    .font(.system(size: 13.5, weight: .heavy))
+                    .foregroundStyle(TreggaColors.primary)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 44)
+            .background(TreggaColors.card, in: Capsule())
+            .overlay(Capsule().stroke(TreggaColors.primary.opacity(0.4), lineWidth: 1.2))
+            .shadow(color: .black.opacity(0.08), radius: 8, y: 3)
+        }
+        .buttonStyle(.plain)
         .padding(.top, 8)
     }
 
