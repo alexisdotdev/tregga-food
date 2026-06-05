@@ -15,6 +15,10 @@ public struct DireccionCliente: Identifiable, Equatable, Hashable, Sendable {
     public var municipio: String?
     public var colonia: String?
     public var calle: String?
+    /// Instrucciones para el repartidor (cómo llegar a la puerta exacta).
+    public var instrucciones: String?
+    /// URLs públicas de fotos de la ubicación (fachada/entrada) para el repartidor.
+    public var fotos: [String]
 
     public init(
         id: UUID,
@@ -29,7 +33,9 @@ public struct DireccionCliente: Identifiable, Equatable, Hashable, Sendable {
         estado: String? = nil,
         municipio: String? = nil,
         colonia: String? = nil,
-        calle: String? = nil
+        calle: String? = nil,
+        instrucciones: String? = nil,
+        fotos: [String] = []
     ) {
         self.id = id
         self.clienteId = clienteId
@@ -44,6 +50,8 @@ public struct DireccionCliente: Identifiable, Equatable, Hashable, Sendable {
         self.municipio = municipio
         self.colonia = colonia
         self.calle = calle
+        self.instrucciones = instrucciones
+        self.fotos = fotos
     }
 
     /// Subtítulo para tarjeta: dirección + municipio si existe.

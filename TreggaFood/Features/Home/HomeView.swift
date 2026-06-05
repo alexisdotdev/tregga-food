@@ -83,7 +83,9 @@ struct HomeView: View {
                 DireccionPickerView(
                     viewModel: DireccionPickerViewModel(
                         repo: deps?.direccionRepository ?? MockDireccionClienteRepository(),
-                        clienteId: cid
+                        clienteId: cid,
+                        storage: deps?.storageService ?? MockStorageService(),
+                        userId: deps?.authSession.tokens?.userId ?? cid
                     ),
                     onSelected: { Task { await resolveCliente() } }
                 )

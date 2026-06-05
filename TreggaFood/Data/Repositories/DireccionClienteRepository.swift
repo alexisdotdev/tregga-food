@@ -17,7 +17,9 @@ public protocol DireccionClienteRepository: Sendable {
         codigoPostal: String?,
         colonia: String?,
         municipio: String?,
-        estado: String?
+        estado: String?,
+        instrucciones: String?,
+        fotos: [String]
     ) async throws -> DireccionCliente
     @discardableResult
     func editar(
@@ -45,7 +47,8 @@ public extension DireccionClienteRepository {
         try await crear(
             clienteId: clienteId, label: label, address: address,
             referencias: referencias, isDefault: isDefault,
-            lat: nil, lng: nil, codigoPostal: nil, colonia: nil, municipio: nil, estado: nil
+            lat: nil, lng: nil, codigoPostal: nil, colonia: nil, municipio: nil, estado: nil,
+            instrucciones: nil, fotos: []
         )
     }
 }
@@ -73,6 +76,8 @@ public final class SupabaseDireccionClienteRepository: DireccionClienteRepositor
         let municipio: String?
         let colonia: String?
         let calle: String?
+        let instrucciones: String?
+        let fotos: [String]?
 
         func toDomain() -> DireccionCliente {
             DireccionCliente(
@@ -88,7 +93,9 @@ public final class SupabaseDireccionClienteRepository: DireccionClienteRepositor
                 estado: estado,
                 municipio: municipio,
                 colonia: colonia,
-                calle: calle
+                calle: calle,
+                instrucciones: instrucciones,
+                fotos: fotos ?? []
             )
         }
     }
@@ -115,7 +122,9 @@ public final class SupabaseDireccionClienteRepository: DireccionClienteRepositor
         codigoPostal: String?,
         colonia: String?,
         municipio: String?,
-        estado: String?
+        estado: String?,
+        instrucciones: String?,
+        fotos: [String]
     ) async throws -> DireccionCliente {
         struct Insert: Encodable {
             let cliente_id: String
@@ -129,6 +138,8 @@ public final class SupabaseDireccionClienteRepository: DireccionClienteRepositor
             let colonia: String?
             let municipio: String?
             let estado: String?
+            let instrucciones: String?
+            let fotos: [String]
         }
         let dto: DireccionDTO = try await client.from("direcciones_cliente")
             .insert(Insert(
@@ -142,7 +153,9 @@ public final class SupabaseDireccionClienteRepository: DireccionClienteRepositor
                 codigo_postal: codigoPostal,
                 colonia: colonia,
                 municipio: municipio,
-                estado: estado
+                estado: estado,
+                instrucciones: instrucciones,
+                fotos: fotos
             ))
             .select()
             .single()
@@ -226,7 +239,9 @@ public final class MockDireccionClienteRepository: DireccionClienteRepository {
         codigoPostal: String?,
         colonia: String?,
         municipio: String?,
-        estado: String?
+        estado: String?,
+        instrucciones: String?,
+        fotos: [String]
     ) async throws -> DireccionCliente {
         DireccionCliente(
             id: UUID(),
@@ -240,7 +255,9 @@ public final class MockDireccionClienteRepository: DireccionClienteRepository {
             codigoPostal: codigoPostal,
             estado: estado,
             municipio: municipio,
-            colonia: colonia
+            colonia: colonia,
+            instrucciones: instrucciones,
+            fotos: fotos
         )
     }
 

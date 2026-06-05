@@ -8,13 +8,17 @@ import Observation
 final class DireccionPickerViewModel {
     private let repo: DireccionClienteRepository
     private let clienteId: UUID
+    private let storage: StorageService
+    private let userId: UUID
 
     private(set) var direcciones: [DireccionCliente] = []
     private(set) var loading = true
 
-    init(repo: DireccionClienteRepository, clienteId: UUID) {
+    init(repo: DireccionClienteRepository, clienteId: UUID, storage: StorageService, userId: UUID) {
         self.repo = repo
         self.clienteId = clienteId
+        self.storage = storage
+        self.userId = userId
     }
 
     /// La dirección activa de entrega (principal) y el resto.
@@ -54,12 +58,25 @@ final class DireccionPickerViewModel {
         return TrackCoord(lat: 19.8642, lng: -100.8225)
     }
 
-    /// Alta con coordenadas (desde el selector de pin). La deja como principal.
-    func crearConUbicacion(label: String, address: String, referencias: String?, place: GeocodedPlace?) async {
+    /// Alta con coordenadas + instrucciones + fotos (desde el selector de pin).
+    /// Sube las fotos al storage y guarda sus URLs. La deja como principal.
+    func crearConUbicacion(
+        label: String, address: String, referencias: String?,
+        instrucciones: String?, fotosData: [Data], place: GeocodedPlace?
+    ) async {
+        var urls: [String] = []
+        for (i, data) in fotosData.enumerated() {
+            if let url = try? await storage.uploadAvatar(
+                data: data, userId: userId, fileName: "direcciones/\(UUID().uuidString)-\(i).jpg"
+            ) {
+                urls.append(url.absoluteString)
+            }
+        }
         let nueva = try? await repo.crear(
             clienteId: clienteId, label: label, address: address, referencias: referencias, isDefault: false,
             lat: place?.lat, lng: place?.lng,
-            codigoPostal: place?.codigoPostal, colonia: place?.colonia, municipio: place?.municipio, estado: place?.estado
+            codigoPostal: place?.codigoPostal, colonia: place?.colonia, municipio: place?.municipio, estado: place?.estado,
+            instrucciones: instrucciones, fotos: urls
         )
         if let nueva { try? await repo.hacerDefault(id: nueva.id, clienteId: clienteId) }
         await cargar()
@@ -145,9 +162,12 @@ struct DireccionPickerView: View {
                 }
             }
             .fullScreenCover(isPresented: $showPicker) {
-                LocationPickerView(center: viewModel.centroInicial) { label, address, refs, place in
+                LocationPickerView(center: viewModel.centroInicial) { label, address, refs, instrucciones, fotosData, place in
                     Task {
-                        await viewModel.crearConUbicacion(label: label, address: address, referencias: refs, place: place)
+                        await viewModel.crearConUbicacion(
+                            label: label, address: address, referencias: refs,
+                            instrucciones: instrucciones, fotosData: fotosData, place: place
+                        )
                         onSelected()
                     }
                 }
