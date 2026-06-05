@@ -18,6 +18,8 @@ public final class SignupFlowState {
     // Paso 2: correo + fecha de nacimiento + teléfono
     public var email: String = ""
     public var fechaNacimiento: Date?
+    /// Error de duplicados (correo/teléfono ya registrados) para el paso 2.
+    public var emailDuplicadoError: String?
 
     // Paso 3: foto de perfil
     public var fotoPerfilURL: URL?
@@ -46,6 +48,7 @@ public final class SignupFlowState {
         apellidoMaterno = ""
         email = ""
         fechaNacimiento = nil
+        emailDuplicadoError = nil
         fotoPerfilURL = nil
         direccionCalle = ""
         colonia = ""

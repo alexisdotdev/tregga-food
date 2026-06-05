@@ -111,6 +111,39 @@ public final class OnboardingCoordinator {
         destination = Self.order[idx + 1]
     }
 
+    /// `true` mientras se verifican los duplicados del paso 2 (correo/teléfono).
+    public private(set) var validandoEmail = false
+
+    /// Verifica contra la base que el correo y el teléfono del paso 2 no estén
+    /// ya registrados antes de avanzar. Si alguno existe (o hay error de red),
+    /// publica el mensaje en `signup.emailDuplicadoError` y NO avanza.
+    public func validarYAvanzarEmail() async {
+        signup.emailDuplicadoError = nil
+        validandoEmail = true
+        defer { validandoEmail = false }
+
+        let email = signup.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let e164 = signup.phoneE164Normalized
+
+        do {
+            // "Registrado" = existe cualquier cuenta con ese correo (cliente,
+            // repartidor o admin), no solo repartidor — por eso usamos el kind.
+            if try await authService.emailAccountKind(email: email) != .none {
+                signup.emailDuplicadoError = "Ese correo ya está registrado. Inicia sesión."
+                return
+            }
+            if !e164.isEmpty, try await authService.phoneIsRegistered(phoneE164: e164) {
+                signup.emailDuplicadoError = "Ese teléfono ya está registrado. Inicia sesión."
+                return
+            }
+        } catch {
+            signup.emailDuplicadoError = "No pudimos verificar tus datos. Revisa tu conexión."
+            return
+        }
+
+        advanceSignup()
+    }
+
     public func backSignup() {
         guard let idx = Self.order.firstIndex(of: destination) else { return }
         if idx == 0 {

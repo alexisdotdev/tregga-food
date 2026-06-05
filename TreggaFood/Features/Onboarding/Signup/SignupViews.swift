@@ -215,6 +215,13 @@ public struct SignupEmailView: View {
                     emailField
                     phoneField
                     fechaNacimientoField
+
+                    if let error = state.emailDuplicadoError {
+                        Text(error)
+                            .font(.system(size: 12.5, weight: .semibold))
+                            .foregroundStyle(TreggaColors.danger)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
                 .padding(.horizontal, 20)
             }
