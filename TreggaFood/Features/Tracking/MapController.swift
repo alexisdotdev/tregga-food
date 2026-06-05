@@ -13,6 +13,14 @@ final class MapController {
         mapView.animate(toZoom: mapView.camera.zoom + 1)
     }
 
+    /// Centra la cámara en una coordenada (usado por el selector de ubicación).
+    func center(lat: Double, lng: Double, zoom: Float = 16) {
+        guard let mapView else { return }
+        mapView.animate(with: GMSCameraUpdate.setTarget(
+            CLLocationCoordinate2D(latitude: lat, longitude: lng), zoom: zoom
+        ))
+    }
+
     func zoomOut() {
         guard let mapView else { return }
         mapView.animate(toZoom: mapView.camera.zoom - 1)

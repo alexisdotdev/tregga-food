@@ -11,7 +11,13 @@ public protocol DireccionClienteRepository: Sendable {
         label: String,
         address: String,
         referencias: String?,
-        isDefault: Bool
+        isDefault: Bool,
+        lat: Double?,
+        lng: Double?,
+        codigoPostal: String?,
+        colonia: String?,
+        municipio: String?,
+        estado: String?
     ) async throws -> DireccionCliente
     @discardableResult
     func editar(
@@ -23,6 +29,25 @@ public protocol DireccionClienteRepository: Sendable {
     func eliminar(id: UUID) async throws
     /// Marca una dirección como principal y desmarca las demás del cliente.
     func hacerDefault(id: UUID, clienteId: UUID) async throws
+}
+
+public extension DireccionClienteRepository {
+    /// Conveniencia: alta sin coordenadas (signup/cuenta). Delega en la versión
+    /// completa con `nil` en geolocalización.
+    @discardableResult
+    func crear(
+        clienteId: UUID,
+        label: String,
+        address: String,
+        referencias: String?,
+        isDefault: Bool
+    ) async throws -> DireccionCliente {
+        try await crear(
+            clienteId: clienteId, label: label, address: address,
+            referencias: referencias, isDefault: isDefault,
+            lat: nil, lng: nil, codigoPostal: nil, colonia: nil, municipio: nil, estado: nil
+        )
+    }
 }
 
 // MARK: - Supabase
@@ -84,7 +109,13 @@ public final class SupabaseDireccionClienteRepository: DireccionClienteRepositor
         label: String,
         address: String,
         referencias: String?,
-        isDefault: Bool
+        isDefault: Bool,
+        lat: Double?,
+        lng: Double?,
+        codigoPostal: String?,
+        colonia: String?,
+        municipio: String?,
+        estado: String?
     ) async throws -> DireccionCliente {
         struct Insert: Encodable {
             let cliente_id: String
@@ -92,6 +123,12 @@ public final class SupabaseDireccionClienteRepository: DireccionClienteRepositor
             let address: String
             let referencias: String?
             let is_default: Bool
+            let lat: Double?
+            let lng: Double?
+            let codigo_postal: String?
+            let colonia: String?
+            let municipio: String?
+            let estado: String?
         }
         let dto: DireccionDTO = try await client.from("direcciones_cliente")
             .insert(Insert(
@@ -99,7 +136,13 @@ public final class SupabaseDireccionClienteRepository: DireccionClienteRepositor
                 label: label,
                 address: address,
                 referencias: referencias,
-                is_default: isDefault
+                is_default: isDefault,
+                lat: lat,
+                lng: lng,
+                codigo_postal: codigoPostal,
+                colonia: colonia,
+                municipio: municipio,
+                estado: estado
             ))
             .select()
             .single()
@@ -177,15 +220,27 @@ public final class MockDireccionClienteRepository: DireccionClienteRepository {
         label: String,
         address: String,
         referencias: String?,
-        isDefault: Bool
+        isDefault: Bool,
+        lat: Double?,
+        lng: Double?,
+        codigoPostal: String?,
+        colonia: String?,
+        municipio: String?,
+        estado: String?
     ) async throws -> DireccionCliente {
         DireccionCliente(
             id: UUID(),
             clienteId: clienteId,
             label: label,
             address: address,
+            lat: lat,
+            lng: lng,
             referencias: referencias,
-            isDefault: isDefault
+            isDefault: isDefault,
+            codigoPostal: codigoPostal,
+            estado: estado,
+            municipio: municipio,
+            colonia: colonia
         )
     }
 

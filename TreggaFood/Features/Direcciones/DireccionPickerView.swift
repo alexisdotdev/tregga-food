@@ -46,6 +46,24 @@ final class DireccionPickerViewModel {
         try? await repo.eliminar(id: dir.id)
         await cargar()
     }
+
+    /// Centro inicial del selector de mapa: la dirección activa (si tiene coords)
+    /// o el centro de Zinapécuaro como respaldo.
+    var centroInicial: TrackCoord {
+        if let a = activa, let la = a.lat, let lo = a.lng { return TrackCoord(lat: la, lng: lo) }
+        return TrackCoord(lat: 19.8642, lng: -100.8225)
+    }
+
+    /// Alta con coordenadas (desde el selector de pin). La deja como principal.
+    func crearConUbicacion(label: String, address: String, referencias: String?, place: GeocodedPlace?) async {
+        let nueva = try? await repo.crear(
+            clienteId: clienteId, label: label, address: address, referencias: referencias, isDefault: false,
+            lat: place?.lat, lng: place?.lng,
+            codigoPostal: place?.codigoPostal, colonia: place?.colonia, municipio: place?.municipio, estado: place?.estado
+        )
+        if let nueva { try? await repo.hacerDefault(id: nueva.id, clienteId: clienteId) }
+        await cargar()
+    }
 }
 
 /// Selector de dirección de entrega (estilo Uber): abre desde el header de Home.
@@ -54,6 +72,7 @@ struct DireccionPickerView: View {
     @State private var viewModel: DireccionPickerViewModel
     @State private var editor: EditorState?
     @State private var accionesPara: DireccionCliente?
+    @State private var showPicker = false
     /// Se llama cuando cambia la dirección activa, para que Home se refresque.
     let onSelected: () -> Void
     @Environment(\.dismiss) private var dismiss
@@ -125,6 +144,14 @@ struct DireccionPickerView: View {
                     }
                 }
             }
+            .fullScreenCover(isPresented: $showPicker) {
+                LocationPickerView(center: viewModel.centroInicial) { label, address, refs, place in
+                    Task {
+                        await viewModel.crearConUbicacion(label: label, address: address, referencias: refs, place: place)
+                        onSelected()
+                    }
+                }
+            }
             .confirmationDialog(accionesPara?.label ?? "", isPresented: .init(
                 get: { accionesPara != nil },
                 set: { if !$0 { accionesPara = nil } }
@@ -141,7 +168,7 @@ struct DireccionPickerView: View {
     }
 
     private var agregarButton: some View {
-        Button { editor = EditorState() } label: {
+        Button { showPicker = true } label: {
             HStack(spacing: 12) {
                 ZStack {
                     Circle().fill(TreggaColors.primarySoft).frame(width: 40, height: 40)

@@ -7,6 +7,8 @@ import GoogleMaps
 struct NegociosMapView: UIViewRepresentable {
     /// Negocios con coordenadas (ya filtrados por el VM).
     let negocios: [Negocio]
+    /// Dirección activa del cliente (centro preferido del mapa).
+    var center: TrackCoord? = nil
     let onSelect: (Negocio) -> Void
     let controller: MapController
 
@@ -14,7 +16,8 @@ struct NegociosMapView: UIViewRepresentable {
     private let fallback = TrackCoord(lat: 19.8642, lng: -100.8225)
 
     func makeUIView(context: Context) -> GMSMapView {
-        let camera = GMSCameraPosition(latitude: fallback.lat, longitude: fallback.lng, zoom: 13.5)
+        let start = center ?? fallback
+        let camera = GMSCameraPosition(latitude: start.lat, longitude: start.lng, zoom: 13.5)
         let options = GMSMapViewOptions()
         options.camera = camera
         let mapView = GMSMapView(options: options)
@@ -79,14 +82,18 @@ struct NegociosMapView: UIViewRepresentable {
             coord.byId.removeValue(forKey: key)
         }
 
-        // Encadre inicial a los negocios.
+        // Encadre inicial: negocios + dirección del cliente (si la hay).
         if !coord.fitted, !conCoords.isEmpty {
-            if conCoords.count == 1 {
-                mapView.animate(toLocation: conCoords[0].1)
+            var puntos = conCoords.map { $0.1 }
+            if let c = center {
+                puntos.append(CLLocationCoordinate2D(latitude: c.lat, longitude: c.lng))
+            }
+            if puntos.count == 1 {
+                mapView.animate(toLocation: puntos[0])
                 mapView.animate(toZoom: 15)
             } else {
                 var bounds = GMSCoordinateBounds()
-                for (_, position) in conCoords { bounds = bounds.includingCoordinate(position) }
+                for p in puntos { bounds = bounds.includingCoordinate(p) }
                 mapView.animate(with: GMSCameraUpdate.fit(bounds, withPadding: 72))
             }
             coord.fitted = true

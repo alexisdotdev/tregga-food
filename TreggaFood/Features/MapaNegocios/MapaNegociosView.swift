@@ -34,6 +34,7 @@ struct MapaNegociosView: View {
     @State private var mapController = MapController()
     @State private var path: [CatalogRoute] = []
     @State private var seleccionado: Negocio?
+    @State private var center: TrackCoord?
 
     private let catalog: CatalogRepository
     private var cart: CartStore { cartEnv ?? CartStore() }
@@ -48,6 +49,7 @@ struct MapaNegociosView: View {
             ZStack(alignment: .bottom) {
                 NegociosMapView(
                     negocios: viewModel.conCoords,
+                    center: center,
                     onSelect: { seleccionado = $0 },
                     controller: mapController
                 )
@@ -72,7 +74,20 @@ struct MapaNegociosView: View {
                     .onDisappear { shell?.barHidden = false }
             }
         }
-        .task { await viewModel.cargar() }
+        .task {
+            await resolverCentro()
+            await viewModel.cargar()
+        }
+    }
+
+    /// Centro del mapa = dirección activa del cliente (si tiene coordenadas).
+    private func resolverCentro() async {
+        guard center == nil, let deps, let uid = deps.authSession.tokens?.userId,
+              let cid = try? await deps.clienteRepository.fetchByUserId(uid)?.id,
+              let dirs = try? await deps.direccionRepository.fetchDelCliente(clienteId: cid),
+              let activa = dirs.first(where: \.isDefault) ?? dirs.first,
+              let la = activa.lat, let lo = activa.lng else { return }
+        center = TrackCoord(lat: la, lng: lo)
     }
 
     // MARK: - Overlays
