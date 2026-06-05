@@ -9,6 +9,8 @@ public struct Negocio: Identifiable, Equatable, Hashable, Sendable {
     public let address: String?
     public let colonia: String?
     public let municipio: String?
+    public let lat: Double?
+    public let lng: Double?
     public let rating: Double
     public let totalOrders: Int
     public let tiempoPreparacionMin: Int?
@@ -24,6 +26,8 @@ public struct Negocio: Identifiable, Equatable, Hashable, Sendable {
         address: String? = nil,
         colonia: String? = nil,
         municipio: String? = nil,
+        lat: Double? = nil,
+        lng: Double? = nil,
         rating: Double = 0,
         totalOrders: Int = 0,
         tiempoPreparacionMin: Int? = nil,
@@ -38,6 +42,8 @@ public struct Negocio: Identifiable, Equatable, Hashable, Sendable {
         self.address = address
         self.colonia = colonia
         self.municipio = municipio
+        self.lat = lat
+        self.lng = lng
         self.rating = rating
         self.totalOrders = totalOrders
         self.tiempoPreparacionMin = tiempoPreparacionMin

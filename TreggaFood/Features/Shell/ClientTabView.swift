@@ -19,7 +19,7 @@ struct ClientTabView: View {
         ZStack(alignment: .bottom) {
             ZStack {
                 tab(.inicio) { HomeView(catalog: catalog) }
-                tab(.live) { LiveTabView() }
+                tab(.live) { MapaNegociosView(catalog: catalog) }
                 tab(.buscar) { BuscarTabView() }
                 tab(.carrito) { CartTabView() }
                 tab(.cuenta) {

@@ -18,6 +18,8 @@ public final class SupabaseCatalogRepository: CatalogRepository {
         let address: String?
         let colonia: String?
         let municipio: String?
+        let lat: Double?
+        let lng: Double?
         let rating: Double?
         let total_orders: Int?
         let tiempo_preparacion_min: Int?
@@ -34,6 +36,8 @@ public final class SupabaseCatalogRepository: CatalogRepository {
                 address: address,
                 colonia: colonia,
                 municipio: municipio,
+                lat: lat,
+                lng: lng,
                 rating: rating ?? 0,
                 totalOrders: total_orders ?? 0,
                 tiempoPreparacionMin: tiempo_preparacion_min,
