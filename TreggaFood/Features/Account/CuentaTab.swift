@@ -30,6 +30,7 @@ struct CuentaTab: View {
     @State private var viewModel: AccountViewModel?
     @State private var path: [AccountRoute] = []
     @State private var showHelp = false
+    @Environment(\.clientShell) private var shell
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -44,7 +45,8 @@ struct CuentaTab: View {
             .navigationDestination(for: AccountRoute.self) { route in
                 if let viewModel {
                     destination(route, viewModel: viewModel)
-                        .toolbar(.hidden, for: .tabBar)
+                        .onAppear { shell?.barHidden = true }
+                        .onDisappear { shell?.barHidden = false }
                 }
             }
         }

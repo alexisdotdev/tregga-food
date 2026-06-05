@@ -2,75 +2,62 @@ import SwiftUI
 import TreggaCore
 import TreggaDesignSystem
 
-/// Shell de la app autenticada: TabView con Inicio, Buscar, Pedidos y Cuenta.
-/// Inicio es la pantalla real (discovery + menú); el resto son placeholders (F3+).
+/// Shell de la app autenticada. Barra de navegación **flotante** (diseño Claude
+/// Design): Inicio · Live · Buscar · Carrito · Cuenta. Las pestañas se mantienen
+/// vivas (preservan su navegación al cambiar). La barra se oculta en flujos
+/// profundos vía `ClientShell.barHidden`.
 struct ClientTabView: View {
     @Environment(\.appDependencies) private var deps
+    @Environment(\.cartStore) private var cartEnv
     /// Callback hacia ContentView para volver la app a `.unauthenticated`.
     var onSignOut: () -> Void = {}
+
+    @State private var shell = ClientShell()
     @State private var showSignOut = false
 
     var body: some View {
-        // El diálogo de cerrar sesión se presenta a nivel del TabView (en un
-        // ZStack por encima) para que cubra el bottom bar Liquid Glass; si se
-        // mostrara dentro de un tab, la barra flotante quedaría encima.
-        ZStack {
-            TabView {
-                HomeView(catalog: catalog)
-                    .tabItem { Label("Inicio", systemImage: "house.fill") }
-
-                PlaceholderTab(
-                    icon: "magnifyingglass",
-                    title: "Buscar",
-                    message: "Pronto podrás explorar negocios por tipo de comida."
-                )
-                .tabItem { Label("Buscar", systemImage: "magnifyingglass") }
-
-                OrdersTab()
-                    .tabItem { Label("Pedidos", systemImage: "bag.fill") }
-
-                CuentaTab(
-                    onSignOut: onSignOut,
-                    onRequestSignOut: { withAnimation(.easeInOut(duration: 0.25)) { showSignOut = true } }
-                )
-                .tabItem { Label("Cuenta", systemImage: "person.crop.circle.fill") }
+        ZStack(alignment: .bottom) {
+            ZStack {
+                tab(.inicio) { HomeView(catalog: catalog) }
+                tab(.live) { LiveTabView() }
+                tab(.buscar) { BuscarTabView() }
+                tab(.carrito) { CartTabView() }
+                tab(.cuenta) {
+                    CuentaTab(
+                        onSignOut: onSignOut,
+                        onRequestSignOut: { withAnimation(.easeInOut(duration: 0.25)) { showSignOut = true } }
+                    )
+                }
             }
-            .tint(TreggaColors.primary)
+
+            if !shell.barHidden {
+                ClientBottomBar(tab: Bindable(shell).tab, cartCount: cartEnv?.count ?? 0)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
 
             if showSignOut {
                 LogoutConfirmDialog(isPresented: $showSignOut, onConfirm: onSignOut)
             }
         }
+        .environment(\.clientShell, shell)
+        .animation(.easeInOut(duration: 0.22), value: shell.barHidden)
+    }
+
+    /// Pestaña keep-alive: visible solo si está activa; reserva espacio para la
+    /// barra flotante cuando ésta se muestra.
+    @ViewBuilder
+    private func tab<Content: View>(_ which: ClientTab, @ViewBuilder _ content: () -> Content) -> some View {
+        let active = shell.tab == which
+        content()
+            .safeAreaInset(edge: .bottom) {
+                Color.clear.frame(height: shell.barHidden ? 0 : 72)
+            }
+            .opacity(active ? 1 : 0)
+            .allowsHitTesting(active)
+            .zIndex(active ? 1 : 0)
     }
 
     private var catalog: CatalogRepository {
         deps?.catalogRepository ?? MockCatalogRepository()
-    }
-}
-
-/// Placeholder simple para tabs aún no implementados.
-private struct PlaceholderTab: View {
-    let icon: String
-    let title: String
-    let message: String
-
-    var body: some View {
-        VStack(spacing: 12) {
-            TreggaIcon(sfSymbol: icon, size: 40, color: TreggaColors.textTer)
-            Text(title)
-                .treggaStyle(.h3)
-                .foregroundStyle(TreggaColors.text)
-            Text("En construcción")
-                .treggaStyle(.caption)
-                .textCase(.uppercase)
-                .foregroundStyle(TreggaColors.primary)
-            Text(message)
-                .treggaStyle(.sub)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(TreggaColors.textSec)
-                .padding(.horizontal, 40)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(TreggaColors.bg)
     }
 }

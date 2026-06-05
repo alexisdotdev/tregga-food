@@ -11,6 +11,7 @@ struct RestaurantView: View {
     @State private var viewModel: RestaurantViewModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.cartStore) private var cartEnv
+    @Environment(\.clientShell) private var shell
 
     init(negocio: Negocio, catalog: CatalogRepository, path: Binding<[CatalogRoute]>) {
         self.negocio = negocio
@@ -38,7 +39,7 @@ struct RestaurantView: View {
             .background(TreggaColors.bg)
             .ignoresSafeArea(edges: .top)
 
-            CartFloatingBar(cart: cart) { path.append(.cart) }
+            CartFloatingBar(cart: cart) { shell?.tab = .carrito }
                 .animation(.spring(response: 0.35, dampingFraction: 0.85), value: cart.count)
         }
         .navigationBarBackButtonHidden(true)

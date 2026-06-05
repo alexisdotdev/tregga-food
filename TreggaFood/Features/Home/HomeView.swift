@@ -8,13 +8,13 @@ struct HomeView: View {
     @State private var path: [CatalogRoute] = []
     @State private var clienteId: UUID?
     @State private var direccionDefault: DireccionCliente?
-    @State private var pedidoEntregado: PedidoTracking?
     @State private var showNotifications = false
     @State private var showOffers = false
     private let catalog: CatalogRepository
 
     @Environment(\.cartStore) private var cartEnv
     @Environment(\.appDependencies) private var deps
+    @Environment(\.clientShell) private var shell
 
     init(catalog: CatalogRepository) {
         self.catalog = catalog
@@ -36,21 +36,18 @@ struct HomeView: View {
                             .padding(.top, 18)
                     }
                     .padding(.top, 8)
-                    .padding(.bottom, cart.isEmpty ? 24 : 88)
+                    .padding(.bottom, 8)
                 }
                 .background(TreggaColors.bg)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar(.hidden, for: .navigationBar)
                 .navigationDestination(for: CatalogRoute.self) { route in
                     destination(for: route)
-                        // Oculta el bottom bar flotante en los flujos con CTA al
-                        // fondo (restaurante/item/carrito/checkout/tracking/chat)
-                        // para que los botones no queden detrás de la barra.
-                        .toolbar(.hidden, for: .tabBar)
+                        // Oculta la barra flotante en flujos profundos con CTA al
+                        // fondo (restaurante/item) para que no queden detrás.
+                        .onAppear { shell?.barHidden = true }
+                        .onDisappear { shell?.barHidden = false }
                 }
-
-                CartFloatingBar(cart: cart) { path.append(.cart) }
-                    .animation(.spring(response: 0.35, dampingFraction: 0.85), value: cart.count)
             }
         }
         .task { await viewModel.load() }
@@ -66,18 +63,6 @@ struct HomeView: View {
             Button("Cancelar", role: .cancel) { cart.resolverConflicto(reemplazar: false) }
         } message: {
             Text("Tu carrito tiene productos de \(cart.negocioName). Para pedir de otro negocio vaciaremos el carrito actual.")
-        }
-        .fullScreenCover(item: $pedidoEntregado) { pedido in
-            DeliveryRatingFlow(
-                pedido: pedido,
-                clienteId: clienteId,
-                repo: deps?.calificacionRepository ?? MockCalificacionRepository(),
-                onDone: {
-                    pedidoEntregado = nil
-                    cart.clear()
-                    path.removeAll()
-                }
-            )
         }
         .sheet(isPresented: $showNotifications) {
             NavigationStack {
@@ -109,41 +94,10 @@ struct HomeView: View {
                     path.removeLast()
                 }
             )
-        case .cart:
-            CartView(cart: cart, onCheckout: { path.append(.checkout) })
-        case .checkout:
-            CheckoutView(
-                viewModel: CheckoutViewModel(
-                    cart: cart,
-                    clienteId: clienteId ?? UUID(),
-                    pedidoRepo: deps?.pedidoRepository ?? MockPedidoRepository(),
-                    direccionRepo: deps?.direccionRepository ?? MockDireccionClienteRepository()
-                ),
-                onFinish: { resultado in
-                    cart.clear()
-                    path = [.tracking(pedidoId: resultado.id)]
-                }
-            )
-        case .tracking(let pedidoId):
-            TrackingView(
-                viewModel: TrackingViewModel(
-                    pedidoId: pedidoId,
-                    repo: deps?.trackingRepository ?? MockTrackingRepository()
-                ),
-                onChat: { name in path.append(.chat(pedidoId: pedidoId, repartidorName: name)) },
-                onCompleted: { pedido in pedidoEntregado = pedido },
-                onBack: { path.removeAll() }
-            )
-        case .chat(let pedidoId, let repartidorName):
-            ChatView(
-                viewModel: ChatViewModel(
-                    pedidoId: pedidoId,
-                    senderId: deps?.authSession.tokens?.userId,
-                    repo: deps?.mensajeRepository ?? MockMensajeRepository()
-                ),
-                repartidorName: repartidorName,
-                onBack: { if !path.isEmpty { path.removeLast() } }
-            )
+        case .cart, .checkout, .tracking, .chat:
+            // El flujo de carrito (carrito → checkout → tracking → chat) vive
+            // ahora en la pestaña Carrito (CartTabView). Home solo descubre.
+            EmptyView()
         }
     }
 
