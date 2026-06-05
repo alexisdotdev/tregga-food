@@ -525,6 +525,10 @@ public struct SignupAddressView: View {
 
                 Spacer().frame(height: 16)
 
+                miniMapa
+
+                Spacer().frame(height: 16)
+
                 VStack(spacing: 14) {
                     plainField("Calle y número", text: $state.direccionCalle)
                     plainField("C.P.", text: $state.codigoPostal, keyboard: .numberPad)
@@ -562,6 +566,36 @@ public struct SignupAddressView: View {
         }
         .safeAreaInset(edge: .bottom) { backContinueBar(canContinue: state.addressStepValid, onContinue: onContinue) }
         .background(TreggaColors.bg)
+    }
+
+    private var miniMapa: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 14).fill(TreggaColors.mapBg)
+            Canvas { ctx, size in
+                var road1 = Path()
+                road1.move(to: CGPoint(x: 0, y: size.height * 0.46))
+                road1.addQuadCurve(
+                    to: CGPoint(x: size.width, y: size.height * 0.77),
+                    control: CGPoint(x: size.width * 0.67, y: size.height * 0.38)
+                )
+                ctx.stroke(road1, with: .color(TreggaColors.mapRoad), lineWidth: 22)
+
+                var road2 = Path()
+                road2.move(to: CGPoint(x: size.width * 0.42, y: 0))
+                road2.addQuadCurve(
+                    to: CGPoint(x: size.width * 0.28, y: size.height),
+                    control: CGPoint(x: size.width * 0.44, y: size.height * 0.62)
+                )
+                ctx.stroke(road2, with: .color(TreggaColors.mapRoad), lineWidth: 18)
+            }
+            Circle()
+                .fill(TreggaColors.primary)
+                .overlay(Circle().stroke(TreggaColors.bg, lineWidth: 3))
+                .frame(width: 28, height: 28)
+        }
+        .frame(height: 130)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .padding(.horizontal, 20)
     }
 
     @ViewBuilder
