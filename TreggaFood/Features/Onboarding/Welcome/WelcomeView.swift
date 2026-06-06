@@ -79,11 +79,18 @@ public struct WelcomeView: View {
     }
 
     private var brandLogo: some View {
-        Image("logo-tregga")
-            .resizable()
-            .scaledToFit()
-            .frame(height: 30)
-            .padding(.horizontal, 20)
+        HStack(spacing: 8) {
+            Image("logo-tregga")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 30)
+            Text("FOOD")
+                .font(.system(size: 11, weight: .heavy))
+                .tracking(2.5)
+                .foregroundStyle(TreggaColors.primary)
+            Spacer()
+        }
+        .padding(.horizontal, 20)
     }
 
     private var headline: some View {
