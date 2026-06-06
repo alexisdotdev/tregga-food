@@ -54,6 +54,7 @@ struct ContentView: View {
             }
         }
         .preferredColorScheme(appearance.colorScheme)
+        .onAppear { KeyboardDismiss.install() }
         .onChange(of: phase) { _, newValue in
             if newValue == .authenticated { maybeOfferBiometric() }
         }
