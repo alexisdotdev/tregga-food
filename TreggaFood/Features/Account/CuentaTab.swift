@@ -201,7 +201,7 @@ struct AccountHubView: View {
 
                 Spacer(minLength: 24)
             }
-            .padding(.bottom, 24)
+            .padding(.bottom, 56)
         }
         .background(TreggaColors.bg)
         .refreshable { await viewModel.cargar() }
