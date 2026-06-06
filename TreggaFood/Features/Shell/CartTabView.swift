@@ -47,7 +47,7 @@ struct CartTabView: View {
             .navigationDestination(for: CartRoute.self) { route in
                 destination(for: route)
             }
-            .onChange(of: path) { _, p in shell?.barHidden = !p.isEmpty }
+            .onChange(of: path) { _, p in shell?.setDeep(.carrito, deep: !p.isEmpty) }
         }
         .task { await resolveCliente() }
         .sheet(isPresented: $showPedidos) {

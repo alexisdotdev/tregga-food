@@ -71,7 +71,7 @@ struct MapaNegociosView: View {
             .navigationDestination(for: CatalogRoute.self) { route in
                 destination(for: route)
             }
-            .onChange(of: path) { _, p in shell?.barHidden = !p.isEmpty }
+            .onChange(of: path) { _, p in shell?.setDeep(.live, deep: !p.isEmpty) }
         }
         .task {
             await resolverCentro()

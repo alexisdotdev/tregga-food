@@ -48,7 +48,7 @@ struct HomeView: View {
                 // Oculta la barra flotante mientras haya navegación profunda
                 // (restaurante/item con CTA al fondo). Basado en la profundidad
                 // del path para evitar carreras entre onAppear/onDisappear.
-                .onChange(of: path) { _, p in shell?.barHidden = !p.isEmpty }
+                .onChange(of: path) { _, p in shell?.setDeep(.inicio, deep: !p.isEmpty) }
             }
         }
         .task { await viewModel.load() }

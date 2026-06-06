@@ -13,12 +13,16 @@ enum ClientTab: Hashable {
 @MainActor
 @Observable
 final class ClientShell {
-    /// Al cambiar de pestaña siempre re-mostramos la barra: evita que un flujo
-    /// profundo que la ocultó deje la nueva pestaña sin barra.
-    var tab: ClientTab = .inicio {
-        didSet { if tab != oldValue { barHidden = false } }
+    var tab: ClientTab = .inicio
+
+    /// Pestañas que están en navegación profunda (path no vacío). La barra
+    /// flotante se oculta cuando la pestaña **activa** está aquí — así no
+    /// reaparece sobre los CTAs al volver a una pestaña que quedó profunda.
+    private(set) var deepTabs: Set<ClientTab> = []
+
+    func setDeep(_ tab: ClientTab, deep: Bool) {
+        if deep { deepTabs.insert(tab) } else { deepTabs.remove(tab) }
     }
-    var barHidden = false
 }
 
 private struct ClientShellKey: EnvironmentKey {

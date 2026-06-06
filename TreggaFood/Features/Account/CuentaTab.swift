@@ -49,7 +49,7 @@ struct CuentaTab: View {
                     destination(route, viewModel: viewModel)
                 }
             }
-            .onChange(of: path) { _, p in shell?.barHidden = !p.isEmpty }
+            .onChange(of: path) { _, p in shell?.setDeep(.cuenta, deep: !p.isEmpty) }
         }
         .tint(TreggaColors.primary)
         .sheet(isPresented: $showHelp) {

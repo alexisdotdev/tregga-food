@@ -43,14 +43,15 @@ struct ClientTabView: View {
         .animation(.easeInOut(duration: 0.22), value: mostrarBarra)
     }
 
-    /// La barra se oculta en flujos profundos (`barHidden`) y en el carrito con
-    /// productos, que tiene su propio CTA "Ir a pagar" a pantalla completa.
+    /// La barra se oculta cuando la pestaña activa está en navegación profunda, y
+    /// en el carrito con productos (tiene su propio CTA "Ir a pagar" a pantalla
+    /// completa).
     private var cartFlowActivo: Bool {
         shell.tab == .carrito && (cartEnv?.count ?? 0) > 0
     }
 
     private var mostrarBarra: Bool {
-        !shell.barHidden && !cartFlowActivo
+        !shell.deepTabs.contains(shell.tab) && !cartFlowActivo
     }
 
     /// Pestaña keep-alive: visible solo si está activa; reserva espacio para la
