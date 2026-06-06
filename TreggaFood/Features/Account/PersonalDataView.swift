@@ -22,6 +22,9 @@ struct PersonalDataView: View {
     @State private var pickerItem: PhotosPickerItem?
     @State private var cropImage: AvatarCropImage?
     @State private var subiendo = false
+    @State private var showSourceDialog = false
+    @State private var showLibrary = false
+    @State private var showCamera = false
 
     var body: some View {
         ScrollView {
@@ -89,6 +92,18 @@ struct PersonalDataView: View {
                 }
             )
         }
+        .confirmationDialog("Foto de perfil", isPresented: $showSourceDialog, titleVisibility: .visible) {
+            if CameraPicker.disponible {
+                Button("Tomar selfie") { showCamera = true }
+            }
+            Button("Elegir de la galería") { showLibrary = true }
+            Button("Cancelar", role: .cancel) {}
+        }
+        .photosPicker(isPresented: $showLibrary, selection: $pickerItem, matching: .images)
+        .fullScreenCover(isPresented: $showCamera) {
+            CameraPicker { img in cropImage = AvatarCropImage(image: img) }
+                .ignoresSafeArea()
+        }
     }
 
     private var avatar: some View {
@@ -98,7 +113,7 @@ struct PersonalDataView: View {
                     .frame(width: 96, height: 96)
                     .clipShape(Circle())
 
-                PhotosPicker(selection: $pickerItem, matching: .images, photoLibrary: .shared()) {
+                Button { showSourceDialog = true } label: {
                     ZStack {
                         Circle().fill(TreggaColors.primary).frame(width: 30, height: 30)
                         if subiendo {
@@ -111,6 +126,7 @@ struct PersonalDataView: View {
                     }
                     .overlay(Circle().stroke(TreggaColors.bg, lineWidth: 2))
                 }
+                .buttonStyle(.plain)
                 .disabled(subiendo)
             }
             Text(viewModel.displayName)

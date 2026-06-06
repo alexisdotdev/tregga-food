@@ -317,6 +317,9 @@ public struct SignupPhotoView: View {
     @State private var cropImage: AvatarCropImage?
     @State private var uploading = false
     @State private var uploadError: String?
+    @State private var showSourceDialog = false
+    @State private var showLibrary = false
+    @State private var showCamera = false
     let onBack: () -> Void
     let onContinue: () -> Void
     let storage: StorageService
@@ -370,7 +373,7 @@ public struct SignupPhotoView: View {
             let hasPhoto = state.fotoPerfilURL != nil
             VStack(spacing: 10) {
                 HStack(spacing: 10) {
-                    PhotosPicker(selection: $pickerItem, matching: .images, photoLibrary: .shared()) {
+                    Button { showSourceDialog = true } label: {
                         Text(uploading ? "Subiendo…" : (hasPhoto ? "Cambiar foto" : "Elegir foto"))
                             .font(.system(size: 14, weight: .heavy))
                             .foregroundStyle(TreggaColors.text)
@@ -380,6 +383,7 @@ public struct SignupPhotoView: View {
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(TreggaColors.border, lineWidth: 1))
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
+                    .buttonStyle(.plain)
                     .disabled(uploading)
 
                     TreggaButton("Continuar", kind: .primary, action: onContinue)
@@ -408,6 +412,18 @@ public struct SignupPhotoView: View {
                     Task { await uploadImage(cropped) }
                 }
             )
+        }
+        .confirmationDialog("Foto de perfil", isPresented: $showSourceDialog, titleVisibility: .visible) {
+            if CameraPicker.disponible {
+                Button("Tomar selfie") { showCamera = true }
+            }
+            Button("Elegir de la galería") { showLibrary = true }
+            Button("Cancelar", role: .cancel) {}
+        }
+        .photosPicker(isPresented: $showLibrary, selection: $pickerItem, matching: .images)
+        .fullScreenCover(isPresented: $showCamera) {
+            CameraPicker { img in cropImage = AvatarCropImage(image: img) }
+                .ignoresSafeArea()
         }
     }
 

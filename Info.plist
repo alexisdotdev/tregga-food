@@ -9,7 +9,7 @@
 	<key>GOOGLE_MAPS_MAP_ID</key>
 	<string>$(GOOGLE_MAPS_MAP_ID)</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Tregga necesita la cámara para que tomes foto de tu INE, vehículo y recibos de pedidos.</string>
+	<string>Tregga usa la cámara para que tomes tu foto de perfil.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Tregga usa Face ID para desbloquear la app y proteger tu cuenta.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
