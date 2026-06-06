@@ -70,9 +70,8 @@ struct MapaNegociosView: View {
             .animation(.spring(response: 0.32, dampingFraction: 0.85), value: seleccionado)
             .navigationDestination(for: CatalogRoute.self) { route in
                 destination(for: route)
-                    .onAppear { shell?.barHidden = true }
-                    .onDisappear { shell?.barHidden = false }
             }
+            .onChange(of: path) { _, p in shell?.barHidden = !p.isEmpty }
         }
         .task {
             await resolverCentro()

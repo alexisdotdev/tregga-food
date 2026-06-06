@@ -30,7 +30,7 @@ struct ClientTabView: View {
                 }
             }
 
-            if !shell.barHidden {
+            if mostrarBarra {
                 ClientBottomBar(tab: Bindable(shell).tab, cartCount: cartEnv?.count ?? 0)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -40,7 +40,17 @@ struct ClientTabView: View {
             }
         }
         .environment(\.clientShell, shell)
-        .animation(.easeInOut(duration: 0.22), value: shell.barHidden)
+        .animation(.easeInOut(duration: 0.22), value: mostrarBarra)
+    }
+
+    /// La barra se oculta en flujos profundos (`barHidden`) y en el carrito con
+    /// productos, que tiene su propio CTA "Ir a pagar" a pantalla completa.
+    private var cartFlowActivo: Bool {
+        shell.tab == .carrito && (cartEnv?.count ?? 0) > 0
+    }
+
+    private var mostrarBarra: Bool {
+        !shell.barHidden && !cartFlowActivo
     }
 
     /// Pestaña keep-alive: visible solo si está activa; reserva espacio para la
@@ -50,7 +60,7 @@ struct ClientTabView: View {
         let active = shell.tab == which
         content()
             .safeAreaInset(edge: .bottom) {
-                Color.clear.frame(height: shell.barHidden ? 0 : 72)
+                Color.clear.frame(height: mostrarBarra ? 72 : 0)
             }
             .opacity(active ? 1 : 0)
             .allowsHitTesting(active)

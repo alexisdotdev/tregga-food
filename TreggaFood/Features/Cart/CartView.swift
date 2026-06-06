@@ -8,7 +8,14 @@ struct CartView: View {
     @Bindable var cart: CartStore
     /// Empuja el checkout.
     let onCheckout: () -> Void
+    /// Cierre del carrito. Si se provee, el ✕ lo llama (p.ej. volver a Inicio en
+    /// el contexto de pestaña); si no, usa `dismiss`.
+    var onClose: (() -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
+
+    private func cerrar() {
+        if let onClose { onClose() } else { dismiss() }
+    }
 
     @State private var nota: String = ""
     private let deliveryFeeEstimado: Decimal = 25
@@ -46,7 +53,7 @@ struct CartView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 12) {
-                Button { dismiss() } label: {
+                Button { cerrar() } label: {
                     TreggaIcon(.close, size: 18, color: TreggaColors.text)
                         .frame(width: 36, height: 36)
                         .background(TreggaColors.surface, in: Circle())
@@ -138,7 +145,7 @@ struct CartView: View {
     private var emptyState: some View {
         VStack(spacing: 12) {
             HStack {
-                Button { dismiss() } label: {
+                Button { cerrar() } label: {
                     TreggaIcon(.close, size: 18, color: TreggaColors.text)
                         .frame(width: 36, height: 36)
                         .background(TreggaColors.surface, in: Circle())

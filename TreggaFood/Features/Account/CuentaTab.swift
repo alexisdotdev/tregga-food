@@ -47,10 +47,9 @@ struct CuentaTab: View {
             .navigationDestination(for: AccountRoute.self) { route in
                 if let viewModel {
                     destination(route, viewModel: viewModel)
-                        .onAppear { shell?.barHidden = true }
-                        .onDisappear { shell?.barHidden = false }
                 }
             }
+            .onChange(of: path) { _, p in shell?.barHidden = !p.isEmpty }
         }
         .tint(TreggaColors.primary)
         .sheet(isPresented: $showHelp) {

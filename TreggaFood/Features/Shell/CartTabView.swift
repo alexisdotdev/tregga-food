@@ -29,18 +29,25 @@ struct CartTabView: View {
                 if cart.isEmpty {
                     emptyState
                 } else {
-                    CartView(cart: cart, onCheckout: { path.append(.checkout) })
+                    CartView(
+                        cart: cart,
+                        onCheckout: { path.append(.checkout) },
+                        onClose: { shell?.tab = .inicio }
+                    )
                 }
             }
             .background(TreggaColors.bg)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(.hidden, for: .navigationBar)
-            .safeAreaInset(edge: .top) { headerBar }
+            .safeAreaInset(edge: .top) {
+                // Con productos, CartView muestra su propio header (✕ + negocio);
+                // evitamos el doble header mostrando "Carritos/Pedidos" solo vacío.
+                if cart.isEmpty { headerBar }
+            }
             .navigationDestination(for: CartRoute.self) { route in
                 destination(for: route)
-                    .onAppear { shell?.barHidden = true }
-                    .onDisappear { shell?.barHidden = false }
             }
+            .onChange(of: path) { _, p in shell?.barHidden = !p.isEmpty }
         }
         .task { await resolveCliente() }
         .sheet(isPresented: $showPedidos) {

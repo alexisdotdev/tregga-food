@@ -44,11 +44,11 @@ struct HomeView: View {
                 .toolbar(.hidden, for: .navigationBar)
                 .navigationDestination(for: CatalogRoute.self) { route in
                     destination(for: route)
-                        // Oculta la barra flotante en flujos profundos con CTA al
-                        // fondo (restaurante/item) para que no queden detrás.
-                        .onAppear { shell?.barHidden = true }
-                        .onDisappear { shell?.barHidden = false }
                 }
+                // Oculta la barra flotante mientras haya navegación profunda
+                // (restaurante/item con CTA al fondo). Basado en la profundidad
+                // del path para evitar carreras entre onAppear/onDisappear.
+                .onChange(of: path) { _, p in shell?.barHidden = !p.isEmpty }
             }
         }
         .task { await viewModel.load() }
