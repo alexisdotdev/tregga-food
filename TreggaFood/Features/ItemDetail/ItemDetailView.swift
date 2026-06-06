@@ -211,6 +211,7 @@ struct ItemDetailView: View {
                     .font(.system(size: 16, weight: .heavy))
                     .foregroundStyle(TreggaColors.onPrimary)
                     .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(!viewModel.puedeAgregar)

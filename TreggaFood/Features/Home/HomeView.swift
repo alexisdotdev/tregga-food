@@ -146,6 +146,7 @@ struct HomeView: View {
                         TreggaIcon(.chevD, size: 14, color: TreggaColors.textSec)
                     }
                 }
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             Spacer()

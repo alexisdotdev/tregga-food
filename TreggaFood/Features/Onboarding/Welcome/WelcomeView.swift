@@ -212,6 +212,7 @@ public struct WelcomeView: View {
                     .foregroundStyle(TreggaColors.primary)
             }
             .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
         }
         .padding(.horizontal, 20)
     }

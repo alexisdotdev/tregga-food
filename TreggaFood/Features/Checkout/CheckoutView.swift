@@ -114,6 +114,7 @@ struct CheckoutView: View {
                             .stroke(style: StrokeStyle(lineWidth: 1.5, dash: [5]))
                             .foregroundStyle(TreggaColors.border)
                     )
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
