@@ -1056,29 +1056,30 @@ public struct SignupSuccessView: View {
                 startRadius: 0,
                 endRadius: 200
             )
-            VStack(spacing: 0) {
-                ZStack {
-                    Circle().fill(Color.white.opacity(0.22)).frame(width: 80, height: 80)
-                    TreggaIcon(.check, size: 38, color: .white)
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ZStack {
+                        Circle().fill(Color.white.opacity(0.22)).frame(width: 60, height: 60)
+                        TreggaIcon(.check, size: 30, color: .white)
+                    }
+                    Text("¡Cuenta creada!")
+                        .font(.system(size: 25, weight: .heavy))
+                        .tracking(-0.5)
+                        .foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 14)
+                    Text("Hola **\(firstName)**, ya formas parte de Tregga. ¡A pedir!")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.white.opacity(0.92))
+                        .lineSpacing(14 * 0.45)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 8)
                 }
-                Text("¡Cuenta creada!")
-                    .font(.system(size: 30, weight: .heavy))
-                    .tracking(-0.6)
-                    .foregroundStyle(.white)
-                    .padding(.top, 16)
-                Text("Hola **\(firstName)**, ya formas parte de Tregga. ¡A pedir!")
-                    .font(.system(size: 14.5))
-                    .foregroundStyle(.white.opacity(0.92))
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(14.5 * 0.45)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 8)
-
+                Spacer(minLength: 0)
                 Image("account-created")
                     .resizable()
                     .scaledToFit()
-                    .frame(maxWidth: 240)
-                    .padding(.top, 18)
+                    .frame(width: 132, height: 132)
             }
             .padding(22)
         }
