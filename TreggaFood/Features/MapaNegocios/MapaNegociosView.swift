@@ -23,8 +23,9 @@ final class MapaNegociosViewModel {
     }
 }
 
-/// Pestaña 📍: mapa de discovery con los negocios disponibles como pines. Tap en
-/// un pin → tarjeta del negocio → abrir su menú. Vacío donde no hay negocios.
+/// Pestaña 📍: mapa de discovery con los negocios como pines + un drawer inferior
+/// (estilo Uber) que lista los negocios; al levantarlo aparece el buscador. Tap en
+/// un negocio → su menú.
 struct MapaNegociosView: View {
     @Environment(\.appDependencies) private var deps
     @Environment(\.cartStore) private var cartEnv
@@ -33,8 +34,10 @@ struct MapaNegociosView: View {
     @State private var viewModel: MapaNegociosViewModel
     @State private var mapController = MapController()
     @State private var path: [CatalogRoute] = []
-    @State private var seleccionado: Negocio?
     @State private var center: TrackCoord?
+    @State private var expanded = false
+    @State private var query = ""
+    @FocusState private var searchFocused: Bool
 
     private let catalog: CatalogRepository
     private var cart: CartStore { cartEnv ?? CartStore() }
@@ -44,34 +47,37 @@ struct MapaNegociosView: View {
         _viewModel = State(initialValue: MapaNegociosViewModel(catalog: catalog))
     }
 
+    private var filtrados: [Negocio] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !q.isEmpty else { return viewModel.negocios }
+        return viewModel.negocios.filter {
+            $0.name.lowercased().contains(q) || ($0.tipo?.lowercased().contains(q) ?? false)
+        }
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
-            ZStack(alignment: .bottom) {
-                NegociosMapView(
-                    negocios: viewModel.conCoords,
-                    center: center,
-                    onSelect: { seleccionado = $0 },
-                    controller: mapController
-                )
-                .ignoresSafeArea()
-                .overlay(alignment: .bottomTrailing) { mapControls }
+            GeometryReader { geo in
+                ZStack(alignment: .bottom) {
+                    NegociosMapView(
+                        negocios: viewModel.conCoords,
+                        center: center,
+                        onSelect: { path.append(.restaurant($0)) },
+                        controller: mapController
+                    )
+                    .ignoresSafeArea()
+                    .overlay(alignment: .bottomTrailing) { mapControls }
 
-                topBar
-
-                if let negocio = seleccionado {
-                    negocioCard(negocio)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                } else if viewModel.conCoords.isEmpty && !viewModel.loading {
-                    emptyCard
+                    drawer(maxHeight: geo.size.height)
                 }
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar(.hidden, for: .navigationBar)
+                .animation(.spring(response: 0.34, dampingFraction: 0.86), value: expanded)
+                .navigationDestination(for: CatalogRoute.self) { route in
+                    destination(for: route)
+                }
+                .onChange(of: path) { _, p in shell?.setDeep(.live, deep: !p.isEmpty) }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar(.hidden, for: .navigationBar)
-            .animation(.spring(response: 0.32, dampingFraction: 0.85), value: seleccionado)
-            .navigationDestination(for: CatalogRoute.self) { route in
-                destination(for: route)
-            }
-            .onChange(of: path) { _, p in shell?.setDeep(.live, deep: !p.isEmpty) }
         }
         .task {
             await resolverCentro()
@@ -89,27 +95,94 @@ struct MapaNegociosView: View {
         center = TrackCoord(lat: la, lng: lo)
     }
 
-    // MARK: - Overlays
+    // MARK: - Drawer
 
-    private var topBar: some View {
-        VStack {
-            HStack(spacing: 10) {
-                TreggaIcon(.pin, size: 18, color: TreggaColors.primary)
-                Text(viewModel.conCoords.isEmpty ? "Negocios cerca de ti" : "\(viewModel.conCoords.count) negocios cerca")
-                    .font(.system(size: 15, weight: .heavy))
-                    .foregroundStyle(TreggaColors.text)
-                Spacer()
+    @ViewBuilder
+    private func drawer(maxHeight: CGFloat) -> some View {
+        let peek: CGFloat = 280
+        let full = max(peek, maxHeight * 0.9)
+        VStack(spacing: 0) {
+            // Zona "agarrable": handle + header + buscador (al expandir).
+            VStack(spacing: 0) {
+                Capsule()
+                    .fill(TreggaColors.border)
+                    .frame(width: 42, height: 5)
+                    .padding(.top, 8)
+                    .padding(.bottom, 10)
+
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Negocios cerca de ti")
+                            .font(.system(size: 20, weight: .heavy))
+                            .tracking(-0.3)
+                            .foregroundStyle(TreggaColors.text)
+                        Text(subtituloHeader)
+                            .font(.system(size: 13))
+                            .foregroundStyle(TreggaColors.textSec)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+
+                if expanded {
+                    SearchBar(text: $query, placeholder: "Busca un negocio o tipo de comida")
+                        .focused($searchFocused)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                }
+            }
+            .padding(.bottom, 10)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 8)
+                    .onEnded { v in
+                        if v.translation.height < -40 { expanded = true }
+                        else if v.translation.height > 40 { expanded = false; searchFocused = false }
+                    }
+            )
+            .onTapGesture { if !expanded { expanded = true } }
+
+            lista
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: expanded ? full : peek, alignment: .top)
+        .background(TreggaColors.bg)
+        .clipShape(.rect(topLeadingRadius: 24, topTrailingRadius: 24))
+        .shadow(color: .black.opacity(0.16), radius: 20, y: -4)
+    }
+
+    private var subtituloHeader: String {
+        if viewModel.loading { return "Cargando…" }
+        let n = viewModel.negocios.count
+        return n == 0 ? "Sin negocios en tu zona todavía" : "\(n) negocio\(n == 1 ? "" : "s") cerca de ti"
+    }
+
+    private var lista: some View {
+        ScrollView {
+            LazyVStack(spacing: 16) {
+                ForEach(filtrados) { negocio in
+                    Button { path.append(.restaurant(negocio)) } label: {
+                        FoodCard(negocio: negocio)
+                    }
+                    .buttonStyle(.plain)
+                }
+                if filtrados.isEmpty && !viewModel.loading {
+                    Text(query.isEmpty ? "No hay negocios disponibles." : "Sin resultados para “\(query)”.")
+                        .font(.system(size: 14))
+                        .foregroundStyle(TreggaColors.textSec)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 30)
+                }
             }
             .padding(.horizontal, 16)
-            .frame(height: 52)
-            .background(TreggaColors.card, in: Capsule())
-            .overlay(Capsule().stroke(TreggaColors.border, lineWidth: 1))
-            .shadow(color: .black.opacity(0.10), radius: 12, y: 6)
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            Spacer()
+            .padding(.top, 6)
+            .padding(.bottom, 28)
         }
+        .scrollDisabled(!expanded)
+        .scrollDismissesKeyboard(.immediately)
     }
+
+    // MARK: - Controles del mapa
 
     private var mapControls: some View {
         VStack(spacing: 8) {
@@ -123,7 +196,7 @@ struct MapaNegociosView: View {
             }
         }
         .padding(.trailing, 14)
-        .padding(.bottom, seleccionado != nil ? 200 : 120)
+        .padding(.bottom, 296)
     }
 
     private func mapControlButton(_ icon: String, action: @escaping () -> Void) -> some View {
@@ -133,71 +206,6 @@ struct MapaNegociosView: View {
                 .treggaGlass(in: Circle())
         }
         .buttonStyle(.plain)
-    }
-
-    private func negocioCard(_ negocio: Negocio) -> some View {
-        Button { path.append(.restaurant(negocio)) } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 14).fill(TreggaColors.primarySoft).frame(width: 54, height: 54)
-                    TreggaIcon(.bag, size: 26, color: TreggaColors.primary)
-                }
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(negocio.name)
-                        .font(.system(size: 16, weight: .heavy))
-                        .foregroundStyle(TreggaColors.text)
-                        .lineLimit(1)
-                    if let tipo = negocio.tipo {
-                        Text(tipo)
-                            .font(.system(size: 13))
-                            .foregroundStyle(TreggaColors.textSec)
-                            .lineLimit(1)
-                    }
-                    HStack(spacing: 8) {
-                        HStack(spacing: 3) {
-                            TreggaIcon(.star, size: 12, color: TreggaColors.warning)
-                            Text(negocio.ratingLabel)
-                                .font(.system(size: 12.5, weight: .heavy))
-                                .foregroundStyle(TreggaColors.text)
-                        }
-                        Text("·").foregroundStyle(TreggaColors.textTer)
-                        Text(negocio.tiempoLabel)
-                            .font(.system(size: 12.5, weight: .semibold))
-                            .foregroundStyle(TreggaColors.textSec)
-                    }
-                }
-                Spacer(minLength: 4)
-                TreggaIcon(.chevR, size: 20, color: TreggaColors.textTer)
-            }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(TreggaColors.bg)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .shadow(color: .black.opacity(0.14), radius: 18, y: -2)
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 14)
-        .padding(.bottom, 92)
-    }
-
-    private var emptyCard: some View {
-        VStack(spacing: 6) {
-            Text("No hay negocios en esta zona todavía")
-                .font(.system(size: 15, weight: .heavy))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(TreggaColors.text)
-            Text("Irán apareciendo conforme se den de alta cerca de ti.")
-                .font(.system(size: 13))
-                .multilineTextAlignment(.center)
-                .foregroundStyle(TreggaColors.textSec)
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity)
-        .background(TreggaColors.bg)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .shadow(color: .black.opacity(0.12), radius: 16, y: -2)
-        .padding(.horizontal, 14)
-        .padding(.bottom, 92)
     }
 
     // MARK: - Navegación al restaurante (mismo flujo que Home)
