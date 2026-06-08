@@ -4,18 +4,20 @@
 <dict>
 	<key>CFBundleDisplayName</key>
 	<string>Tregga Food</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>GOOGLE_MAPS_API_KEY</key>
 	<string>$(GOOGLE_MAPS_API_KEY)</string>
 	<key>GOOGLE_MAPS_MAP_ID</key>
 	<string>$(GOOGLE_MAPS_MAP_ID)</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Tregga usa la cámara para que tomes tu foto de perfil.</string>
+	<string>Tregga usa la cámara para tu foto de perfil y para fotos de la entrada de tu domicilio.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>Tregga usa Face ID para desbloquear la app y proteger tu cuenta.</string>
+	<string>Tregga usa Face ID para volver a iniciar sesión de forma rápida y segura.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Tregga necesita tu ubicación para guiarte al negocio y al cliente durante tus entregas.</string>
+	<string>Tregga usa tu ubicación para mostrarte negocios cerca de ti y ubicar tu dirección de entrega.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Tregga necesita acceso a fotos para que puedas subir tu INE, foto de tu vehículo y recibos.</string>
+	<string>Tregga necesita acceso a tus fotos para tu foto de perfil y fotos de la entrada de tu domicilio.</string>
 	<key>SupabaseAnonKey</key>
 	<string>$(SUPABASE_ANON_KEY)</string>
 	<key>SupabaseURL</key>

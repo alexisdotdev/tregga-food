@@ -32,8 +32,16 @@ public final class AppDependencies {
     public let postalCodeRepository: PostalCodeRepository
 
     public init(defaults: UserDefaults = .standard) {
+        // En release (TestFlight/App Store) SIEMPRE backend real y OTP real: los
+        // launch arguments del scheme no existen en una build archivada. En debug
+        // se respetan los flags para desarrollo/preview.
+        #if DEBUG
         let useSupabase = defaults.bool(forKey: "USE_SUPABASE_BACKEND")
         let bypassOTP = defaults.bool(forKey: "BYPASS_OTP")
+        #else
+        let useSupabase = true
+        let bypassOTP = false
+        #endif
         if useSupabase {
             self.authService = bypassOTP ? BypassOTPAuthService() : SupabaseAuthService()
             self.authStorage = KeychainAuthStorage()
