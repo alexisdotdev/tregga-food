@@ -16,6 +16,7 @@ public final class AccountViewModel {
     public var direcciones: [DireccionCliente] = []
     public var prefs: PreferenciasUsuario?
     public var pedidosCount: Int = 0
+    public var favoritosCount: Int = 0
 
     private let userId: UUID
     private let profileRepo: ProfileRepository
@@ -25,6 +26,7 @@ public final class AccountViewModel {
     private let accountRepo: AccountRepository
     private let storageService: StorageService
     private let pedidoRepository: PedidoRepository
+    private let favoritoRepo: FavoritoRepository
 
     public init(
         userId: UUID,
@@ -34,7 +36,8 @@ public final class AccountViewModel {
         preferenciasRepo: PreferenciasRepository,
         accountRepo: AccountRepository,
         storageService: StorageService,
-        pedidoRepository: PedidoRepository
+        pedidoRepository: PedidoRepository,
+        favoritoRepo: FavoritoRepository
     ) {
         self.userId = userId
         self.profileRepo = profileRepo
@@ -44,6 +47,7 @@ public final class AccountViewModel {
         self.accountRepo = accountRepo
         self.storageService = storageService
         self.pedidoRepository = pedidoRepository
+        self.favoritoRepo = favoritoRepo
     }
 
     public var displayName: String {
@@ -80,6 +84,7 @@ public final class AccountViewModel {
                 self.direcciones = (try? await direccionRepo.fetchDelCliente(clienteId: clienteId)) ?? []
                 self.pedidosCount = (try? await pedidoRepository.fetchHistorial(clienteId: clienteId).count) ?? 0
             }
+            self.favoritosCount = ((try? await favoritoRepo.idsFavoritos(userId: userId)) ?? []).count
             phase = .cargado
         } catch {
             phase = .error("No pudimos cargar tu cuenta. Reintenta.")

@@ -6,6 +6,8 @@ import TreggaDesignSystem
 /// En curso arriba, anteriores abajo. Tap → detalle → tracking (F4) / rating.
 struct OrdersTab: View {
     @Environment(\.appDependencies) private var deps
+    /// Si se presenta como sheet (p.ej. desde Cuenta), muestra un botón para cerrar.
+    var onClose: (() -> Void)? = nil
 
     @State private var path: [OrdersRoute] = []
     @State private var viewModel: MyOrdersViewModel?
@@ -19,9 +21,9 @@ struct OrdersTab: View {
         NavigationStack(path: $path) {
             Group {
                 if let viewModel {
-                    MyOrdersView(viewModel: viewModel) { resumen in
+                    MyOrdersView(viewModel: viewModel, onTap: { resumen in
                         path.append(.detalle(pedidoId: resumen.id))
-                    }
+                    }, onClose: onClose)
                 } else {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 }

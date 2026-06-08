@@ -6,6 +6,8 @@ import TreggaDesignSystem
 struct MyOrdersView: View {
     @State var viewModel: MyOrdersViewModel
     let onTap: (PedidoResumen) -> Void
+    /// Si se presenta de forma modal (p.ej. desde Cuenta), muestra un botón atrás.
+    var onClose: (() -> Void)? = nil
 
     var body: some View {
         Group {
@@ -54,13 +56,24 @@ struct MyOrdersView: View {
     }
 
     private var header: some View {
-        Text("Pedidos")
-            .treggaStyle(.h1)
-            .foregroundStyle(TreggaColors.text)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 4)
+        HStack(spacing: 12) {
+            if let onClose {
+                Button { onClose() } label: {
+                    ZStack {
+                        Circle().fill(TreggaColors.surface).frame(width: 40, height: 40)
+                        TreggaIcon(.chevL, size: 20, color: TreggaColors.text)
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+            Text("Pedidos")
+                .treggaStyle(onClose == nil ? .h1 : .h2)
+                .foregroundStyle(TreggaColors.text)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 4)
     }
 
     private var vacio: some View {

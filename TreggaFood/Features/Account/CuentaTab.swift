@@ -67,7 +67,8 @@ struct CuentaTab: View {
                     preferenciasRepo: deps.preferenciasRepository,
                     accountRepo: deps.accountRepository,
                     storageService: deps.storageService,
-                    pedidoRepository: deps.pedidoRepository
+                    pedidoRepository: deps.pedidoRepository,
+                    favoritoRepo: deps.favoritoRepository
                 )
             }
             await viewModel?.cargar()
@@ -158,7 +159,8 @@ struct AccountHubView: View {
                         .buttonStyle(.plain)
                         RowDivider()
                         Button { showFavoritos = true } label: {
-                            AccountNavRow(icon: .heart, label: "Favoritos")
+                            AccountNavRow(icon: .heart, label: "Favoritos",
+                                          tail: "\(viewModel.favoritosCount)")
                         }
                         .buttonStyle(.plain)
                         RowDivider()
@@ -236,7 +238,7 @@ struct AccountHubView: View {
         }
         .background(TreggaColors.bg)
         .refreshable { await viewModel.cargar() }
-        .sheet(isPresented: $showOrders) { OrdersTab() }
+        .sheet(isPresented: $showOrders) { OrdersTab(onClose: { showOrders = false }) }
         .sheet(isPresented: $showFavoritos) { FavoritosView() }
         .sheet(isPresented: $showDirecciones) {
             if let cid = viewModel.cliente?.id, let deps {
