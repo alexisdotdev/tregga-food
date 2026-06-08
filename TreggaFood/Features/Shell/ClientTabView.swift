@@ -61,7 +61,7 @@ struct ClientTabView: View {
         let active = shell.tab == which
         content()
             .safeAreaInset(edge: .bottom) {
-                Color.clear.frame(height: mostrarBarra ? 72 : 0)
+                Color.clear.frame(height: mostrarBarra ? 96 : 0)
             }
             .opacity(active ? 1 : 0)
             .allowsHitTesting(active)

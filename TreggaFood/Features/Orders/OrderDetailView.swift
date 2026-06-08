@@ -315,10 +315,20 @@ struct OrderDetailView: View {
                 }
             } else {
                 HStack(spacing: 10) {
-                    TreggaButton("Reportar problema", kind: .ghost, isFullWidth: false, height: 50) {
+                    Button {
                         // TODO(F6): flujo de soporte / reporte de problema.
+                    } label: {
+                        Text("Reportar problema")
+                            .font(.system(size: 15, weight: .bold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                            .foregroundStyle(TreggaColors.danger)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(TreggaColors.dangerBg, in: RoundedRectangle(cornerRadius: 14))
+                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(TreggaColors.danger.opacity(0.35), lineWidth: 1))
                     }
-                    .frame(maxWidth: .infinity)
+                    .buttonStyle(.plain)
                     TreggaButton("Volver a pedir", kind: .primary, isFullWidth: false, height: 50) {
                         // TODO(F6): re-poblar el carrito desde este pedido.
                     }

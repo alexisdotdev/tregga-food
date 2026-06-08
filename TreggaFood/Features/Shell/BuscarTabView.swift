@@ -2,9 +2,12 @@ import SwiftUI
 import TreggaCore
 import TreggaDesignSystem
 
-/// Pestaña "Buscar" (Explorar). Placeholder hasta portar la grilla de categorías
-/// del diseño; mantiene el encabezado y la barra de búsqueda.
+/// Pestaña "Buscar" (Explorar). Placeholder de la grilla de categorías, pero con
+/// la barra de búsqueda ya funcional (enfocable, abre el teclado).
 struct BuscarTabView: View {
+    @State private var query = ""
+    @FocusState private var searchFocused: Bool
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -17,7 +20,9 @@ struct BuscarTabView: View {
             .padding(.horizontal, 16)
             .padding(.top, 8)
 
-            SearchBar(placeholder: "Carnitas, pizza, tacos…")
+            SearchBar(text: $query, placeholder: "Carnitas, pizza, tacos…")
+                .focused($searchFocused)
+                .padding(.horizontal, 16)
                 .padding(.top, 12)
 
             VStack(spacing: 12) {
@@ -29,8 +34,11 @@ struct BuscarTabView: View {
                     .padding(.horizontal, 40)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture { searchFocused = false }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(TreggaColors.bg)
+        .keyboardDoneToolbar()
     }
 }
