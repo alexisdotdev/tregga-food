@@ -1073,6 +1073,12 @@ public struct SignupSuccessView: View {
                     .lineSpacing(14.5 * 0.45)
                     .padding(.horizontal, 24)
                     .padding(.top, 8)
+
+                Image("account-created")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: 240)
+                    .padding(.top, 18)
             }
             .padding(22)
         }
