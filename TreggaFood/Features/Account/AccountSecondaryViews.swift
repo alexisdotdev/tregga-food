@@ -98,6 +98,7 @@ struct SecuritySettingsView: View {
                             sub: "Pide \(biometricName) al abrir Tregga",
                             isOn: $biometricLockOn
                         )
+                        .padding(.horizontal, 14)
                     } else {
                         AccountNavRow(icon: .faceId, label: "Desbloqueo con Face ID",
                                       sub: "No disponible en este dispositivo", showChevron: false)
@@ -218,64 +219,12 @@ private struct ChangePasswordSheet: View {
     }
 }
 
-// MARK: - Idioma
-
-struct LanguageSettingsView: View {
-    private let langs: [(code: String, label: String, sub: String, on: Bool)] = [
-        ("es-MX", "Español (México)", "Idioma de la app", true),
-        ("en-US", "English (United States)", "", false),
-    ]
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                AccountHeader(title: "Idioma")
-
-                VStack(spacing: 0) {
-                    ForEach(langs, id: \.code) { l in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(l.label).font(.system(size: 15, weight: .semibold))
-                                    .foregroundStyle(l.on ? TreggaColors.text : TreggaColors.textSec)
-                                if !l.sub.isEmpty {
-                                    Text(l.sub).font(.system(size: 12)).foregroundStyle(TreggaColors.textSec)
-                                }
-                            }
-                            Spacer()
-                            if l.on { TreggaIcon(.check, size: 20, color: TreggaColors.primary) }
-                            else { Tag("Pronto", tone: .default) }
-                        }
-                        .padding(.vertical, 14)
-                        if l.code != langs.last?.code { RowDivider() }
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-
-                HStack(spacing: 10) {
-                    TreggaIcon(.info, size: 16, color: TreggaColors.textSec)
-                    Text("Los precios siempre van en MXN sin importar el idioma.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(TreggaColors.textSec)
-                }
-                .padding(14)
-                .background(TreggaColors.surface)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .padding(.horizontal, 16)
-                .padding(.top, 18)
-
-                Spacer(minLength: 24)
-            }
-        }
-        .background(TreggaColors.bg)
-        .navigationBarBackButtonHidden(true)
-    }
-}
-
 // MARK: - Acerca de (sin RFC ni dirección fija)
 
 struct AboutAppView: View {
     @State private var selectedDoc: LegalDocument? = nil
+    @State private var feedbackKind: FeedbackKind? = nil
+    @Environment(\.appDependencies) private var deps
 
     private var version: String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -311,6 +260,19 @@ struct AboutAppView: View {
                     legalRow("Licencias de software libre", id: "licencias-oss")
                 }
 
+                SectionHeader("Sobre la app").padding(.top, 16)
+                AccountCard {
+                    Button { feedbackKind = .bug } label: {
+                        AccountNavRow(icon: .bug, label: "Reportar un bug", sub: "Algo no funciona bien")
+                    }
+                    .buttonStyle(.plain)
+                    RowDivider()
+                    Button { feedbackKind = .feedback } label: {
+                        AccountNavRow(icon: .message, label: "Sugerencia o feedback")
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 Text("Hecho con 🍊 en México")
                     .font(.system(size: 12))
                     .foregroundStyle(TreggaColors.textTer)
@@ -324,6 +286,13 @@ struct AboutAppView: View {
         .navigationBarBackButtonHidden(true)
         .sheet(item: $selectedDoc) { doc in
             LegalDocumentView(document: doc, onBack: { selectedDoc = nil })
+        }
+        .sheet(item: $feedbackKind) { kind in
+            FeedbackFormView(
+                kind: kind,
+                userId: deps?.authSession.tokens?.userId,
+                repo: deps?.feedbackRepository ?? MockFeedbackRepository()
+            )
         }
     }
 

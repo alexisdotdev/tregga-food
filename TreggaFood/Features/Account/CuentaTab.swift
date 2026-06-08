@@ -10,7 +10,6 @@ enum AccountRoute: Hashable {
     case notifications
     case privacy
     case security
-    case language
     case appPreferences
     case about
     case dataDownload
@@ -99,7 +98,20 @@ struct CuentaTab: View {
         case .personalData:
             PersonalDataView(viewModel: viewModel)
         case .addresses:
-            AddressesView(viewModel: viewModel)
+            // Mismo editor rico que Home (mapa + instrucciones + fotos de entrada).
+            if let cid = viewModel.cliente?.id, let deps {
+                DireccionPickerView(
+                    viewModel: DireccionPickerViewModel(
+                        repo: deps.direccionRepository,
+                        clienteId: cid,
+                        storage: deps.storageService,
+                        userId: deps.authSession.tokens?.userId ?? cid
+                    ),
+                    onSelected: { Task { await viewModel.cargar() } }
+                )
+            } else {
+                AddressesView(viewModel: viewModel)
+            }
         case .paymentMethods:
             PaymentMethodsView()
         case .notifications:
@@ -108,8 +120,6 @@ struct CuentaTab: View {
             PrivacySettingsView(viewModel: viewModel, onDelete: { path.append(.accountDeletion) })
         case .security:
             SecuritySettingsView()
-        case .language:
-            LanguageSettingsView()
         case .appPreferences:
             AppPreferencesView(viewModel: viewModel)
         case .about:
@@ -135,19 +145,40 @@ struct AccountHubView: View {
     @Bindable var viewModel: AccountViewModel
     let onRequestSignOut: () -> Void
     var onHelp: () -> Void = {}
+    @State private var showOrders = false
+    @State private var showFavoritos = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 header
-                profileCard
-                    .padding(.horizontal, 16)
-                    .padding(.top, 6)
+                NavigationLink(value: AccountRoute.personalData) {
+                    profileCard
+                        .padding(.horizontal, 16)
+                        .padding(.top, 6)
+                }
+                .buttonStyle(.plain)
 
-                grupo(title: "Pedidos y pagos", rows: [
-                    .nav(.receipt, "Historial de pedidos", tail: "\(viewModel.pedidosCount)", route: nil),
-                    .nav(.card, "Métodos de pago", tail: "Efectivo", route: .paymentMethods),
-                ])
+                VStack(alignment: .leading, spacing: 0) {
+                    SectionHeader("Pedidos y pagos").padding(.top, 16)
+                    AccountCard {
+                        Button { showOrders = true } label: {
+                            AccountNavRow(icon: .receipt, label: "Historial de pedidos",
+                                          tail: "\(viewModel.pedidosCount)")
+                        }
+                        .buttonStyle(.plain)
+                        RowDivider()
+                        Button { showFavoritos = true } label: {
+                            AccountNavRow(icon: .heart, label: "Favoritos")
+                        }
+                        .buttonStyle(.plain)
+                        RowDivider()
+                        NavigationLink(value: AccountRoute.paymentMethods) {
+                            AccountNavRow(icon: .card, label: "Métodos de pago", tail: "Efectivo")
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
 
                 grupo(title: "Preferencias", rows: [
                     .nav(.pin, "Direcciones guardadas", tail: "\(viewModel.direcciones.count)", route: .addresses),
@@ -156,7 +187,6 @@ struct AccountHubView: View {
                     .nav(.grid, "Preferencias de la app", tail: nil, route: .appPreferences),
                     .nav(.info, "Privacidad", tail: nil, route: .privacy),
                     .nav(.user, "Seguridad", tail: nil, route: .security),
-                    .nav(.message, "Idioma", tail: "Español (MX)", route: .language),
                 ])
 
                 grupo(title: "Mensajes", rows: [
@@ -205,6 +235,8 @@ struct AccountHubView: View {
         }
         .background(TreggaColors.bg)
         .refreshable { await viewModel.cargar() }
+        .sheet(isPresented: $showOrders) { OrdersTab() }
+        .sheet(isPresented: $showFavoritos) { FavoritosView() }
     }
 
     private var header: some View {
@@ -221,12 +253,7 @@ struct AccountHubView: View {
 
     private var profileCard: some View {
         HStack(spacing: 14) {
-            ZStack {
-                Circle().fill(TreggaColors.onPrimary.opacity(0.95)).frame(width: 58, height: 58)
-                Text(viewModel.initials)
-                    .font(.system(size: 20, weight: .heavy))
-                    .foregroundStyle(TreggaColors.primaryDeep)
-            }
+            avatar
             VStack(alignment: .leading, spacing: 3) {
                 Text(viewModel.displayName)
                     .font(.system(size: 18, weight: .heavy))
@@ -249,6 +276,32 @@ struct AccountHubView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
+    /// Foto de perfil si existe; si no, iniciales. La edición vive en
+    /// Datos personales (PhotosPicker + cámara + recorte).
+    @ViewBuilder
+    private var avatar: some View {
+        let initials = ZStack {
+            Circle().fill(TreggaColors.onPrimary.opacity(0.95)).frame(width: 58, height: 58)
+            Text(viewModel.initials)
+                .font(.system(size: 20, weight: .heavy))
+                .foregroundStyle(TreggaColors.primaryDeep)
+        }
+        if let urlString = viewModel.perfil?.avatarUrl, let url = URL(string: urlString) {
+            AsyncImage(url: url) { phase in
+                if let image = phase.image {
+                    image.resizable().scaledToFill()
+                } else {
+                    initials
+                }
+            }
+            .frame(width: 58, height: 58)
+            .clipShape(Circle())
+            .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 2))
+        } else {
+            initials
+        }
+    }
+
     private enum Row {
         case nav(TreggaIcon.Name, String, tail: String?, route: AccountRoute?)
     }
@@ -263,6 +316,7 @@ struct AccountHubView: View {
                         if let route {
                             NavigationLink(value: route) {
                                 AccountNavRow(icon: icon, label: label, tail: tail)
+                                    .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                         } else {

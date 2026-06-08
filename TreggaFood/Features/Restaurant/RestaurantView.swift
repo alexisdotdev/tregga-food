@@ -9,9 +9,12 @@ struct RestaurantView: View {
     @Binding var path: [CatalogRoute]
 
     @State private var viewModel: RestaurantViewModel
+    @State private var isFav = false
+    @State private var favBusy = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.cartStore) private var cartEnv
     @Environment(\.clientShell) private var shell
+    @Environment(\.appDependencies) private var deps
 
     init(negocio: Negocio, catalog: CatalogRepository, path: Binding<[CatalogRoute]>) {
         self.negocio = negocio
@@ -45,6 +48,25 @@ struct RestaurantView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .task { await viewModel.load() }
+        .task {
+            guard let deps, let uid = deps.authSession.tokens?.userId else { return }
+            isFav = ((try? await deps.favoritoRepository.idsFavoritos(userId: uid)) ?? []).contains(negocio.id)
+        }
+    }
+
+    private func toggleFavorito() async {
+        guard let deps, let uid = deps.authSession.tokens?.userId, !favBusy else { return }
+        favBusy = true
+        defer { favBusy = false }
+        let nuevo = !isFav
+        do {
+            if nuevo {
+                try await deps.favoritoRepository.agregar(userId: uid, negocioId: negocio.id)
+            } else {
+                try await deps.favoritoRepository.quitar(userId: uid, negocioId: negocio.id)
+            }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { isFav = nuevo }
+        } catch {}
     }
 
     private var hero: some View {
@@ -57,7 +79,14 @@ struct RestaurantView: View {
             HStack {
                 circleButton(.chevL) { dismiss() }
                 Spacer()
-                circleButton(.heart) {}
+                Button { Task { await toggleFavorito() } } label: {
+                    TreggaIcon(.heart, size: 20, color: isFav ? TreggaColors.danger : Color(red: 0.04, green: 0.06, blue: 0.05))
+                        .frame(width: 40, height: 40)
+                        .background(Color.white.opacity(0.95), in: Circle())
+                        .scaleEffect(isFav ? 1.08 : 1)
+                }
+                .buttonStyle(.plain)
+                .disabled(favBusy)
             }
             .padding(.horizontal, 16)
             .padding(.top, 56)
