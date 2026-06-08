@@ -98,20 +98,7 @@ struct CuentaTab: View {
         case .personalData:
             PersonalDataView(viewModel: viewModel)
         case .addresses:
-            // Mismo editor rico que Home (mapa + instrucciones + fotos de entrada).
-            if let cid = viewModel.cliente?.id, let deps {
-                DireccionPickerView(
-                    viewModel: DireccionPickerViewModel(
-                        repo: deps.direccionRepository,
-                        clienteId: cid,
-                        storage: deps.storageService,
-                        userId: deps.authSession.tokens?.userId ?? cid
-                    ),
-                    onSelected: { Task { await viewModel.cargar() } }
-                )
-            } else {
-                AddressesView(viewModel: viewModel)
-            }
+            AddressesView(viewModel: viewModel)
         case .paymentMethods:
             PaymentMethodsView()
         case .notifications:
@@ -145,8 +132,10 @@ struct AccountHubView: View {
     @Bindable var viewModel: AccountViewModel
     let onRequestSignOut: () -> Void
     var onHelp: () -> Void = {}
+    @Environment(\.appDependencies) private var deps
     @State private var showOrders = false
     @State private var showFavoritos = false
+    @State private var showDirecciones = false
 
     var body: some View {
         ScrollView {
@@ -180,14 +169,26 @@ struct AccountHubView: View {
                     }
                 }
 
-                grupo(title: "Preferencias", rows: [
-                    .nav(.pin, "Direcciones guardadas", tail: "\(viewModel.direcciones.count)", route: .addresses),
-                    .nav(.user, "Datos personales", tail: nil, route: .personalData),
-                    .nav(.bell, "Notificaciones", tail: nil, route: .notifications),
-                    .nav(.grid, "Preferencias de la app", tail: nil, route: .appPreferences),
-                    .nav(.info, "Privacidad", tail: nil, route: .privacy),
-                    .nav(.user, "Seguridad", tail: nil, route: .security),
-                ])
+                VStack(alignment: .leading, spacing: 0) {
+                    SectionHeader("Preferencias").padding(.top, 16)
+                    AccountCard {
+                        Button { showDirecciones = true } label: {
+                            AccountNavRow(icon: .pin, label: "Direcciones guardadas",
+                                          tail: "\(viewModel.direcciones.count)")
+                        }
+                        .buttonStyle(.plain)
+                        RowDivider()
+                        navRow(.user, "Datos personales", .personalData)
+                        RowDivider()
+                        navRow(.bell, "Notificaciones", .notifications)
+                        RowDivider()
+                        navRow(.grid, "Preferencias de la app", .appPreferences)
+                        RowDivider()
+                        navRow(.info, "Privacidad", .privacy)
+                        RowDivider()
+                        navRow(.user, "Seguridad", .security)
+                    }
+                }
 
                 grupo(title: "Mensajes", rows: [
                     .nav(.message, "Inbox", tail: nil, route: .inbox),
@@ -237,6 +238,29 @@ struct AccountHubView: View {
         .refreshable { await viewModel.cargar() }
         .sheet(isPresented: $showOrders) { OrdersTab() }
         .sheet(isPresented: $showFavoritos) { FavoritosView() }
+        .sheet(isPresented: $showDirecciones) {
+            if let cid = viewModel.cliente?.id, let deps {
+                DireccionPickerView(
+                    viewModel: DireccionPickerViewModel(
+                        repo: deps.direccionRepository,
+                        clienteId: cid,
+                        storage: deps.storageService,
+                        userId: deps.authSession.tokens?.userId ?? cid
+                    ),
+                    onSelected: { Task { await viewModel.cargar() } }
+                )
+            } else {
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity).background(TreggaColors.bg)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func navRow(_ icon: TreggaIcon.Name, _ label: String, _ route: AccountRoute) -> some View {
+        NavigationLink(value: route) {
+            AccountNavRow(icon: icon, label: label).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var header: some View {

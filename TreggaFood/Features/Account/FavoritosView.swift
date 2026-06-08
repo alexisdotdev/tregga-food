@@ -8,6 +8,7 @@ import TreggaDesignSystem
 struct FavoritosView: View {
     @Environment(\.appDependencies) private var deps
     @Environment(\.cartStore) private var cartEnv
+    @Environment(\.dismiss) private var dismiss
     @State private var path: [CatalogRoute] = []
     @State private var negocios: [Negocio] = []
     @State private var cargando = true
@@ -28,14 +29,21 @@ struct FavoritosView: View {
     private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                HStack {
+                HStack(spacing: 12) {
+                    Button { dismiss() } label: {
+                        ZStack {
+                            Circle().fill(TreggaColors.surface).frame(width: 40, height: 40)
+                            TreggaIcon(.chevL, size: 20, color: TreggaColors.text)
+                        }
+                    }
+                    .buttonStyle(.plain)
                     Text("Tus favoritos")
-                        .treggaStyle(.h1)
+                        .treggaStyle(.h2)
                         .foregroundStyle(TreggaColors.text)
                     Spacer()
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 18)
+                .padding(.top, 14)
 
                 if cargando {
                     ProgressView().frame(maxWidth: .infinity).padding(.top, 90)

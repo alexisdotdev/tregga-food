@@ -16,7 +16,7 @@ struct ClientTabView: View {
     @State private var showSignOut = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             ZStack {
                 tab(.inicio) { HomeView(catalog: catalog) }
                 tab(.live) { MapaNegociosView(catalog: catalog) }
@@ -29,10 +29,15 @@ struct ClientTabView: View {
                     )
                 }
             }
-
-            if mostrarBarra {
-                ClientBottomBar(tab: Bindable(shell).tab, cartCount: cartEnv?.count ?? 0)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            // La barra flotante se hospeda como safe-area inset: reserva su espacio
+            // y lo propaga al contenido de cada pestaña (incluidos sus NavigationStack),
+            // así el contenido nunca queda debajo de la barra.
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if mostrarBarra {
+                    ClientBottomBar(tab: Bindable(shell).tab, cartCount: cartEnv?.count ?? 0)
+                        .padding(.top, 6)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
 
             if showSignOut {
@@ -60,9 +65,6 @@ struct ClientTabView: View {
     private func tab<Content: View>(_ which: ClientTab, @ViewBuilder _ content: () -> Content) -> some View {
         let active = shell.tab == which
         content()
-            .safeAreaInset(edge: .bottom) {
-                Color.clear.frame(height: mostrarBarra ? 96 : 0)
-            }
             .opacity(active ? 1 : 0)
             .allowsHitTesting(active)
             .zIndex(active ? 1 : 0)
