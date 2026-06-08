@@ -91,8 +91,9 @@ struct BuscarTabView: View {
                 .foregroundStyle(TreggaColors.textSec)
                 .padding(.horizontal, 40)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.top, 60)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 80)
+        .padding(.bottom, 24)
     }
 
     @ViewBuilder
