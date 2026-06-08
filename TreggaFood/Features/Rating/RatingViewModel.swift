@@ -40,6 +40,20 @@ final class RatingViewModel {
 
     func enviar() async {
         guard phase != .enviando else { return }
+        // La tabla exige rating 1–5, cliente y repartidor no nulos. Validamos antes
+        // para dar un mensaje claro en vez de un fallo genérico del backend.
+        guard (1...5).contains(rating) else {
+            phase = .error("Elige cuántas estrellas antes de enviar.")
+            return
+        }
+        guard clienteId != nil else {
+            phase = .error("No pudimos identificar tu cuenta. Reinicia sesión e intenta de nuevo.")
+            return
+        }
+        guard pedido.repartidorId != nil else {
+            phase = .error("Este pedido no tiene repartidor asignado, no se puede calificar.")
+            return
+        }
         phase = .enviando
         do {
             try await repo.calificar(
@@ -52,7 +66,7 @@ final class RatingViewModel {
             )
             phase = .enviado
         } catch {
-            phase = .error("No pudimos enviar tu calificación. Intenta de nuevo.")
+            phase = .error("No pudimos enviar tu calificación: \(error.localizedDescription)")
         }
     }
 }

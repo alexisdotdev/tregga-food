@@ -19,12 +19,14 @@ struct DeliveryRatingFlow: View {
     var body: some View {
         Group {
             if mostrandoRating {
-                RatingView(viewModel: viewModel, onDone: onDone)
+                RatingView(viewModel: viewModel, onDone: onDone, onClose: onDone)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
             } else {
-                DeliverySuccessView(pedido: pedido) {
-                    withAnimation(.easeInOut(duration: 0.3)) { mostrandoRating = true }
-                }
+                DeliverySuccessView(
+                    pedido: pedido,
+                    onContinue: { withAnimation(.easeInOut(duration: 0.3)) { mostrandoRating = true } },
+                    onSkip: onDone
+                )
                 .transition(.opacity)
             }
         }
@@ -37,10 +39,21 @@ struct DeliveryRatingFlow: View {
 private struct DeliverySuccessView: View {
     let pedido: PedidoTracking
     let onContinue: () -> Void
+    let onSkip: () -> Void
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .topTrailing) {
             TreggaColors.bg.ignoresSafeArea()
+            Button(action: onSkip) {
+                ZStack {
+                    Circle().fill(TreggaColors.surface).frame(width: 36, height: 36)
+                    TreggaIcon(.close, size: 18, color: TreggaColors.textSec)
+                }
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 12)
+            .padding(.trailing, 16)
+            .zIndex(1)
             VStack(spacing: 20) {
                 Spacer()
                 ZStack {
@@ -62,7 +75,7 @@ private struct DeliverySuccessView: View {
                 Spacer()
                 TreggaButton("Calificar entrega", kind: .primary, height: 56) { onContinue() }
                     .padding(.horizontal, 16)
-                Button(action: onContinue) {
+                Button(action: onSkip) {
                     Text("Ahora no")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(TreggaColors.textSec)
@@ -107,6 +120,7 @@ private struct DeliverySuccessView: View {
 private struct RatingView: View {
     @State var viewModel: RatingViewModel
     let onDone: () -> Void
+    let onClose: () -> Void
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -124,6 +138,17 @@ private struct RatingView: View {
             .background(TreggaColors.bg)
 
             footer
+        }
+        .overlay(alignment: .topTrailing) {
+            Button(action: onClose) {
+                ZStack {
+                    Circle().fill(.white.opacity(0.95)).frame(width: 36, height: 36)
+                    TreggaIcon(.close, size: 18, color: TreggaColors.text)
+                }
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 30)
+            .padding(.trailing, 24)
         }
         .onChange(of: viewModel.phase) { _, phase in
             if phase == .enviado { onDone() }
