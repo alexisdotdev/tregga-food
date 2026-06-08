@@ -14,6 +14,7 @@
 		5443F4E62FB7F7670027212D /* TreggaDesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 5443F4E52FB7F7670027212D /* TreggaDesignSystem */; };
 		545B2AE82FBAAC2D006A8A95 /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 545B2AE72FBAAC2D006A8A95 /* GoogleMaps */; };
 		C0FFEE0000000000000000B1 /* TreggaCore in Frameworks */ = {isa = PBXBuildFile; productRef = C0FFEE0000000000000000D2 /* TreggaCore */; };
+		FCBA5E0000000000000000B1 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = FCBA5E0000000000000000D2 /* FirebaseMessaging */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,6 +70,7 @@
 				5419860D2FBBB6D30064A92C /* Supabase in Frameworks */,
 				5443F4E62FB7F7670027212D /* TreggaDesignSystem in Frameworks */,
 				C0FFEE0000000000000000B1 /* TreggaCore in Frameworks */,
+				FCBA5E0000000000000000B1 /* FirebaseMessaging in Frameworks */,
 				5419860B2FBBB6D30064A92C /* Storage in Frameworks */,
 				541986072FBBB6D30064A92C /* Auth in Frameworks */,
 			);
@@ -148,6 +150,7 @@
 				541986082FBBB6D30064A92C /* PostgREST */,
 				5419860A2FBBB6D30064A92C /* Storage */,
 				5419860C2FBBB6D30064A92C /* Supabase */,
+				FCBA5E0000000000000000D2 /* FirebaseMessaging */,
 			);
 			productName = TreggaFood;
 			productReference = 540867972FB7E8B800FF1584 /* TreggaFood.app */;
@@ -236,6 +239,7 @@
 				C0FFEE0000000000000000E3 /* XCLocalSwiftPackageReference "../tregga-shared/TreggaCore" */,
 				5456D8552FBA8EF50088157D /* XCRemoteSwiftPackageReference "ios-maps-sdk" */,
 				541986052FBBB6D30064A92C /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				FCBA5E0000000000000000A3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 540867982FB7E8B800FF1584 /* Products */;
@@ -438,13 +442,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TreggaFood/TreggaFood.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = TPWHVJYQB9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = NO;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
@@ -471,13 +477,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TreggaFood/TreggaFood.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = TPWHVJYQB9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = NO;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
@@ -503,8 +511,10 @@
 			baseConfigurationReference = 5456D8572FBA912A0088157D /* secrets.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_ENTITLEMENTS = TreggaFood/TreggaFood.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = TPWHVJYQB9;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
@@ -525,8 +535,10 @@
 			baseConfigurationReference = 5456D8572FBA912A0088157D /* secrets.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_ENTITLEMENTS = TreggaFood/TreggaFood.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = TPWHVJYQB9;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
@@ -546,8 +558,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 5456D8572FBA912A0088157D /* secrets.xcconfig */;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TreggaFood/TreggaFood.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = TPWHVJYQB9;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.tregga.TreggaFoodUITests;
@@ -566,8 +580,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 5456D8572FBA912A0088157D /* secrets.xcconfig */;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = TreggaFood/TreggaFood.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = TPWHVJYQB9;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.tregga.TreggaFoodUITests;
@@ -651,6 +667,14 @@
 				minimumVersion = 10.13.0;
 			};
 		};
+		FCBA5E0000000000000000A3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.14.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -688,6 +712,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C0FFEE0000000000000000E3 /* XCLocalSwiftPackageReference "../tregga-shared/TreggaCore" */;
 			productName = TreggaCore;
+		};
+		FCBA5E0000000000000000D2 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FCBA5E0000000000000000A3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

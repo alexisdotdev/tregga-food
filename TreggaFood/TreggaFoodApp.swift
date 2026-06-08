@@ -5,21 +5,21 @@
 
 import SwiftUI
 import TreggaCore
-import UserNotifications
 
 @main
 struct TreggaFoodApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var deps = AppDependencies()
 
     init() {
         GoogleMapsBootstrap.configure()
-        UNUserNotificationCenter.current().delegate = NotificationPresenter.shared
     }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(\.appDependencies, deps)
+                .environment(\.locale, Locale(identifier: "es_MX"))
         }
     }
 }

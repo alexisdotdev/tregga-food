@@ -12,17 +12,40 @@ struct ContentView: View {
     @State private var cart = CartStore()
     @State private var isLocked = false
     @State private var showBiometricOffer = false
+    @State private var appGate: AppGate = .none
+    @Environment(\.openURL) private var openURL
     private let remembered = RememberedUserStore()
     /// Apariencia elegida en Cuenta → Preferencias. Persistida local.
     @AppStorage("APPEARANCE_MODE") private var appearanceRaw: String = AppearanceMode.system.rawValue
 
     enum Phase { case loading, unauthenticated, welcomeBack, authenticated }
 
+    /// Gate de arranque por configuración remota (`app_config`).
+    enum AppGate: Equatable { case none, maintenance, forceUpdate(String?) }
+
     private var appearance: AppearanceMode {
         AppearanceMode(rawValue: appearanceRaw) ?? .system
     }
 
     var body: some View {
+        Group {
+            switch appGate {
+            case .maintenance:
+                MaintenanceView(onRetry: { Task { await revisarGate() } })
+            case .forceUpdate(let storeURL):
+                ForceUpdateView(onUpdate: {
+                    let s = storeURL ?? "https://tregga.app"
+                    if let u = URL(string: s) { openURL(u) }
+                })
+            case .none:
+                content
+            }
+        }
+        .preferredColorScheme(appearance.colorScheme)
+    }
+
+    @ViewBuilder
+    private var content: some View {
         Group {
             if isLocked {
                 BiometricLockView(
@@ -53,10 +76,14 @@ struct ContentView: View {
                 }
             }
         }
-        .preferredColorScheme(appearance.colorScheme)
         .onAppear { KeyboardDismiss.install() }
         .onChange(of: phase) { _, newValue in
-            if newValue == .authenticated { maybeOfferBiometric() }
+            if newValue == .authenticated {
+                maybeOfferBiometric()
+                if let uid = deps?.authSession.tokens?.userId {
+                    Task { await PushTokenCoordinator.shared.onLogin(userId: uid) }
+                }
+            }
         }
         .onChange(of: scenePhase) { _, newScene in
             // Re-bloquear al pasar a segundo plano (oculta contenido en el switcher).
@@ -87,6 +114,9 @@ struct ContentView: View {
         }
         .task {
             guard let deps else { return }
+            // Gate remoto (mantenimiento / versión mínima). Fail-open: si no se
+            // puede leer, no bloquea.
+            await revisarGate(deps: deps)
             await deps.authSession.restore()
             // Validamos la sesión persistida ANTES de conceder acceso: un token del
             // Keychain podría estar caducado/revocado (sesión "fantasma"). Hacemos un
@@ -124,6 +154,41 @@ struct ContentView: View {
                 phase = .unauthenticated
             }
         }
+    }
+
+    // MARK: - Gate de arranque (config remota)
+
+    private var appVersion: String {
+        (Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String) ?? "0"
+    }
+
+    /// Lee `app_config` y decide si bloquear por mantenimiento o versión obsoleta.
+    /// Fail-open: ante cualquier error no bloquea.
+    private func revisarGate(deps: AppDependencies) async {
+        guard let cfg = try? await deps.appConfigRepository.fetch() else { return }
+        if cfg.maintenance {
+            appGate = .maintenance
+        } else if Self.isVersion(appVersion, below: cfg.minVersionIOS) {
+            appGate = .forceUpdate(cfg.iosStoreURL)
+        } else {
+            appGate = .none
+        }
+    }
+
+    private func revisarGate() async {
+        if let deps { await revisarGate(deps: deps) }
+    }
+
+    /// Compara versiones semánticas: "1.0" < "1.4.0".
+    static func isVersion(_ current: String, below minimum: String) -> Bool {
+        let c = current.split(separator: ".").map { Int($0) ?? 0 }
+        let m = minimum.split(separator: ".").map { Int($0) ?? 0 }
+        for i in 0..<max(c.count, m.count) {
+            let cv = i < c.count ? c[i] : 0
+            let mv = i < m.count ? m[i] : 0
+            if cv != mv { return cv < mv }
+        }
+        return false
     }
 
     /// Guarda al usuario recordado (nombre + refresh token actual) para el
@@ -208,6 +273,7 @@ struct ContentView: View {
     private func signOut() {
         guard let deps else { return }
         Task {
+            await PushTokenCoordinator.shared.onLogout()
             if BiometricLockPreference.isEnabled,
                BiometricAuthService.shared.isAvailable,
                deps.authSession.tokens != nil {

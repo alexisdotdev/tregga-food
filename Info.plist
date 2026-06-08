@@ -20,10 +20,11 @@
 	<string>$(SUPABASE_ANON_KEY)</string>
 	<key>SupabaseURL</key>
 	<string>$(SUPABASE_URL)</string>
-	<key>UILaunchScreen</key>
-	<dict>
-		<key>UIColorName</key>
-		<string>LaunchBackground</string>
-	</dict>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

@@ -24,6 +24,9 @@ public final class AppDependencies {
     public let accountRepository: AccountRepository
     public let notificacionRepository: NotificacionRepository
     public let ofertaRepository: OfertaRepository
+    public let appConfigRepository: AppConfigRepository
+    public let feedbackRepository: FeedbackRepository
+    public let favoritoRepository: FavoritoRepository
     public let storageService: StorageService
     /// Lookup de CP (SEPOMEX, servicio público) → estado/municipio/colonias.
     public let postalCodeRepository: PostalCodeRepository
@@ -46,6 +49,9 @@ public final class AppDependencies {
             self.accountRepository = SupabaseAccountRepository()
             self.notificacionRepository = SupabaseNotificacionRepository()
             self.ofertaRepository = SupabaseOfertaRepository()
+            self.appConfigRepository = SupabaseAppConfigRepository()
+            self.feedbackRepository = SupabaseFeedbackRepository()
+            self.favoritoRepository = SupabaseFavoritoRepository()
             self.storageService = SupabaseStorageService()
         } else {
             self.authService = MockAuthService()
@@ -62,6 +68,9 @@ public final class AppDependencies {
             self.accountRepository = MockAccountRepository()
             self.notificacionRepository = MockNotificacionRepository()
             self.ofertaRepository = MockOfertaRepository()
+            self.appConfigRepository = MockAppConfigRepository()
+            self.feedbackRepository = MockFeedbackRepository()
+            self.favoritoRepository = MockFavoritoRepository()
             self.storageService = MockStorageService()
         }
         // SEPOMEX es un servicio público (sin auth): se usa igual en ambos modos.

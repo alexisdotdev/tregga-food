@@ -28,16 +28,3 @@ enum LocalNotifications {
         UNUserNotificationCenter.current().add(request)
     }
 }
-
-/// Permite que las notificaciones locales se muestren como banner incluso con la
-/// app en primer plano (por defecto iOS las suprime). Se registra en el `@main`.
-final class NotificationPresenter: NSObject, UNUserNotificationCenterDelegate {
-    static let shared = NotificationPresenter()
-
-    func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        [.banner, .sound]
-    }
-}
