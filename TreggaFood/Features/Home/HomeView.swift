@@ -30,9 +30,6 @@ struct HomeView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         header
-                        SearchBar(placeholder: "Carnitas, pizza, tacos…")
-                            .padding(.horizontal, 16)
-                            .padding(.top, 12)
                         content
                             .padding(.top, 18)
                     }
@@ -184,19 +181,33 @@ struct HomeView: View {
             .padding(.top, 60)
 
         case .loaded(let negocios):
-            VStack(spacing: 0) {
-                SectionHeader("Negocios cerca de ti")
-                LazyVStack(spacing: 18) {
-                    ForEach(negocios) { negocio in
-                        Button {
-                            path.append(.restaurant(negocio))
-                        } label: {
-                            FoodCard(negocio: negocio)
-                        }
-                        .buttonStyle(.plain)
-                    }
+            VStack(spacing: 24) {
+                let destacados = topRated(negocios)
+                if !destacados.isEmpty {
+                    carousel("Destacados de Tregga", destacados)
                 }
-                .padding(.horizontal, 16)
+                let cerca = cercaDeTi(negocios)
+                if !cerca.isEmpty {
+                    carousel("Cerca de ti", cerca)
+                }
+                let populares = masPedidos(negocios)
+                if !populares.isEmpty {
+                    carousel("Más pedidos", populares)
+                }
+                VStack(spacing: 0) {
+                    SectionHeader("Todos los negocios")
+                    LazyVStack(spacing: 18) {
+                        ForEach(negocios) { negocio in
+                            Button {
+                                path.append(.restaurant(negocio))
+                            } label: {
+                                FoodCard(negocio: negocio)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
             }
 
         case .empty:
@@ -215,6 +226,49 @@ struct HomeView: View {
             }
             .frame(maxWidth: .infinity)
         }
+    }
+
+    // MARK: - Secciones (derivadas en el cliente desde la lista de negocios)
+
+    /// Carrusel horizontal de negocios con título.
+    @ViewBuilder
+    private func carousel(_ title: String, _ negocios: [Negocio]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SectionHeader(title)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    ForEach(negocios) { negocio in
+                        Button { path.append(.restaurant(negocio)) } label: {
+                            FoodCard(negocio: negocio).frame(width: 260)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+    }
+
+    private func topRated(_ n: [Negocio]) -> [Negocio] {
+        Array(n.filter { $0.rating > 0 }.sorted { $0.rating > $1.rating }.prefix(10))
+    }
+
+    private func masPedidos(_ n: [Negocio]) -> [Negocio] {
+        Array(n.sorted { $0.totalOrders > $1.totalOrders }.prefix(10))
+    }
+
+    /// Ordena por distancia a la dirección activa; sin coordenadas, por más pedidos.
+    private func cercaDeTi(_ n: [Negocio]) -> [Negocio] {
+        guard let lat = direccionDefault?.lat, let lng = direccionDefault?.lng else {
+            return masPedidos(n)
+        }
+        return Array(n.sorted { distanciaSq($0, lat, lng) < distanciaSq($1, lat, lng) }.prefix(10))
+    }
+
+    private func distanciaSq(_ neg: Negocio, _ lat: Double, _ lng: Double) -> Double {
+        guard let nlat = neg.lat, let nlng = neg.lng else { return .greatestFiniteMagnitude }
+        let dlat = nlat - lat, dlng = nlng - lng
+        return dlat * dlat + dlng * dlng
     }
 
     private func emptyState(icon: TreggaIcon.Name, title: String, message: String) -> some View {
