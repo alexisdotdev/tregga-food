@@ -297,7 +297,12 @@ public final class OnboardingCoordinator {
     ) async {
         await authSession.persist(tokens)
 
-        let name = fullName ?? (pendingFullName.isEmpty ? "Cliente" : pendingFullName)
+        // El perfil puede haberse creado server-side: el trigger `handle_new_user`
+        // copia nombre/email/avatar del proveedor (Google). Preferimos ese nombre
+        // real antes que el fallback "Cliente", porque `vincular_cliente` lo
+        // sobrescribiría con lo que le pasemos.
+        let existente = try? await profileRepository.fetch(userId: tokens.userId)
+        let name = resolverNombre(recibido: fullName, existente: existente?.fullName)
         let mail = email ?? pendingEmail
         let phone = phoneE164 ?? pendingPhoneE164 ?? ""
 
@@ -313,5 +318,16 @@ public final class OnboardingCoordinator {
         }
 
         onAuthenticated?()
+    }
+
+    /// Elige el nombre a persistir: prioriza el nombre real ya existente en el
+    /// perfil (p. ej. el que puso el trigger desde Google), luego el recibido del
+    /// proveedor, y solo como último recurso el placeholder "Cliente".
+    private func resolverNombre(recibido: String?, existente: String?) -> String {
+        let ex = (existente ?? "").trimmingCharacters(in: .whitespaces)
+        if !ex.isEmpty, ex != "Cliente" { return ex }
+        let rec = (recibido ?? "").trimmingCharacters(in: .whitespaces)
+        if !rec.isEmpty { return rec }
+        return pendingFullName.isEmpty ? "Cliente" : pendingFullName
     }
 }
