@@ -109,6 +109,8 @@ struct ContentView: View {
                     await deps.authSession.persist(fresh)
                 } catch AuthError.networkFailure {
                     // Sin red: conservamos la sesión persistida.
+                } catch AuthError.weakConnection {
+                    // Conexión inestable: conservamos la sesión (no cerrar por red débil).
                 } catch {
                     try? await deps.authService.signOut()
                     await deps.authSession.clear()

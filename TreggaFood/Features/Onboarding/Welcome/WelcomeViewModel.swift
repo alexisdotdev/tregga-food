@@ -66,6 +66,8 @@ public final class WelcomeViewModel {
                 case .invalidPhone: error = "Número inválido"
                 case .rateLimitedSMS: error = "Espera un momento antes de reintentar"
                 case .accountNotRegistered: error = nil
+                case .networkFailure: error = "Sin conexión. Revisa tu internet e intenta de nuevo."
+                case .weakConnection: error = "Tu conexión es inestable. Verifica tu señal e intenta de nuevo."
                 default: error = "No se pudo enviar el código. Intenta de nuevo"
                 }
                 throw e
@@ -76,6 +78,9 @@ public final class WelcomeViewModel {
             let kind: AccountKind
             do {
                 kind = try await authService.emailAccountKind(email: email)
+            } catch let e as AuthError where e == .weakConnection {
+                self.error = "Tu conexión es inestable. Verifica tu señal e intenta de nuevo."
+                throw e
             } catch {
                 self.error = "No pudimos verificar el correo. Revisa tu conexión e intenta de nuevo."
                 throw error

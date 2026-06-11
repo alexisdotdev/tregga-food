@@ -101,6 +101,8 @@ public final class OTPViewModel {
                 self.error = "Demasiados intentos. Espera 5 minutos."
             case .networkFailure:
                 self.error = "Sin conexión. Revisa tu internet e intenta de nuevo."
+            case .weakConnection:
+                self.error = "Tu conexión es inestable. Verifica tu señal e intenta de nuevo."
             default:
                 self.error = "No se pudo verificar el código."
             }
@@ -118,6 +120,10 @@ public final class OTPViewModel {
             case .email(let mail): try await authService.sendEmailOTP(email: mail)
             }
             resendCountdown = 60
+        } catch AuthError.weakConnection {
+            self.error = "Tu conexión es inestable. Verifica tu señal e intenta de nuevo."
+        } catch AuthError.networkFailure {
+            self.error = "Sin conexión. Revisa tu internet e intenta de nuevo."
         } catch {
             self.error = "No se pudo reenviar el código."
         }
