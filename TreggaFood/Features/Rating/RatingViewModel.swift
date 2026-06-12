@@ -60,6 +60,7 @@ final class RatingViewModel {
                 pedidoId: pedido.id,
                 clienteId: clienteId,
                 repartidorId: pedido.repartidorId,
+                negocioId: pedido.negocioId,
                 rating: rating,
                 comment: comentario.trimmingCharacters(in: .whitespacesAndNewlines),
                 tags: Array(tagsSeleccionados)

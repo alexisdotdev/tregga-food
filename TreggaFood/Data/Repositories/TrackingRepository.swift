@@ -8,6 +8,9 @@ public protocol TrackingRepository: Sendable {
     func fetchUbicacionRepartidor(repartidorId: UUID) async throws -> UbicacionRepartidor?
     /// El pedido en curso del cliente (no terminal), si existe.
     func fetchPedidoActivo(clienteId: UUID) async throws -> PedidoTracking?
+    /// Teléfono del repartidor del pedido (para llamar/WhatsApp). Vía RPC
+    /// `SECURITY DEFINER`: solo lo devuelve a quien participa en el pedido.
+    func telefonoRepartidor(pedidoId: UUID) async throws -> String?
 }
 
 // MARK: - Supabase
@@ -25,6 +28,7 @@ public final class SupabaseTrackingRepository: TrackingRepository {
         let status: String
         let repartidor_id: UUID?
         let repartidor_name: String?
+        let negocio_id: UUID?
         let negocio_name: String?
         let pickup_lat: Double?
         let pickup_lng: Double?
@@ -48,6 +52,7 @@ public final class SupabaseTrackingRepository: TrackingRepository {
                 status: PedidoStatus(raw: status),
                 repartidorId: repartidor_id,
                 repartidorName: repartidor_name,
+                negocioId: negocio_id,
                 negocioName: negocio_name,
                 pickup: pickup,
                 delivery: delivery,
@@ -64,7 +69,7 @@ public final class SupabaseTrackingRepository: TrackingRepository {
     }
 
     private static let columns =
-        "id,order_number,status,repartidor_id,repartidor_name,negocio_name,pickup_lat,pickup_lng,delivery_lat,delivery_lng,estimated_duration_min,amount"
+        "id,order_number,status,repartidor_id,repartidor_name,negocio_id,negocio_name,pickup_lat,pickup_lng,delivery_lat,delivery_lng,estimated_duration_min,amount"
 
     public func fetchPedido(id: UUID) async throws -> PedidoTracking {
         let dto: PedidoDTO = try await client.from("pedidos")
@@ -98,6 +103,15 @@ public final class SupabaseTrackingRepository: TrackingRepository {
             .execute()
             .value
         return dtos.first?.toDomain()
+    }
+
+    public func telefonoRepartidor(pedidoId: UUID) async throws -> String? {
+        struct Params: Encodable { let p_pedido_id: String }
+        let phone: String? = try await client
+            .rpc("get_repartidor_phone", params: Params(p_pedido_id: pedidoId.uuidString))
+            .execute()
+            .value
+        return phone
     }
 }
 
@@ -152,5 +166,9 @@ public final class MockTrackingRepository: TrackingRepository {
 
     public func fetchPedidoActivo(clienteId: UUID) async throws -> PedidoTracking? {
         try await fetchPedido(id: UUID())
+    }
+
+    public func telefonoRepartidor(pedidoId: UUID) async throws -> String? {
+        "+525555555555"
     }
 }

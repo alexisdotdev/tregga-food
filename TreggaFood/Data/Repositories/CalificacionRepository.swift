@@ -8,6 +8,7 @@ public protocol CalificacionRepository: Sendable {
         pedidoId: UUID,
         clienteId: UUID?,
         repartidorId: UUID?,
+        negocioId: UUID?,
         rating: Int,
         comment: String?,
         tags: [String]
@@ -30,6 +31,7 @@ public final class SupabaseCalificacionRepository: CalificacionRepository {
         pedidoId: UUID,
         clienteId: UUID?,
         repartidorId: UUID?,
+        negocioId: UUID?,
         rating: Int,
         comment: String?,
         tags: [String]
@@ -38,6 +40,9 @@ public final class SupabaseCalificacionRepository: CalificacionRepository {
             let pedido_id: String
             let cliente_id: String?
             let repartidor_id: String?
+            // La reseña del cliente también califica al negocio: con negocio_id
+            // aparece en la pantalla Reseñas de Tregga Business.
+            let negocio_id: String?
             let rating: Int
             let comment: String?
             let tags: [String]
@@ -48,6 +53,7 @@ public final class SupabaseCalificacionRepository: CalificacionRepository {
                 pedido_id: pedidoId.uuidString,
                 cliente_id: clienteId?.uuidString,
                 repartidor_id: repartidorId?.uuidString,
+                negocio_id: negocioId?.uuidString,
                 rating: rating,
                 comment: (comment?.isEmpty ?? true) ? nil : comment,
                 tags: tags,
@@ -84,6 +90,7 @@ public final class MockCalificacionRepository: CalificacionRepository {
         pedidoId: UUID,
         clienteId: UUID?,
         repartidorId: UUID?,
+        negocioId: UUID?,
         rating: Int,
         comment: String?,
         tags: [String]

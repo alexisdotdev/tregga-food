@@ -76,6 +76,7 @@ public struct PedidoTracking: Equatable, Sendable, Identifiable {
     public let status: PedidoStatus
     public let repartidorId: UUID?
     public let repartidorName: String?
+    public let negocioId: UUID?
     public let negocioName: String?
     public let pickup: TrackCoord?
     public let delivery: TrackCoord?
@@ -88,6 +89,7 @@ public struct PedidoTracking: Equatable, Sendable, Identifiable {
         status: PedidoStatus,
         repartidorId: UUID?,
         repartidorName: String?,
+        negocioId: UUID? = nil,
         negocioName: String?,
         pickup: TrackCoord?,
         delivery: TrackCoord?,
@@ -99,6 +101,7 @@ public struct PedidoTracking: Equatable, Sendable, Identifiable {
         self.status = status
         self.repartidorId = repartidorId
         self.repartidorName = repartidorName
+        self.negocioId = negocioId
         self.negocioName = negocioName
         self.pickup = pickup
         self.delivery = delivery
