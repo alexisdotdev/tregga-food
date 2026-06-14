@@ -129,7 +129,7 @@ public final class SupabaseCatalogRepository: CatalogRepository {
             .select()
             .eq("is_active", value: true)
             .eq("acepta_pedidos", value: true)
-            .eq("status", value: "registered")
+            .eq("status", value: "approved")
             .order("rating", ascending: false)
             .execute()
             .value
