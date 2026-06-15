@@ -730,7 +730,7 @@ public struct SignupPasswordView: View {
 
                 Group {
                     Text("Crea una contraseña segura").treggaStyle(.h3)
-                    Text("La usarás si entras desde otro dispositivo o si no te llega el código por SMS.")
+                    Text("La usarás si entras desde otro dispositivo o si no te llega el código a tu correo.")
                         .font(.system(size: 13.5))
                         .foregroundStyle(TreggaColors.textSec)
                         .lineSpacing(13.5 * 0.5)
