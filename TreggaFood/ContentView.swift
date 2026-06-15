@@ -130,10 +130,29 @@ struct ContentView: View {
                     await captureRememberedUser()
                 }
                 phase = .authenticated
-            } else if remembered.hasRemembered, BiometricAuthService.shared.isAvailable {
-                // Sesión cerrada/vencida pero el dispositivo recuerda al usuario:
-                // pantalla de bienvenida con re-login biométrico (estilo Banamex).
-                phase = .welcomeBack
+            } else if remembered.hasRemembered, BiometricAuthService.shared.isAvailable,
+                      let token = await remembered.refreshToken() {
+                // Sesión cerrada/vencida pero el dispositivo recuerda al usuario.
+                // Validamos su refresh token contra el servidor (legible sin Face ID):
+                // SOLO si la cuenta sigue viva ofrecemos welcomeBack + Face ID; si el
+                // token murió (cuenta borrada/baneada) → login. Nunca pedimos Face ID
+                // por una cuenta inexistente. Ante error de red conservamos el
+                // ofrecimiento (Face ID reintenta). El token rota: re-guardamos el nuevo.
+                do {
+                    let tokens = try await deps.authService.restoreSession(refreshToken: token)
+                    await remembered.save(
+                        displayName: remembered.displayName ?? "",
+                        refreshToken: tokens.refreshToken,
+                        userId: tokens.userId
+                    )
+                    phase = .welcomeBack
+                } catch AuthError.networkFailure {
+                    phase = .welcomeBack
+                } catch AuthError.weakConnection {
+                    phase = .welcomeBack
+                } catch {
+                    phase = .unauthenticated
+                }
             } else {
                 phase = .unauthenticated
             }
