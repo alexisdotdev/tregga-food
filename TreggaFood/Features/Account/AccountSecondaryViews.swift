@@ -45,6 +45,7 @@ struct PaymentMethodsView: View {
         }
         .background(TreggaColors.bg)
         .navigationBarBackButtonHidden(true)
+        .swipeBackToDismiss()
     }
 
     private func metodo(_ icon: TreggaIcon.Name, _ title: String, _ sub: String) -> some View {
@@ -117,6 +118,7 @@ struct SecuritySettingsView: View {
         .sheet(isPresented: $showChangePassword) {
             ChangePasswordSheet(authService: deps?.authService ?? MockAuthService())
         }
+        .swipeBackToDismiss()
     }
 
     /// Al activar, confirma identidad antes de habilitar; si falla, revierte.
@@ -160,13 +162,16 @@ private struct ChangePasswordSheet: View {
     @State private var procesando = false
     @State private var mensaje: String?
 
+    private enum Campo: Hashable { case actual, nueva, confirma }
+    @FocusState private var foco: Campo?
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    campo("Contraseña actual", text: $actual)
-                    campo("Nueva contraseña", text: $nueva)
-                    campo("Confirmar nueva", text: $confirma)
+                    campo("Contraseña actual", text: $actual, foco: .actual)
+                    campo("Nueva contraseña", text: $nueva, foco: .nueva)
+                    campo("Confirmar nueva", text: $confirma, foco: .confirma)
                     if let mensaje {
                         Text(mensaje)
                             .font(.system(size: 13, weight: .semibold))
@@ -184,6 +189,7 @@ private struct ChangePasswordSheet: View {
             .navigationTitle("Cambiar contraseña")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() } } }
+            .keyboardNavToolbar($foco, order: [.actual, .nueva, .confirma])
         }
     }
 
@@ -191,12 +197,12 @@ private struct ChangePasswordSheet: View {
         nueva.count >= 8 && nueva == confirma && !actual.isEmpty
     }
 
-    private func campo(_ title: String, text: Binding<String>) -> some View {
+    private func campo(_ title: String, text: Binding<String>, foco campo: Campo) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title.uppercased())
                 .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(TreggaColors.textSec)
-            SecureField("", text: text)
+            PasswordField("", text: text, focus: $foco, equals: campo)
                 .font(.system(size: 15, weight: .semibold))
                 .padding(.horizontal, 14)
                 .frame(height: 48)
@@ -294,6 +300,7 @@ struct AboutAppView: View {
                 repo: deps?.feedbackRepository ?? MockFeedbackRepository()
             )
         }
+        .swipeBackToDismiss()
     }
 
     @ViewBuilder
@@ -370,6 +377,7 @@ struct DataDownloadView: View {
         }
         .background(TreggaColors.bg)
         .navigationBarBackButtonHidden(true)
+        .swipeBackToDismiss()
     }
 
     private func incluye(_ title: String, _ sub: String) -> some View {

@@ -142,6 +142,9 @@ public struct SignupNameView: View {
     let onBack: () -> Void
     let onContinue: () -> Void
 
+    private enum Campo: Hashable { case nombres, paterno, materno }
+    @FocusState private var foco: Campo?
+
     public init(state: SignupFlowState, onBack: @escaping () -> Void, onContinue: @escaping () -> Void) {
         self.state = state
         self.onBack = onBack
@@ -167,9 +170,9 @@ public struct SignupNameView: View {
                 Spacer().frame(height: 18)
 
                 VStack(spacing: 14) {
-                    nameField("Nombre(s)", text: $state.nombres)
-                    nameField("Apellido paterno", text: $state.apellidoPaterno)
-                    nameField("Apellido materno (opcional)", text: $state.apellidoMaterno)
+                    nameField("Nombre(s)", text: $state.nombres, foco: $foco, equals: .nombres)
+                    nameField("Apellido paterno", text: $state.apellidoPaterno, foco: $foco, equals: .paterno)
+                    nameField("Apellido materno (opcional)", text: $state.apellidoMaterno, foco: $foco, equals: .materno)
                 }
                 .padding(.horizontal, 20)
             }
@@ -177,6 +180,7 @@ public struct SignupNameView: View {
         }
         .safeAreaInset(edge: .bottom) { backContinueBar(canContinue: state.nameStepValid, onContinue: onContinue) }
         .background(TreggaColors.bg)
+        .keyboardNavToolbar($foco, order: [.nombres, .paterno, .materno])
     }
 }
 
@@ -186,6 +190,9 @@ public struct SignupEmailView: View {
     @Bindable var state: SignupFlowState
     let onBack: () -> Void
     let onContinue: () -> Void
+
+    private enum Campo: Hashable { case email, telefono }
+    @FocusState private var foco: Campo?
 
     public init(state: SignupFlowState, onBack: @escaping () -> Void, onContinue: @escaping () -> Void) {
         self.state = state
@@ -229,6 +236,7 @@ public struct SignupEmailView: View {
         }
         .safeAreaInset(edge: .bottom) { backContinueBar(canContinue: state.emailStepValid, onContinue: onContinue) }
         .background(TreggaColors.bg)
+        .keyboardNavToolbar($foco, order: [.email, .telefono])
     }
 
     private var emailField: some View {
@@ -238,6 +246,7 @@ public struct SignupEmailView: View {
             // los data detectors de iOS y se pinta azul (como enlace). Un texto
             // genérico queda gris, igual que en Tregga Delivery.
             TextField("Tu correo electrónico", text: $state.email)
+                .focused($foco, equals: .email)
                 .keyboardType(.emailAddress)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled(true)
@@ -258,6 +267,7 @@ public struct SignupEmailView: View {
                     .foregroundStyle(TreggaColors.textSec)
                 Rectangle().fill(TreggaColors.border).frame(width: 1, height: 22)
                 TextField("(55) 123 4567", text: phoneBinding)
+                    .focused($foco, equals: .telefono)
                     .keyboardType(.numberPad)
                     .font(.system(size: 15.5, weight: .heavy))
             }
@@ -518,6 +528,9 @@ public struct SignupAddressView: View {
     @State private var lookupError: String?
     @State private var loadingCP = false
 
+    private enum Campo: Hashable { case calle, cp, colonia, referencias }
+    @FocusState private var foco: Campo?
+
     public init(
         state: SignupFlowState,
         postalCodeRepo: PostalCodeRepository? = nil,
@@ -553,8 +566,8 @@ public struct SignupAddressView: View {
                 Spacer().frame(height: 16)
 
                 VStack(spacing: 14) {
-                    plainField("Calle y número", text: $state.direccionCalle)
-                    plainField("C.P.", text: $state.codigoPostal, keyboard: .numberPad)
+                    plainField("Calle y número", text: $state.direccionCalle, foco: $foco, equals: .calle)
+                    plainField("C.P.", text: $state.codigoPostal, foco: $foco, equals: .cp, keyboard: .numberPad)
                         .onChange(of: state.codigoPostal) { _, new in handleCPChange(new) }
 
                     if loadingCP {
@@ -581,7 +594,7 @@ public struct SignupAddressView: View {
                         }
                     }
 
-                    plainField("Referencias (opcional)", text: $state.referencias, autocapitalization: .sentences)
+                    plainField("Referencias (opcional)", text: $state.referencias, foco: $foco, equals: .referencias, autocapitalization: .sentences)
                 }
                 .padding(.horizontal, 20)
             }
@@ -589,6 +602,7 @@ public struct SignupAddressView: View {
         }
         .safeAreaInset(edge: .bottom) { backContinueBar(canContinue: state.addressStepValid, onContinue: onContinue) }
         .background(TreggaColors.bg)
+        .keyboardNavToolbar($foco, order: [.calle, .cp, .colonia, .referencias])
     }
 
     private var miniMapa: some View {
@@ -624,7 +638,7 @@ public struct SignupAddressView: View {
     @ViewBuilder
     private var coloniaField: some View {
         if colonias.isEmpty {
-            plainField("Colonia", text: $state.colonia)
+            plainField("Colonia", text: $state.colonia, foco: $foco, equals: .colonia)
         } else {
             VStack(alignment: .leading, spacing: 6) {
                 Text("COLONIA")
@@ -711,7 +725,6 @@ public struct SignupAddressView: View {
 
 public struct SignupPasswordView: View {
     @Bindable var state: SignupFlowState
-    @State private var revealed = false
     @State private var faceIDOn = true
     let onBack: () -> Void
     let onContinue: () -> Void
@@ -741,26 +754,12 @@ public struct SignupPasswordView: View {
                 Spacer().frame(height: 18)
 
                 VStack(alignment: .leading, spacing: 6) {
-                    HStack {
-                        fieldLabel("Contraseña")
-                        Spacer()
-                        Button(revealed ? "OCULTAR" : "MOSTRAR") { revealed.toggle() }
-                            .font(.system(size: 12, weight: .heavy))
-                            .foregroundStyle(TreggaColors.primary)
-                    }
-                    Group {
-                        if revealed {
-                            TextField("", text: $state.password)
-                                .textInputAutocapitalization(.never)
-                        } else {
-                            SecureField("", text: $state.password)
-                        }
-                    }
-                    .autocorrectionDisabled(true)
-                    .font(.system(size: 16, weight: .heavy))
-                    .padding(14)
-                    .background(TreggaColors.surface)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    fieldLabel("Contraseña")
+                    PasswordField("", text: $state.password)
+                        .font(.system(size: 16, weight: .heavy))
+                        .padding(14)
+                        .background(TreggaColors.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
                 .padding(.horizontal, 20)
 
@@ -777,6 +776,7 @@ public struct SignupPasswordView: View {
         }
         .safeAreaInset(edge: .bottom) { backContinueBar(canContinue: state.passwordStepValid, onContinue: onContinue) }
         .background(TreggaColors.bg)
+        .keyboardDismissToolbar()
     }
 
     private var faceIDRow: some View {
@@ -1105,10 +1105,16 @@ private func fieldLabel(_ label: String) -> some View {
 
 /// Campo de texto para nombres/apellidos: capitaliza palabras en onChange.
 @ViewBuilder
-fileprivate func nameField(_ label: String, text: Binding<String>) -> some View {
+fileprivate func nameField<F: Hashable>(
+    _ label: String,
+    text: Binding<String>,
+    foco: FocusState<F?>.Binding,
+    equals campo: F
+) -> some View {
     VStack(alignment: .leading, spacing: 6) {
         fieldLabel(label)
         TextField("Toca para escribir…", text: text)
+            .focused(foco, equals: campo)
             .textInputAutocapitalization(.words)
             .onChange(of: text.wrappedValue) { _, new in
                 let c = NameFormatter.capitalizedWords(new)
@@ -1122,15 +1128,18 @@ fileprivate func nameField(_ label: String, text: Binding<String>) -> some View 
 }
 
 @ViewBuilder
-fileprivate func plainField(
+fileprivate func plainField<F: Hashable>(
     _ label: String,
     text: Binding<String>,
+    foco: FocusState<F?>.Binding,
+    equals campo: F,
     keyboard: UIKeyboardType = .default,
     autocapitalization: TextInputAutocapitalization = .words
 ) -> some View {
     VStack(alignment: .leading, spacing: 6) {
         fieldLabel(label)
         TextField("Toca para escribir…", text: text)
+            .focused(foco, equals: campo)
             .keyboardType(keyboard)
             .textInputAutocapitalization(autocapitalization)
             .padding(14)
