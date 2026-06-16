@@ -11,6 +11,7 @@ struct BuscarTabView: View {
     @State private var path: [CatalogRoute] = []
     @State private var query = ""
     @State private var negocios: [Negocio] = []
+    @State private var categoria: BusinessCategory?
     @FocusState private var searchFocused: Bool
 
     private var catalog: CatalogRepository { deps?.catalogRepository ?? MockCatalogRepository() }
@@ -20,12 +21,28 @@ struct BuscarTabView: View {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// Hay un filtro activo (texto o categoría) → mostramos resultados.
+    private var hayFiltro: Bool { !queryLimpia.isEmpty || categoria != nil }
+
+    /// Solo las categorías que tienen al menos un negocio disponible, en el
+    /// orden canónico del catálogo compartido.
+    private var categoriasDisponibles: [BusinessCategory] {
+        let presentes = Set(negocios.compactMap { BusinessCategory.resolve($0.tipo)?.id })
+        return BusinessCategory.all.filter { presentes.contains($0.id) }
+    }
+
     private var resultados: [Negocio] {
-        let q = queryLimpia.lowercased()
-        guard !q.isEmpty else { return [] }
-        return negocios.filter {
-            $0.name.lowercased().contains(q) || ($0.tipo?.lowercased().contains(q) ?? false)
+        var base = negocios
+        if let categoria {
+            base = base.filter { BusinessCategory.resolve($0.tipo)?.id == categoria.id }
         }
+        let q = queryLimpia.lowercased()
+        if !q.isEmpty {
+            base = base.filter {
+                $0.name.lowercased().contains(q) || ($0.tipo?.lowercased().contains(q) ?? false)
+            }
+        }
+        return base
     }
 
     var body: some View {
@@ -43,6 +60,20 @@ struct BuscarTabView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
 
+                if !categoriasDisponibles.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(categoriasDisponibles) { cat in
+                                Chip("\(cat.emoji) \(cat.label)", isActive: categoria?.id == cat.id) {
+                                    categoria = (categoria?.id == cat.id) ? nil : cat
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    }
+                    .padding(.top, 12)
+                }
+
                 content
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -50,17 +81,19 @@ struct BuscarTabView: View {
             .navigationDestination(for: CatalogRoute.self) { route in destination(for: route) }
         }
         .task { if negocios.isEmpty { negocios = (try? await catalog.fetchNegociosDisponibles()) ?? [] } }
-        .keyboardDoneToolbar()
+        .keyboardDismissToolbar()
     }
 
     @ViewBuilder
     private var content: some View {
-        if queryLimpia.isEmpty {
+        if !hayFiltro {
             estado(icon: .search, titulo: "Busca lo que se te antoje",
-                   sub: "Escribe el nombre de un negocio o tipo de comida (tacos, pizza, sushi…).")
+                   sub: "Elige una categoría o escribe el nombre de un negocio o tipo de comida.")
         } else if resultados.isEmpty {
             estado(icon: .info, titulo: "Sin resultados",
-                   sub: "No encontramos negocios para “\(queryLimpia)”.")
+                   sub: queryLimpia.isEmpty
+                        ? "No hay negocios en \(categoria?.label ?? "esta categoría") por ahora."
+                        : "No encontramos negocios para “\(queryLimpia)”.")
         } else {
             ScrollView {
                 LazyVStack(spacing: 18) {
