@@ -14,6 +14,7 @@ public protocol DireccionClienteRepository: Sendable {
         isDefault: Bool,
         lat: Double?,
         lng: Double?,
+        calle: String?,
         codigoPostal: String?,
         colonia: String?,
         municipio: String?,
@@ -27,6 +28,24 @@ public protocol DireccionClienteRepository: Sendable {
         label: String,
         address: String,
         referencias: String?
+    ) async throws -> DireccionCliente
+    /// Edición completa (desde el selector de mapa): coords, componentes,
+    /// instrucciones y fotos. No toca `is_default`.
+    @discardableResult
+    func actualizar(
+        id: UUID,
+        label: String,
+        address: String,
+        referencias: String?,
+        lat: Double?,
+        lng: Double?,
+        calle: String?,
+        codigoPostal: String?,
+        colonia: String?,
+        municipio: String?,
+        estado: String?,
+        instrucciones: String?,
+        fotos: [String]
     ) async throws -> DireccionCliente
     func eliminar(id: UUID) async throws
     /// Marca una dirección como principal y desmarca las demás del cliente.
@@ -47,7 +66,7 @@ public extension DireccionClienteRepository {
         try await crear(
             clienteId: clienteId, label: label, address: address,
             referencias: referencias, isDefault: isDefault,
-            lat: nil, lng: nil, codigoPostal: nil, colonia: nil, municipio: nil, estado: nil,
+            lat: nil, lng: nil, calle: nil, codigoPostal: nil, colonia: nil, municipio: nil, estado: nil,
             instrucciones: nil, fotos: []
         )
     }
@@ -119,6 +138,7 @@ public final class SupabaseDireccionClienteRepository: DireccionClienteRepositor
         isDefault: Bool,
         lat: Double?,
         lng: Double?,
+        calle: String?,
         codigoPostal: String?,
         colonia: String?,
         municipio: String?,
@@ -134,6 +154,7 @@ public final class SupabaseDireccionClienteRepository: DireccionClienteRepositor
             let is_default: Bool
             let lat: Double?
             let lng: Double?
+            let calle: String?
             let codigo_postal: String?
             let colonia: String?
             let municipio: String?
@@ -150,6 +171,7 @@ public final class SupabaseDireccionClienteRepository: DireccionClienteRepositor
                 is_default: isDefault,
                 lat: lat,
                 lng: lng,
+                calle: calle,
                 codigo_postal: codigoPostal,
                 colonia: colonia,
                 municipio: municipio,
@@ -178,6 +200,59 @@ public final class SupabaseDireccionClienteRepository: DireccionClienteRepositor
         }
         let dto: DireccionDTO = try await client.from("direcciones_cliente")
             .update(Update(label: label, address: address, referencias: referencias))
+            .eq("id", value: id.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+        return dto.toDomain()
+    }
+
+    @discardableResult
+    public func actualizar(
+        id: UUID,
+        label: String,
+        address: String,
+        referencias: String?,
+        lat: Double?,
+        lng: Double?,
+        calle: String?,
+        codigoPostal: String?,
+        colonia: String?,
+        municipio: String?,
+        estado: String?,
+        instrucciones: String?,
+        fotos: [String]
+    ) async throws -> DireccionCliente {
+        struct Update: Encodable {
+            let label: String
+            let address: String
+            let referencias: String?
+            let lat: Double?
+            let lng: Double?
+            let calle: String?
+            let codigo_postal: String?
+            let colonia: String?
+            let municipio: String?
+            let estado: String?
+            let instrucciones: String?
+            let fotos: [String]
+        }
+        let dto: DireccionDTO = try await client.from("direcciones_cliente")
+            .update(Update(
+                label: label,
+                address: address,
+                referencias: referencias,
+                lat: lat,
+                lng: lng,
+                calle: calle,
+                codigo_postal: codigoPostal,
+                colonia: colonia,
+                municipio: municipio,
+                estado: estado,
+                instrucciones: instrucciones,
+                fotos: fotos
+            ))
             .eq("id", value: id.uuidString)
             .select()
             .single()
@@ -236,6 +311,7 @@ public final class MockDireccionClienteRepository: DireccionClienteRepository {
         isDefault: Bool,
         lat: Double?,
         lng: Double?,
+        calle: String?,
         codigoPostal: String?,
         colonia: String?,
         municipio: String?,
@@ -256,6 +332,7 @@ public final class MockDireccionClienteRepository: DireccionClienteRepository {
             estado: estado,
             municipio: municipio,
             colonia: colonia,
+            calle: calle,
             instrucciones: instrucciones,
             fotos: fotos
         )
@@ -269,6 +346,30 @@ public final class MockDireccionClienteRepository: DireccionClienteRepository {
         referencias: String?
     ) async throws -> DireccionCliente {
         DireccionCliente(id: id, clienteId: UUID(), label: label, address: address, referencias: referencias)
+    }
+
+    @discardableResult
+    public func actualizar(
+        id: UUID,
+        label: String,
+        address: String,
+        referencias: String?,
+        lat: Double?,
+        lng: Double?,
+        calle: String?,
+        codigoPostal: String?,
+        colonia: String?,
+        municipio: String?,
+        estado: String?,
+        instrucciones: String?,
+        fotos: [String]
+    ) async throws -> DireccionCliente {
+        DireccionCliente(
+            id: id, clienteId: UUID(), label: label, address: address,
+            lat: lat, lng: lng, referencias: referencias,
+            codigoPostal: codigoPostal, estado: estado, municipio: municipio,
+            colonia: colonia, calle: calle, instrucciones: instrucciones, fotos: fotos
+        )
     }
 
     public func eliminar(id: UUID) async throws {}

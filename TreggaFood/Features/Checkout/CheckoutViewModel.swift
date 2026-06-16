@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import TreggaCore
 
 @MainActor
 @Observable
@@ -17,11 +18,6 @@ final class CheckoutViewModel {
     var propina: Decimal = 0
     var propinaPersonalizada: String = ""
 
-    // Captura inline de dirección (cuando el cliente no tiene ninguna)
-    var capturandoDireccion: Bool = false
-    var nuevaDireccionTexto: String = ""
-    var nuevaDireccionReferencias: String = ""
-
     private(set) var direcciones: [DireccionCliente] = []
     private(set) var cargandoDirecciones: Bool = true
     private(set) var phase: Phase = .idle
@@ -33,17 +29,32 @@ final class CheckoutViewModel {
     private let clienteId: UUID
     private let pedidoRepo: PedidoRepository
     private let direccionRepo: DireccionClienteRepository
+    private let storage: StorageService
+    private let userId: UUID
 
     init(
         cart: CartStore,
         clienteId: UUID,
         pedidoRepo: PedidoRepository,
-        direccionRepo: DireccionClienteRepository
+        direccionRepo: DireccionClienteRepository,
+        storage: StorageService,
+        userId: UUID
     ) {
         self.cart = cart
         self.clienteId = clienteId
         self.pedidoRepo = pedidoRepo
         self.direccionRepo = direccionRepo
+        self.storage = storage
+        self.userId = userId
+    }
+
+    /// Centro inicial del mapa al agregar dirección: la seleccionada (si tiene
+    /// coordenadas) o el centro de Zinapécuaro como respaldo.
+    var centroInicial: TrackCoord {
+        if let d = direccionSeleccionada ?? direcciones.first, let la = d.lat, let lo = d.lng {
+            return TrackCoord(lat: la, lng: lo)
+        }
+        return TrackCoord(lat: 19.8642, lng: -100.8225)
     }
 
     var subtotal: Decimal { cart.subtotal }
@@ -59,22 +70,45 @@ final class CheckoutViewModel {
     var total: Decimal { subtotal + deliveryFee + propinaEfectiva }
 
     var puedeConfirmar: Bool {
-        guard !cart.isEmpty else { return false }
-        if direccionSeleccionada != nil { return true }
-        return !nuevaDireccionTexto.trimmingCharacters(in: .whitespaces).isEmpty
+        !cart.isEmpty && direccionSeleccionada != nil
     }
 
     func load() async {
         cargandoDirecciones = true
-        do {
-            direcciones = try await direccionRepo.fetchDelCliente(clienteId: clienteId)
+        direcciones = (try? await direccionRepo.fetchDelCliente(clienteId: clienteId)) ?? []
+        if direccionSeleccionada == nil || !direcciones.contains(where: { $0.id == direccionSeleccionada?.id }) {
             direccionSeleccionada = direcciones.first(where: { $0.isDefault }) ?? direcciones.first
-            capturandoDireccion = direcciones.isEmpty
-        } catch {
-            direcciones = []
-            capturandoDireccion = true
         }
         cargandoDirecciones = false
+    }
+
+    /// Alta de dirección con mapa+pin (mismo flujo que el selector de Direcciones):
+    /// sube las fotos, crea con coordenadas/datos estructurados y la deja
+    /// seleccionada para este pedido. La primera dirección queda como principal.
+    func crearConUbicacion(
+        label: String, address: String, referencias: String?,
+        instrucciones: String?, fotosData: [Data], place: GeocodedPlace?
+    ) async {
+        let esPrimera = direcciones.isEmpty
+        var urls: [String] = []
+        for (i, data) in fotosData.enumerated() {
+            if let url = try? await storage.uploadAvatar(
+                data: data, userId: userId, fileName: "direcciones/\(UUID().uuidString)-\(i).jpg"
+            ) {
+                urls.append(url.absoluteString)
+            }
+        }
+        let nueva = try? await direccionRepo.crear(
+            clienteId: clienteId, label: label, address: address, referencias: referencias,
+            isDefault: esPrimera,
+            lat: place?.lat, lng: place?.lng,
+            calle: place?.calle,
+            codigoPostal: place?.codigoPostal, colonia: place?.colonia,
+            municipio: place?.municipio, estado: place?.estado,
+            instrucciones: instrucciones, fotos: urls
+        )
+        if let nueva { direccionSeleccionada = nueva }
+        await load()
     }
 
     func seleccionarPropina(_ valor: Decimal) {
@@ -83,47 +117,21 @@ final class CheckoutViewModel {
     }
 
     func confirmar() async {
-        guard cart.negocioId != nil, !cart.isEmpty else {
+        guard let negocioId = cart.negocioId, !cart.isEmpty else {
             phase = .error("Tu carrito está vacío.")
+            return
+        }
+        guard let dir = direccionSeleccionada else {
+            phase = .error("Agrega tu dirección de entrega.")
             return
         }
         phase = .confirming
-
-        // Resolver dirección: usar la seleccionada o crear una inline.
-        let direccionId: UUID
-        do {
-            if let dir = direccionSeleccionada {
-                direccionId = dir.id
-            } else {
-                let texto = nuevaDireccionTexto.trimmingCharacters(in: .whitespaces)
-                guard !texto.isEmpty else {
-                    phase = .error("Falta tu dirección de entrega.")
-                    return
-                }
-                let creada = try await direccionRepo.crear(
-                    clienteId: clienteId,
-                    label: "Casa",
-                    address: texto,
-                    referencias: nuevaDireccionReferencias.isEmpty ? nil : nuevaDireccionReferencias,
-                    isDefault: direcciones.isEmpty
-                )
-                direccionId = creada.id
-            }
-        } catch {
-            phase = .error("No pudimos guardar tu dirección. Intenta de nuevo.")
-            return
-        }
-
-        guard let negocioId = cart.negocioId else {
-            phase = .error("Tu carrito está vacío.")
-            return
-        }
 
         do {
             let resultado = try await pedidoRepo.crearPedido(
                 clienteId: clienteId,
                 negocioId: negocioId,
-                direccionId: direccionId,
+                direccionId: dir.id,
                 items: cart.buildPedidoItems(),
                 metodoPago: metodoPago,
                 deliveryFee: deliveryFee,

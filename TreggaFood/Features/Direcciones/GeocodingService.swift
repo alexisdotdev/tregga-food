@@ -7,6 +7,7 @@ struct GeocodedPlace: Identifiable, Equatable {
     let address: String
     let lat: Double
     let lng: Double
+    var calle: String?
     var codigoPostal: String?
     var colonia: String?
     var municipio: String?
@@ -86,10 +87,16 @@ struct GeocodingService {
                 func comp(_ type: String) -> String? {
                     address_components.first { $0.types.contains(type) }?.long_name
                 }
+                // Calle y número: route + street_number (el número suele ir al final
+                // en direcciones MX). nil si Google no devolvió ninguno.
+                let calle = [comp("route"), comp("street_number")]
+                    .compactMap { $0 }
+                    .joined(separator: " ")
                 return GeocodedPlace(
                     address: formatted_address,
                     lat: geometry.location.lat,
                     lng: geometry.location.lng,
+                    calle: calle.isEmpty ? nil : calle,
                     codigoPostal: comp("postal_code"),
                     colonia: comp("sublocality") ?? comp("neighborhood"),
                     municipio: comp("locality") ?? comp("administrative_area_level_2"),

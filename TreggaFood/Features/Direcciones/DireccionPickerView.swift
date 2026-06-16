@@ -36,16 +36,6 @@ final class DireccionPickerViewModel {
         await cargar()
     }
 
-    func crear(label: String, address: String, referencias: String?, isDefault: Bool) async {
-        _ = try? await repo.crear(clienteId: clienteId, label: label, address: address, referencias: referencias, isDefault: isDefault)
-        await cargar()
-    }
-
-    func editar(id: UUID, label: String, address: String, referencias: String?) async {
-        _ = try? await repo.editar(id: id, label: label, address: address, referencias: referencias)
-        await cargar()
-    }
-
     func eliminar(_ dir: DireccionCliente) async {
         try? await repo.eliminar(id: dir.id)
         await cargar()
@@ -75,10 +65,36 @@ final class DireccionPickerViewModel {
         let nueva = try? await repo.crear(
             clienteId: clienteId, label: label, address: address, referencias: referencias, isDefault: false,
             lat: place?.lat, lng: place?.lng,
+            calle: place?.calle,
             codigoPostal: place?.codigoPostal, colonia: place?.colonia, municipio: place?.municipio, estado: place?.estado,
             instrucciones: instrucciones, fotos: urls
         )
         if let nueva { try? await repo.hacerDefault(id: nueva.id, clienteId: clienteId) }
+        await cargar()
+    }
+
+    /// Edición con coordenadas + instrucciones + fotos (desde el selector de pin).
+    /// Conserva las fotos existentes elegidas y sube las nuevas. No cambia la principal.
+    func editarConUbicacion(
+        id: UUID, label: String, address: String, referencias: String?,
+        instrucciones: String?, nuevasFotos: [Data], fotosExistentes: [String], place: GeocodedPlace?
+    ) async {
+        var urls = fotosExistentes
+        for (i, data) in nuevasFotos.enumerated() {
+            if let url = try? await storage.uploadAvatar(
+                data: data, userId: userId, fileName: "direcciones/\(UUID().uuidString)-\(i).jpg"
+            ) {
+                urls.append(url.absoluteString)
+            }
+        }
+        _ = try? await repo.actualizar(
+            id: id, label: label, address: address, referencias: referencias,
+            lat: place?.lat, lng: place?.lng,
+            calle: place?.calle,
+            codigoPostal: place?.codigoPostal, colonia: place?.colonia,
+            municipio: place?.municipio, estado: place?.estado,
+            instrucciones: instrucciones, fotos: urls
+        )
         await cargar()
     }
 }
@@ -87,8 +103,7 @@ final class DireccionPickerViewModel {
 /// Permite seleccionar la dirección activa, agregar nuevas y editarlas.
 struct DireccionPickerView: View {
     @State private var viewModel: DireccionPickerViewModel
-    @State private var editor: EditorState?
-    @State private var accionesPara: DireccionCliente?
+    @State private var editandoDir: DireccionCliente?
     @State private var showPicker = false
     /// Se llama cuando cambia la dirección activa, para que Home se refresque.
     let onSelected: () -> Void
@@ -101,43 +116,52 @@ struct DireccionPickerView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
+            List {
+                Section {
                     agregarButton
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 4, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                }
 
-                    if viewModel.loading {
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 60)
-                    } else {
-                        if let activa = viewModel.activa {
-                            SectionHeader("Dirección actual").padding(.top, 22)
-                            tarjeta(activa, esActual: true)
-                                .padding(.horizontal, 16)
-                                .padding(.top, 4)
-                        }
-
-                        if !viewModel.otras.isEmpty {
-                            SectionHeader("Tus direcciones").padding(.top, 22)
-                            VStack(spacing: 12) {
-                                ForEach(viewModel.otras) { dir in
-                                    tarjeta(dir, esActual: false)
-                                }
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.top, 4)
-                        }
-
-                        if viewModel.direcciones.isEmpty {
-                            vacio
+                if viewModel.loading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 40)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                } else {
+                    if let activa = viewModel.activa {
+                        Section {
+                            fila(activa, esActual: true)
+                        } header: {
+                            SectionHeader("Dirección actual")
+                                .textCase(nil)
+                                .listRowInsets(EdgeInsets(top: 16, leading: 0, bottom: 0, trailing: 0))
                         }
                     }
 
-                    Spacer(minLength: 24)
+                    if !viewModel.otras.isEmpty {
+                        Section {
+                            ForEach(viewModel.otras) { dir in
+                                fila(dir, esActual: false)
+                            }
+                        } header: {
+                            SectionHeader("Tus direcciones")
+                                .textCase(nil)
+                                .listRowInsets(EdgeInsets(top: 16, leading: 0, bottom: 0, trailing: 0))
+                        }
+                    }
+
+                    if viewModel.direcciones.isEmpty {
+                        vacio
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    }
                 }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
             .background(TreggaColors.bg)
             .navigationTitle("Direcciones")
             .navigationBarTitleDisplayMode(.inline)
@@ -149,20 +173,8 @@ struct DireccionPickerView: View {
                 }
             }
             .task { await viewModel.cargar() }
-            .sheet(item: $editor) { state in
-                AddressEditorSheet(state: state) { label, address, refs, isDefault in
-                    Task {
-                        if let id = state.id {
-                            await viewModel.editar(id: id, label: label, address: address, referencias: refs)
-                        } else {
-                            await viewModel.crear(label: label, address: address, referencias: refs, isDefault: isDefault)
-                        }
-                        onSelected()
-                    }
-                }
-            }
             .fullScreenCover(isPresented: $showPicker) {
-                LocationPickerView(center: viewModel.centroInicial) { label, address, refs, instrucciones, fotosData, place in
+                LocationPickerView(center: viewModel.centroInicial) { label, address, refs, instrucciones, fotosData, _, place in
                     Task {
                         await viewModel.crearConUbicacion(
                             label: label, address: address, referencias: refs,
@@ -172,16 +184,16 @@ struct DireccionPickerView: View {
                     }
                 }
             }
-            .confirmationDialog(accionesPara?.label ?? "", isPresented: .init(
-                get: { accionesPara != nil },
-                set: { if !$0 { accionesPara = nil } }
-            ), titleVisibility: .visible) {
-                if let dir = accionesPara {
-                    Button("Editar") { editor = EditorState(from: dir) }
-                    Button("Eliminar", role: .destructive) {
-                        Task { await viewModel.eliminar(dir); onSelected() }
+            .fullScreenCover(item: $editandoDir) { dir in
+                LocationPickerView(editing: dir) { label, address, refs, instrucciones, nuevas, existentes, place in
+                    Task {
+                        await viewModel.editarConUbicacion(
+                            id: dir.id, label: label, address: address, referencias: refs,
+                            instrucciones: instrucciones, nuevasFotos: nuevas,
+                            fotosExistentes: existentes, place: place
+                        )
+                        onSelected()
                     }
-                    Button("Cancelar", role: .cancel) {}
                 }
             }
         }
@@ -206,6 +218,27 @@ struct DireccionPickerView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)
+    }
+
+    /// Fila de la lista: la tarjeta + acciones por deslizamiento (Editar/Eliminar).
+    private func fila(_ dir: DireccionCliente, esActual: Bool) -> some View {
+        tarjeta(dir, esActual: esActual)
+            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                Button(role: .destructive) {
+                    Task { await viewModel.eliminar(dir); onSelected() }
+                } label: {
+                    Label("Eliminar", systemImage: "trash")
+                }
+                Button {
+                    editandoDir = dir
+                } label: {
+                    Label("Editar", systemImage: "pencil")
+                }
+                .tint(TreggaColors.primary)
+            }
     }
 
     private func tarjeta(_ dir: DireccionCliente, esActual: Bool) -> some View {
@@ -245,11 +278,7 @@ struct DireccionPickerView: View {
                     }
                 }
                 Spacer(minLength: 4)
-                Button { accionesPara = dir } label: {
-                    TreggaIcon(.edit, size: 18, color: TreggaColors.textSec)
-                        .frame(width: 32, height: 32)
-                }
-                .buttonStyle(.plain)
+                TreggaIcon(.chevR, size: 16, color: TreggaColors.textTer)
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)

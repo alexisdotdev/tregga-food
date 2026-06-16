@@ -4,12 +4,15 @@ import TreggaDesignSystem
 import GoogleMaps
 import Observation
 import PhotosUI
+import UIKit
 
 /// Mapa con pin fijo al centro: reporta su centro al quedar quieto (para reverse
 /// geocoding). El pin es un overlay SwiftUI, no un marcador, así queda centrado.
 struct LocationPickerMapView: UIViewRepresentable {
     let initial: TrackCoord
     let controller: MapController
+    var topPadding: CGFloat = 0
+    var bottomPadding: CGFloat = 0
     let onIdle: (TrackCoord) -> Void
 
     func makeUIView(context: Context) -> GMSMapView {
@@ -37,7 +40,13 @@ struct LocationPickerMapView: UIViewRepresentable {
         }
     }
 
-    func updateUIView(_ mapView: GMSMapView, context: Context) {}
+    func updateUIView(_ mapView: GMSMapView, context: Context) {
+        // El padding recentra el target de la cámara (que reporta `idleAt`) dentro
+        // del área visible entre la barra superior y el drawer, así el pin apunta
+        // a la zona libre del mapa y no queda tapado por el panel.
+        let nuevo = UIEdgeInsets(top: topPadding, left: 0, bottom: bottomPadding, right: 0)
+        if mapView.padding != nuevo { mapView.padding = nuevo }
+    }
 }
 
 @MainActor
@@ -53,7 +62,11 @@ final class LocationPickerViewModel {
     private(set) var direccionActual: String = "Mueve el mapa para ubicar tu dirección"
     private(set) var place: GeocodedPlace?
 
-    init(center: TrackCoord) { self.center = center }
+    init(center: TrackCoord, addressPreload: String? = nil, placePreload: GeocodedPlace? = nil) {
+        self.center = center
+        if let addressPreload { self.direccionActual = addressPreload }
+        self.place = placePreload
+    }
 
     func buscar() async {
         let q = query
@@ -82,6 +95,13 @@ final class LocationPickerViewModel {
         if let p = await geocoder.reverse(lat: coord.lat, lng: coord.lng) {
             direccionActual = p.address
             place = p
+        } else {
+            // Sin reverse-geocoding (Geocoding API no disponible): igual dejamos
+            // guardar usando las coordenadas del pin, para no bloquear al usuario.
+            let etiqueta = String(format: "Ubicación seleccionada (%.5f, %.5f)", coord.lat, coord.lng)
+            direccionActual = etiqueta
+            place = GeocodedPlace(address: etiqueta, lat: coord.lat, lng: coord.lng,
+                                  codigoPostal: nil, colonia: nil, municipio: nil, estado: nil)
         }
     }
 }
@@ -95,22 +115,58 @@ struct LocationPickerView: View {
     @State private var instrucciones = ""
     @State private var fotosSel: [PhotosPickerItem] = []
     @State private var fotosImg: [UIImage] = []
+    /// URLs de fotos ya guardadas (modo edición); se conservan salvo que se quiten.
+    @State private var fotosExistentes: [String] = []
     @State private var searchTask: Task<Void, Never>?
     @State private var locationProvider = CurrentLocationProvider()
     @State private var buscandoUbicacion = false
     @State private var ubicacionDenegada = false
+    @State private var topH: CGFloat = 0
+    @State private var drawerH: CGFloat = 0
+    @State private var showFotoOpciones = false
+    @State private var showLibrary = false
+    @State private var showCamara = false
     @Environment(\.dismiss) private var dismiss
 
+    /// `fotosExistentes`: URLs que el usuario decidió conservar; `nuevasFotos`: fotos
+    /// recién tomadas/elegidas (Data para subir).
     let onGuardar: (_ label: String, _ address: String, _ referencias: String?,
-                    _ instrucciones: String?, _ fotos: [Data], _ place: GeocodedPlace?) -> Void
+                    _ instrucciones: String?, _ nuevasFotos: [Data],
+                    _ fotosExistentes: [String], _ place: GeocodedPlace?) -> Void
 
     private let etiquetas = ["Casa", "Trabajo", "Otro"]
 
+    private var totalFotos: Int { fotosExistentes.count + fotosImg.count }
+
+    /// Alta: arranca en `center`, sin datos precargados.
     init(
         center: TrackCoord,
-        onGuardar: @escaping (String, String, String?, String?, [Data], GeocodedPlace?) -> Void
+        onGuardar: @escaping (String, String, String?, String?, [Data], [String], GeocodedPlace?) -> Void
     ) {
         _viewModel = State(initialValue: LocationPickerViewModel(center: center))
+        self.onGuardar = onGuardar
+    }
+
+    /// Edición: precarga ubicación, etiqueta, referencias, instrucciones y fotos.
+    init(
+        editing dir: DireccionCliente,
+        onGuardar: @escaping (String, String, String?, String?, [Data], [String], GeocodedPlace?) -> Void
+    ) {
+        let center: TrackCoord = (dir.lat != nil && dir.lng != nil)
+            ? TrackCoord(lat: dir.lat!, lng: dir.lng!)
+            : TrackCoord(lat: 19.8642, lng: -100.8225)
+        let place = GeocodedPlace(
+            address: dir.address, lat: center.lat, lng: center.lng,
+            calle: dir.calle,
+            codigoPostal: dir.codigoPostal, colonia: dir.colonia,
+            municipio: dir.municipio, estado: dir.estado
+        )
+        _viewModel = State(initialValue: LocationPickerViewModel(
+            center: center, addressPreload: dir.address, placePreload: place))
+        _label = State(initialValue: dir.label)
+        _referencias = State(initialValue: dir.referencias ?? "")
+        _instrucciones = State(initialValue: dir.instrucciones ?? "")
+        _fotosExistentes = State(initialValue: dir.fotos)
         self.onGuardar = onGuardar
     }
 
@@ -120,16 +176,26 @@ struct LocationPickerView: View {
                 LocationPickerMapView(
                     initial: viewModel.center,
                     controller: mapController,
+                    topPadding: topH,
+                    bottomPadding: drawerH,
                     onIdle: { coord in Task { await viewModel.mapaQuieto(coord) } }
                 )
                 .ignoresSafeArea()
 
                 centerPin
+                    .ignoresSafeArea()
+                    .offset(y: (topH - drawerH) / 2)
 
                 VStack(spacing: 0) {
                     searchArea
+                        .onGeometryChange(for: CGFloat.self) { proxy in
+                            proxy.size.height + proxy.safeAreaInsets.top
+                        } action: { topH = $0 }
                     Spacer()
                     bottomPanel
+                        .onGeometryChange(for: CGFloat.self) { proxy in
+                            proxy.size.height + proxy.safeAreaInsets.bottom
+                        } action: { drawerH = $0 }
                 }
             }
             .navigationTitle("Ubicación de entrega")
@@ -144,6 +210,9 @@ struct LocationPickerView: View {
             } message: {
                 Text("Activa el permiso de ubicación en Ajustes para usar tu ubicación actual.")
             }
+            // Layout en capas (buscador en overlay + panel con scroll propio): el
+            // orden de foco no es lineal, así que solo el check para ocultar teclado.
+            .keyboardDismissToolbar()
         }
     }
 
@@ -291,6 +360,7 @@ struct LocationPickerView: View {
                     referencias.isEmpty ? nil : referencias,
                     instrucciones.isEmpty ? nil : instrucciones,
                     fotosImg.compactMap { jpegComprimido($0) },
+                    fotosExistentes,
                     viewModel.place
                 )
                 dismiss()
@@ -314,15 +384,18 @@ struct LocationPickerView: View {
             }
         }
         .onChange(of: fotosSel) { _, items in
+            guard !items.isEmpty else { return }
             Task {
-                var imgs: [UIImage] = []
+                var nuevas: [UIImage] = []
                 for item in items {
                     if let data = try? await item.loadTransferable(type: Data.self),
                        let img = UIImage(data: data) {
-                        imgs.append(img)
+                        nuevas.append(img)
                     }
                 }
-                fotosImg = imgs
+                let espacio = max(0, 3 - totalFotos)
+                fotosImg.append(contentsOf: nuevas.prefix(espacio))
+                fotosSel = []
             }
         }
     }
@@ -350,10 +423,10 @@ struct LocationPickerView: View {
 
     private var fotosPicker: some View {
         VStack(alignment: .leading, spacing: 10) {
-            PhotosPicker(selection: $fotosSel, maxSelectionCount: 3, matching: .images) {
+            Button { showFotoOpciones = true } label: {
                 HStack(spacing: 8) {
                     TreggaIcon(.camera, size: 16, color: TreggaColors.primary)
-                    Text(fotosImg.isEmpty ? "Agregar fotos de la entrada" : "\(fotosImg.count) foto\(fotosImg.count == 1 ? "" : "s")")
+                    Text(totalFotos == 0 ? "Agregar fotos de la entrada" : "\(totalFotos) foto\(totalFotos == 1 ? "" : "s")")
                         .font(.system(size: 13.5, weight: .heavy))
                         .foregroundStyle(TreggaColors.primary)
                     Spacer()
@@ -365,20 +438,69 @@ struct LocationPickerView: View {
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(TreggaColors.primary.opacity(0.35), lineWidth: 1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .buttonStyle(.plain)
+            .disabled(totalFotos >= 3)
+            .confirmationDialog("Agregar foto de la entrada", isPresented: $showFotoOpciones, titleVisibility: .visible) {
+                if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                    Button("Tomar foto") { showCamara = true }
+                }
+                Button("Elegir de la galería") { showLibrary = true }
+                Button("Cancelar", role: .cancel) {}
+            }
+            .photosPicker(isPresented: $showLibrary, selection: $fotosSel,
+                          maxSelectionCount: max(1, 3 - totalFotos), matching: .images)
+            .fullScreenCover(isPresented: $showCamara) {
+                CameraPicker(onImage: { img in
+                    if totalFotos < 3 { fotosImg.append(img) }
+                }, preferRear: true)
+                .ignoresSafeArea()
+            }
 
-            if !fotosImg.isEmpty {
+            if totalFotos > 0 {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(Array(fotosImg.enumerated()), id: \.offset) { _, img in
-                            Image(uiImage: img)
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 64, height: 64)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        ForEach(Array(fotosExistentes.enumerated()), id: \.element) { idx, url in
+                            fotoThumb {
+                                AsyncImage(url: URL(string: url)) { img in
+                                    img.resizable().scaledToFill()
+                                } placeholder: {
+                                    ZStack { TreggaColors.surface; ProgressView().controlSize(.mini) }
+                                }
+                            } onRemove: {
+                                fotosExistentes.remove(at: idx)
+                            }
+                        }
+                        ForEach(Array(fotosImg.enumerated()), id: \.offset) { idx, img in
+                            fotoThumb {
+                                Image(uiImage: img).resizable().scaledToFill()
+                            } onRemove: {
+                                fotosImg.remove(at: idx)
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    /// Miniatura de foto (64×64) con botón para quitarla.
+    private func fotoThumb<Content: View>(
+        @ViewBuilder _ content: () -> Content,
+        onRemove: @escaping () -> Void
+    ) -> some View {
+        content()
+            .frame(width: 64, height: 64)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(alignment: .topTrailing) {
+                Button(action: onRemove) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 20, height: 20)
+                        .background(Color.black.opacity(0.55), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .padding(3)
+            }
     }
 }
