@@ -1120,7 +1120,9 @@ fileprivate func nameField<F: Hashable>(
                 let c = NameFormatter.capitalizedWords(new)
                 if c != new { text.wrappedValue = c }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
+            .contentShape(Rectangle())
             .background(TreggaColors.surface)
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .font(.system(size: 15.5, weight: .heavy))
@@ -1142,7 +1144,9 @@ fileprivate func plainField<F: Hashable>(
             .focused(foco, equals: campo)
             .keyboardType(keyboard)
             .textInputAutocapitalization(autocapitalization)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
+            .contentShape(Rectangle())
             .background(TreggaColors.surface)
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .font(.system(size: 15.5, weight: .heavy))
