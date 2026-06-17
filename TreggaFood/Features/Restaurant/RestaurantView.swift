@@ -114,7 +114,7 @@ struct RestaurantView: View {
                     .foregroundStyle(TreggaColors.textSec)
                     .padding(.top, 4)
             }
-            if let estado = viewModel.estadoApertura {
+            if let estado = estadoMostrado {
                 aperturaBadge(estado)
                     .padding(.top, 10)
             }
@@ -148,6 +148,15 @@ struct RestaurantView: View {
             RoundedRectangle(cornerRadius: TreggaRadius.xxl)
                 .stroke(TreggaColors.border, lineWidth: 1)
         )
+    }
+
+    /// Estado a mostrar: si el dueño cerró manualmente (no acepta pedidos),
+    /// se ve "Cerrado" aunque sea su horario; si no, lo derivado de los horarios.
+    private var estadoMostrado: EstadoApertura? {
+        guard negocio.aceptaPedidos else {
+            return EstadoApertura(abierto: false, detalle: "No disponible ahora")
+        }
+        return viewModel.estadoApertura
     }
 
     private func aperturaBadge(_ estado: EstadoApertura) -> some View {
