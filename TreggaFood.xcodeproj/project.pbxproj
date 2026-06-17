@@ -14,6 +14,7 @@
 		5443F4E62FB7F7670027212D /* TreggaDesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 5443F4E52FB7F7670027212D /* TreggaDesignSystem */; };
 		545B2AE82FBAAC2D006A8A95 /* GoogleMaps in Frameworks */ = {isa = PBXBuildFile; productRef = 545B2AE72FBAAC2D006A8A95 /* GoogleMaps */; };
 		548265DC2FE338640069FA38 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 548265DB2FE338640069FA38 /* GoogleService-Info.plist */; };
+		548274242FE356270069FA38 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 548274232FE356270069FA38 /* FirebaseCrashlytics */; };
 		C0FFEE0000000000000000B1 /* TreggaCore in Frameworks */ = {isa = PBXBuildFile; productRef = C0FFEE0000000000000000D2 /* TreggaCore */; };
 		FCBA5E0000000000000000B1 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = FCBA5E0000000000000000D2 /* FirebaseMessaging */; };
 /* End PBXBuildFile section */
@@ -73,6 +74,7 @@
 				5443F4E62FB7F7670027212D /* TreggaDesignSystem in Frameworks */,
 				C0FFEE0000000000000000B1 /* TreggaCore in Frameworks */,
 				FCBA5E0000000000000000B1 /* FirebaseMessaging in Frameworks */,
+				548274242FE356270069FA38 /* FirebaseCrashlytics in Frameworks */,
 				5419860B2FBBB6D30064A92C /* Storage in Frameworks */,
 				541986072FBBB6D30064A92C /* Auth in Frameworks */,
 			);
@@ -136,6 +138,7 @@
 				540867932FB7E8B800FF1584 /* Sources */,
 				540867942FB7E8B800FF1584 /* Frameworks */,
 				540867952FB7E8B800FF1584 /* Resources */,
+				548274252FE356810069FA38 /* Run Script */,
 			);
 			buildRules = (
 			);
@@ -154,6 +157,7 @@
 				5419860A2FBBB6D30064A92C /* Storage */,
 				5419860C2FBBB6D30064A92C /* Supabase */,
 				FCBA5E0000000000000000D2 /* FirebaseMessaging */,
+				548274232FE356270069FA38 /* FirebaseCrashlytics */,
 			);
 			productName = TreggaFood;
 			productReference = 540867972FB7E8B800FF1584 /* TreggaFood.app */;
@@ -280,6 +284,29 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		548274252FE356810069FA38 /* Run Script */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+			);
+			name = "Run Script";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		540867932FB7E8B800FF1584 /* Sources */ = {
@@ -711,6 +738,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5456D8552FBA8EF50088157D /* XCRemoteSwiftPackageReference "ios-maps-sdk" */;
 			productName = GoogleMaps;
+		};
+		548274232FE356270069FA38 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FCBA5E0000000000000000A3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
 		};
 		C0FFEE0000000000000000D2 /* TreggaCore */ = {
 			isa = XCSwiftPackageProductDependency;
