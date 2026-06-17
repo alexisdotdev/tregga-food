@@ -217,6 +217,14 @@ public final class OnboardingCoordinator {
             return
         }
 
+        // 3b — correo de verificación (no bloqueante): manda un enlace para que
+        // el cliente confirme la propiedad de su correo. Si falla, no afecta el alta.
+        do {
+            try await authService.requestEmailVerification()
+        } catch {
+            print("[submitSignup] requestEmailVerification falló:", error)
+        }
+
         let fullName = signup.nombres.trimmingCharacters(in: .whitespaces)
         let phone = signup.phoneE164Normalized
         let email = signup.email.trimmingCharacters(in: .whitespacesAndNewlines)
