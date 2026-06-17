@@ -52,6 +52,7 @@ struct RestaurantView: View {
             guard let deps, let uid = deps.authSession.tokens?.userId else { return }
             isFav = ((try? await deps.favoritoRepository.idsFavoritos(userId: uid)) ?? []).contains(negocio.id)
         }
+        .swipeBackToDismiss()
     }
 
     private func toggleFavorito() async {
@@ -113,6 +114,10 @@ struct RestaurantView: View {
                     .foregroundStyle(TreggaColors.textSec)
                     .padding(.top, 4)
             }
+            if let estado = viewModel.estadoApertura {
+                aperturaBadge(estado)
+                    .padding(.top, 10)
+            }
             HStack(spacing: 14) {
                 metaItem(icon: .star, text: negocio.ratingLabel, iconColor: TreggaColors.star)
                 metaItem(icon: .clock, text: negocio.tiempoLabel)
@@ -142,6 +147,27 @@ struct RestaurantView: View {
         .overlay(
             RoundedRectangle(cornerRadius: TreggaRadius.xxl)
                 .stroke(TreggaColors.border, lineWidth: 1)
+        )
+    }
+
+    private func aperturaBadge(_ estado: EstadoApertura) -> some View {
+        let color = estado.abierto ? TreggaColors.primaryDeep : TreggaColors.danger
+        return HStack(spacing: 7) {
+            Circle()
+                .fill(estado.abierto ? TreggaColors.primary : TreggaColors.danger)
+                .frame(width: 7, height: 7)
+            Text(estado.abierto ? "Abierto" : "Cerrado")
+                .font(.system(size: 13, weight: .heavy))
+                .foregroundStyle(color)
+            Text("· \(estado.detalle)")
+                .font(.system(size: 12.5, weight: .semibold))
+                .foregroundStyle(TreggaColors.textSec)
+        }
+        .padding(.horizontal, 11)
+        .padding(.vertical, 7)
+        .background(
+            (estado.abierto ? TreggaColors.primarySoft : TreggaColors.danger.opacity(0.10)),
+            in: Capsule()
         )
     }
 

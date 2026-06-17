@@ -8,6 +8,8 @@ public protocol CatalogRepository: Sendable {
     func fetchMenu(negocioId: UUID) async throws -> [MenuSection]
     /// Grupos de modificadores (con sus opciones) de un producto.
     func fetchModificadores(productoId: UUID) async throws -> [GrupoModificadores]
+    /// Horarios de atención del negocio (para mostrar abierto/cerrado).
+    func fetchHorarios(negocioId: UUID) async throws -> [HorarioNegocio]
 }
 
 // MARK: - Mock
@@ -97,6 +99,14 @@ public final class MockCatalogRepository: CatalogRepository {
                 ]
             ),
         ]
+    }
+
+    public func fetchHorarios(negocioId: UUID) async throws -> [HorarioNegocio] {
+        // Lun–Sáb 11:00–22:00, Dom 11:00–18:00.
+        (1...7).map { dia in
+            HorarioNegocio(diaSemana: dia, horaApertura: "11:00",
+                           horaCierre: dia == 7 ? "18:00" : "22:00", isActive: true)
+        }
     }
 
     private static let tacoId = UUID()

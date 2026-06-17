@@ -165,6 +165,26 @@ public final class SupabaseCatalogRepository: CatalogRepository {
         }
     }
 
+    public func fetchHorarios(negocioId: UUID) async throws -> [HorarioNegocio] {
+        struct HorarioDTO: Decodable {
+            let dia_semana: Int
+            let hora_apertura: String
+            let hora_cierre: String
+            let is_active: Bool
+        }
+        let dtos: [HorarioDTO] = try await client.from("horarios_negocio")
+            .select("dia_semana,hora_apertura,hora_cierre,is_active")
+            .eq("negocio_id", value: negocioId.uuidString)
+            .execute()
+            .value
+        return dtos.map {
+            HorarioNegocio(diaSemana: $0.dia_semana,
+                           horaApertura: String($0.hora_apertura.prefix(5)),
+                           horaCierre: String($0.hora_cierre.prefix(5)),
+                           isActive: $0.is_active)
+        }
+    }
+
     public func fetchModificadores(productoId: UUID) async throws -> [GrupoModificadores] {
         let grupos: [GrupoDTO] = try await client.from("grupos_modificadores")
             .select()
