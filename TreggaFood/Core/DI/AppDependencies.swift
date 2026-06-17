@@ -36,7 +36,10 @@ public final class AppDependencies {
         // launch arguments del scheme no existen en una build archivada. En debug
         // se respetan los flags para desarrollo/preview.
         #if DEBUG
-        let useSupabase = defaults.bool(forKey: "USE_SUPABASE_BACKEND")
+        // Real por default también en debug (para probar de verdad en device);
+        // -USE_MOCK YES fuerza Mock para trabajar layouts sin red. (Antes el
+        // default era Mock y daba "datos dummy" + Google auth que no registraba.)
+        let useSupabase = !defaults.bool(forKey: "USE_MOCK")
         let bypassOTP = defaults.bool(forKey: "BYPASS_OTP")
         #else
         let useSupabase = true
