@@ -114,7 +114,25 @@ public final class SupabasePedidoRepository: PedidoRepository {
             .rpc("crear_pedido_cliente", params: params)
             .execute()
             .value
-        return dto.toDomain()
+        let resultado = dto.toDomain()
+        // Avisa al negocio (push) — best-effort: no bloquea ni falla el pedido.
+        notificarNegocio(pedidoId: resultado.id)
+        return resultado
+    }
+
+    /// POST best-effort a `notify-negocio` para que el dueño reciba el push del
+    /// pedido nuevo aunque tenga la app cerrada. El endpoint resuelve el
+    /// `owner_user_id` y manda FCM a sus `device_tokens`.
+    private func notificarNegocio(pedidoId: UUID) {
+        Task {
+            guard let token = try? await client.auth.session.accessToken else { return }
+            var req = URLRequest(url: Config.API_BASE.appendingPathComponent("api/pedidos/notify-negocio"))
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            req.httpBody = try? JSONSerialization.data(withJSONObject: ["pedido_id": pedidoId.uuidString])
+            _ = try? await URLSession.shared.data(for: req)
+        }
     }
 
     // MARK: - Historial / Detalle (F5)
