@@ -21,6 +21,10 @@ public protocol PedidoRepository: Sendable {
 
     /// Detalle completo de un pedido (incluye items parseados).
     func fetchDetalle(pedidoId: UUID) async throws -> PedidoDetalle
+
+    /// Repartidores en línea (RPC `count_repartidores_activos`: `last_location_at`
+    /// en los últimos 10 min). 0 = nadie disponible para asignar el pedido.
+    func contarRepartidoresDisponibles() async throws -> Int
 }
 
 // MARK: - Supabase
@@ -211,6 +215,10 @@ public final class SupabasePedidoRepository: PedidoRepository {
         return Self.toDetalle(row, calificacion: calificacion)
     }
 
+    public func contarRepartidoresDisponibles() async throws -> Int {
+        try await client.rpc("count_repartidores_activos").execute().value
+    }
+
     private static func resumenItems(_ items: [ItemDTO]?) -> String {
         guard let items, !items.isEmpty else { return "Pedido sin detalle" }
         return items
@@ -316,6 +324,8 @@ public final class MockPedidoRepository: PedidoRepository {
             )
         ]
     }
+
+    public func contarRepartidoresDisponibles() async throws -> Int { 3 }
 
     public func fetchDetalle(pedidoId: UUID) async throws -> PedidoDetalle {
         try? await Task.sleep(nanoseconds: 300_000_000)

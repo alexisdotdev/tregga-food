@@ -127,6 +127,13 @@ final class CheckoutViewModel {
         }
         phase = .confirming
 
+        // No crear pedido si no hay repartidores en línea para asignar. Fail-open:
+        // si el conteo falla (red), no bloqueamos; solo si devuelve 0 explícito.
+        if let disponibles = try? await pedidoRepo.contarRepartidoresDisponibles(), disponibles == 0 {
+            phase = .error("Por ahora no hay repartidores disponibles para entregar tu pedido. Intenta de nuevo en unos minutos.")
+            return
+        }
+
         do {
             let resultado = try await pedidoRepo.crearPedido(
                 clienteId: clienteId,
