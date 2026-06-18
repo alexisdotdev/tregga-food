@@ -258,15 +258,7 @@ struct DireccionPickerView: View {
 
     private func tarjeta(_ dir: DireccionCliente, esActual: Bool) -> some View {
         Button {
-            if esActual {
-                dismiss()
-            } else {
-                Task {
-                    await viewModel.seleccionar(dir)
-                    onSelected()
-                    dismiss()
-                }
-            }
+            sheet = .editar(dir)
         } label: {
             HStack(alignment: .top, spacing: 12) {
                 ZStack {
@@ -293,12 +285,7 @@ struct DireccionPickerView: View {
                     }
                 }
                 Spacer(minLength: 4)
-                Button { sheet = .editar(dir) } label: {
-                    TreggaIcon(.chevR, size: 18, color: TreggaColors.textSec)
-                        .frame(width: 32, height: 32)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
+                TreggaIcon(.chevR, size: 16, color: TreggaColors.textTer)
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
