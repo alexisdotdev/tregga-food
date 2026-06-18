@@ -103,11 +103,24 @@ final class DireccionPickerViewModel {
 /// Permite seleccionar la dirección activa, agregar nuevas y editarlas.
 struct DireccionPickerView: View {
     @State private var viewModel: DireccionPickerViewModel
-    @State private var editandoDir: DireccionCliente?
-    @State private var showPicker = false
+    @State private var sheet: DireccionSheet?
     /// Se llama cuando cambia la dirección activa, para que Home se refresque.
     let onSelected: () -> Void
     @Environment(\.dismiss) private var dismiss
+
+    /// Una sola presentación (agregar/editar). Evita el bug de SwiftUI de tener
+    /// dos `.fullScreenCover` en la misma vista: el de editar se presentaba y se
+    /// cerraba de inmediato ("baja la pantalla y regresa").
+    private enum DireccionSheet: Identifiable {
+        case agregar
+        case editar(DireccionCliente)
+        var id: String {
+            switch self {
+            case .agregar: return "agregar"
+            case .editar(let d): return d.id.uuidString
+            }
+        }
+    }
 
     init(viewModel: DireccionPickerViewModel, onSelected: @escaping () -> Void) {
         _viewModel = State(initialValue: viewModel)
@@ -173,26 +186,28 @@ struct DireccionPickerView: View {
                 }
             }
             .task { await viewModel.cargar() }
-            .fullScreenCover(isPresented: $showPicker) {
-                LocationPickerView(center: viewModel.centroInicial) { label, address, refs, instrucciones, fotosData, _, place in
-                    Task {
-                        await viewModel.crearConUbicacion(
-                            label: label, address: address, referencias: refs,
-                            instrucciones: instrucciones, fotosData: fotosData, place: place
-                        )
-                        onSelected()
+            .fullScreenCover(item: $sheet) { s in
+                switch s {
+                case .agregar:
+                    LocationPickerView(center: viewModel.centroInicial) { label, address, refs, instrucciones, fotosData, _, place in
+                        Task {
+                            await viewModel.crearConUbicacion(
+                                label: label, address: address, referencias: refs,
+                                instrucciones: instrucciones, fotosData: fotosData, place: place
+                            )
+                            onSelected()
+                        }
                     }
-                }
-            }
-            .fullScreenCover(item: $editandoDir) { dir in
-                LocationPickerView(editing: dir) { label, address, refs, instrucciones, nuevas, existentes, place in
-                    Task {
-                        await viewModel.editarConUbicacion(
-                            id: dir.id, label: label, address: address, referencias: refs,
-                            instrucciones: instrucciones, nuevasFotos: nuevas,
-                            fotosExistentes: existentes, place: place
-                        )
-                        onSelected()
+                case .editar(let dir):
+                    LocationPickerView(editing: dir) { label, address, refs, instrucciones, nuevas, existentes, place in
+                        Task {
+                            await viewModel.editarConUbicacion(
+                                id: dir.id, label: label, address: address, referencias: refs,
+                                instrucciones: instrucciones, nuevasFotos: nuevas,
+                                fotosExistentes: existentes, place: place
+                            )
+                            onSelected()
+                        }
                     }
                 }
             }
@@ -200,7 +215,7 @@ struct DireccionPickerView: View {
     }
 
     private var agregarButton: some View {
-        Button { showPicker = true } label: {
+        Button { sheet = .agregar } label: {
             HStack(spacing: 12) {
                 ZStack {
                     Circle().fill(TreggaColors.primarySoft).frame(width: 40, height: 40)
@@ -233,7 +248,7 @@ struct DireccionPickerView: View {
                     Label("Eliminar", systemImage: "trash")
                 }
                 Button {
-                    editandoDir = dir
+                    sheet = .editar(dir)
                 } label: {
                     Label("Editar", systemImage: "pencil")
                 }
