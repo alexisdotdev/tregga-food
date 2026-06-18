@@ -170,6 +170,14 @@ struct DireccionPickerView: View {
                         vacio
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
+                    } else {
+                        Text("Desliza una dirección para editar o eliminar.")
+                            .font(.system(size: 12.5))
+                            .foregroundStyle(TreggaColors.textTer)
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 12)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
                     }
                 }
             }
