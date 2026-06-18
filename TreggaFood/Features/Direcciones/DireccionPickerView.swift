@@ -254,6 +254,20 @@ struct DireccionPickerView: View {
                 }
                 .tint(TreggaColors.primary)
             }
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                if !esActual {
+                    Button {
+                        Task {
+                            await viewModel.seleccionar(dir)
+                            onSelected()
+                            dismiss()
+                        }
+                    } label: {
+                        Label("Usar", systemImage: "checkmark.circle.fill")
+                    }
+                    .tint(TreggaColors.primary)
+                }
+            }
     }
 
     private func tarjeta(_ dir: DireccionCliente, esActual: Bool) -> some View {
