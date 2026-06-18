@@ -293,7 +293,12 @@ struct DireccionPickerView: View {
                     }
                 }
                 Spacer(minLength: 4)
-                TreggaIcon(.chevR, size: 16, color: TreggaColors.textTer)
+                Button { sheet = .editar(dir) } label: {
+                    TreggaIcon(.chevR, size: 18, color: TreggaColors.textSec)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
