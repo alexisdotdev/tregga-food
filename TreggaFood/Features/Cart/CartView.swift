@@ -48,6 +48,8 @@ struct CartView: View {
         .background(TreggaColors.bg)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .keyboardDismissToolbar()
+        .swipeToGoBack { cerrar() }
     }
 
     private var header: some View {

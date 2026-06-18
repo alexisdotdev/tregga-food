@@ -49,6 +49,7 @@ struct FeedbackFormView: View {
             .padding(.bottom, 40)
         }
         .background(TreggaColors.bg)
+        .keyboardDismissToolbar()
     }
 
     private var formState: some View {

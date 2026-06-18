@@ -76,6 +76,7 @@ struct ScreenHelpArticle: View {
         .background(TreggaColors.bg)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)
+        .swipeBackToDismiss()
     }
 
     private var feedbackCard: some View {

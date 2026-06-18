@@ -51,7 +51,7 @@ struct CartTabView: View {
         }
         .task { await resolveCliente() }
         .sheet(isPresented: $showPedidos) {
-            OrdersTab()
+            OrdersTab(onClose: { showPedidos = false })
         }
         .fullScreenCover(item: $pedidoEntregado) { pedido in
             DeliveryRatingFlow(
@@ -143,7 +143,9 @@ struct CartTabView: View {
                     cart: cart,
                     clienteId: clienteId ?? UUID(),
                     pedidoRepo: deps?.pedidoRepository ?? MockPedidoRepository(),
-                    direccionRepo: deps?.direccionRepository ?? MockDireccionClienteRepository()
+                    direccionRepo: deps?.direccionRepository ?? MockDireccionClienteRepository(),
+                    storage: deps?.storageService ?? MockStorageService(),
+                    userId: deps?.authSession.tokens?.userId ?? clienteId ?? UUID()
                 ),
                 onFinish: { resultado in
                     cart.clear()

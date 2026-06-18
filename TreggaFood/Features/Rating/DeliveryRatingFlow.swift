@@ -153,6 +153,7 @@ private struct RatingView: View {
         .onChange(of: viewModel.phase) { _, phase in
             if phase == .enviado { onDone() }
         }
+        .keyboardDismissToolbar()
     }
 
     private var hero: some View {

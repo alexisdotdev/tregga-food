@@ -88,6 +88,7 @@ struct AccountDeletionView: View {
             Button("Eliminar definitivamente", role: .destructive) { Task { await eliminar() } }
             Button("Cancelar", role: .cancel) {}
         }
+        .swipeBackToDismiss()
     }
 
     private let consecuencias = [

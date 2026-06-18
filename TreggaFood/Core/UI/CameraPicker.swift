@@ -5,6 +5,8 @@ import UIKit
 /// devuelve la `UIImage`. La cámara solo está disponible en dispositivo físico.
 struct CameraPicker: UIViewControllerRepresentable {
     let onImage: (UIImage) -> Void
+    /// Por defecto frontal (selfie de perfil); `true` usa la trasera (p.ej. fachada).
+    var preferRear = false
     @Environment(\.dismiss) private var dismiss
 
     /// `false` en simulador → ocultar la opción "Tomar selfie".
@@ -13,8 +15,9 @@ struct CameraPicker: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
         picker.sourceType = .camera
-        if UIImagePickerController.isCameraDeviceAvailable(.front) {
-            picker.cameraDevice = .front
+        let device: UIImagePickerController.CameraDevice = preferRear ? .rear : .front
+        if UIImagePickerController.isCameraDeviceAvailable(device) {
+            picker.cameraDevice = device
         }
         picker.delegate = context.coordinator
         return picker

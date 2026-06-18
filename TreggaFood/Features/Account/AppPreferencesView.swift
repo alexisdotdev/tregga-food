@@ -46,6 +46,7 @@ struct AppPreferencesView: View {
         }
         .background(TreggaColors.bg)
         .navigationBarBackButtonHidden(true)
+        .swipeBackToDismiss()
     }
 
     private func opcionApariencia(_ mode: AppearanceMode) -> some View {

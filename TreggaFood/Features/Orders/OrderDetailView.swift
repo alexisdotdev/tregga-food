@@ -19,6 +19,7 @@ struct OrderDetailView: View {
         }
         .background(TreggaColors.bg)
         .task { await viewModel.cargar() }
+        .swipeToGoBack(onBack)
     }
 
     @ViewBuilder

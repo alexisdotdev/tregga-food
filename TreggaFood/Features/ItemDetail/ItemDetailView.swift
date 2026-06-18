@@ -43,6 +43,7 @@ struct ItemDetailView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .task { await viewModel.load() }
+        .swipeBackToDismiss()
     }
 
     private var hero: some View {

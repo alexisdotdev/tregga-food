@@ -118,10 +118,8 @@ struct CuentaTab: View {
             AccountDeletionView(viewModel: viewModel, onDeleted: onSignOut)
         case .inbox:
             ScreenInbox(
-                viewModel: NotificationsViewModel(
-                    userId: deps?.authSession.tokens?.userId,
-                    repo: deps?.notificacionRepository ?? MockNotificacionRepository()
-                )
+                userId: deps?.authSession.tokens?.userId,
+                repo: deps?.notificacionRepository ?? MockNotificacionRepository()
             )
         }
     }

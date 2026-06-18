@@ -74,6 +74,7 @@ struct NotificationDetailView: View {
         .background(TreggaColors.bg)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .swipeBackToDismiss()
     }
 
     private var header: some View {

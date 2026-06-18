@@ -33,6 +33,8 @@ struct ChatView: View {
         .toolbar(.hidden, for: .navigationBar)
         .onAppear { viewModel.start() }
         .onDisappear { viewModel.stop() }
+        .keyboardDismissToolbar()
+        .swipeToGoBack(onBack)
     }
 
     private var header: some View {

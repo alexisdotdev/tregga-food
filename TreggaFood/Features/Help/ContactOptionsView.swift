@@ -46,6 +46,7 @@ struct ScreenContactOptions: View {
         .background(TreggaColors.bg)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)
+        .swipeBackToDismiss()
     }
 
     private func opcion(_ icon: TreggaIcon.Name, _ label: String, _ sub: String, action: @escaping () -> Void) -> some View {

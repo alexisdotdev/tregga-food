@@ -42,6 +42,7 @@ struct ScreenOffers: View {
             promos = (try? await repo.fetchActivas()) ?? []
             loading = false
         }
+        .swipeBackToDismiss()
     }
 
     private var emptyState: some View {

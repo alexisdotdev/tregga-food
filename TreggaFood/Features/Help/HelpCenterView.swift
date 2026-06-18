@@ -29,6 +29,7 @@ struct ScreenHelpCenter: View {
                 }
         }
         .tint(TreggaColors.primary)
+        .swipeBackToDismiss()
     }
 
     private var resultados: [HelpArticle] { HelpData.search(query) }
@@ -54,6 +55,7 @@ struct ScreenHelpCenter: View {
         .background(TreggaColors.bg)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)
+        .keyboardDismissToolbar()
     }
 
     private var searchField: some View {
@@ -169,6 +171,7 @@ struct HelpCategoryListView: View {
         .background(TreggaColors.bg)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)
+        .swipeBackToDismiss()
     }
 }
 

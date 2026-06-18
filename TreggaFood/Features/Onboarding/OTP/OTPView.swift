@@ -50,6 +50,7 @@ public struct OTPView: View {
         }
         .background(TreggaColors.bg)
         .onReceive(resendTimer) { _ in viewModel.tickResendCountdown() }
+        .keyboardDismissToolbar()
     }
 
     private var header: some View {

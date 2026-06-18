@@ -49,6 +49,7 @@ struct NotificationsConfigView: View {
         }
         .background(TreggaColors.bg)
         .navigationBarBackButtonHidden(true)
+        .swipeBackToDismiss()
     }
 
     private var masterActiva: Bool {

@@ -70,8 +70,9 @@ struct TrackingView: View {
             Button("Llamada directa") { abrirLlamada() }
             Button("Cancelar", role: .cancel) {}
         } message: {
-            Text("Llamada anónima — tu número no se comparte.")
+            Text("Te comunicamos con tu repartidor para coordinar la entrega.")
         }
+        .swipeToGoBack(onBack)
     }
 
     private var backButton: some View {
@@ -273,14 +274,16 @@ struct TrackingView: View {
     // MARK: - Acciones de llamada
 
     private func abrirWhatsApp() {
-        if let url = URL(string: "https://wa.me/"), UIApplication.shared.canOpenURL(url) {
-            UIApplication.shared.open(url)
-        }
+        let digits = (viewModel.repartidorPhone ?? "").filter(\.isNumber)
+        guard !digits.isEmpty, let url = URL(string: "https://wa.me/\(digits)"),
+              UIApplication.shared.canOpenURL(url) else { return }
+        UIApplication.shared.open(url)
     }
 
     private func abrirLlamada() {
-        if let url = URL(string: "tel://"), UIApplication.shared.canOpenURL(url) {
-            UIApplication.shared.open(url)
-        }
+        let cleaned = (viewModel.repartidorPhone ?? "").filter { $0.isNumber || $0 == "+" }
+        guard !cleaned.isEmpty, let url = URL(string: "tel://\(cleaned)"),
+              UIApplication.shared.canOpenURL(url) else { return }
+        UIApplication.shared.open(url)
     }
 }

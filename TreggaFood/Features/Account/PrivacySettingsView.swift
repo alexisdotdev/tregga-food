@@ -51,6 +51,7 @@ struct PrivacySettingsView: View {
         }
         .background(TreggaColors.bg)
         .navigationBarBackButtonHidden(true)
+        .swipeBackToDismiss()
     }
 
     private func bind(_ key: WritableKeyPath<PreferenciasUsuario, Bool>) -> Binding<Bool> {

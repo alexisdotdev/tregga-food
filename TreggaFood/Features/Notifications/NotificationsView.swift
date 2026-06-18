@@ -7,8 +7,15 @@ import TreggaDesignSystem
 /// Lista de notificaciones reales del usuario con ícono por tipo, punto de
 /// no-leída y "marcar todas leídas".
 struct ScreenNotifications: View {
-    @Bindable var viewModel: NotificationsViewModel
+    @State private var viewModel: NotificationsViewModel
     @State private var selected: Notificacion?
+
+    /// Posee el VM con `@State` (creado una sola vez por identidad de vista) para
+    /// que NO se recree en cada redibujo del padre — eso reseteaba el estado a
+    /// `.loading` y dejaba el loader colgado tras la primera carga.
+    init(userId: UUID?, repo: NotificacionRepository) {
+        _viewModel = State(initialValue: NotificationsViewModel(userId: userId, repo: repo))
+    }
 
     var body: some View {
         ScrollView {
@@ -26,6 +33,7 @@ struct ScreenNotifications: View {
         }
         .refreshable { await viewModel.cargar() }
         .task { await viewModel.cargar() }
+        .swipeBackToDismiss()
     }
 
     private var header: some View {
@@ -85,13 +93,18 @@ struct ScreenNotifications: View {
 /// Bandeja de avisos de Tregga. Comparte fuente con notificaciones, filtrando a
 /// categorías de "avisos" (sistema/promos/ofertas) y con filtro por categoría.
 struct ScreenInbox: View {
-    @Bindable var viewModel: NotificationsViewModel
+    @State private var viewModel: NotificationsViewModel
     @State private var filtro: Filtro = .todas
 
     enum Filtro: String, CaseIterable {
         case todas = "Todas"
         case promos = "Promos"
         case pedidos = "Pedidos"
+    }
+
+    /// VM propio con `@State` (ver nota en `ScreenNotifications`).
+    init(userId: UUID?, repo: NotificacionRepository) {
+        _viewModel = State(initialValue: NotificationsViewModel(userId: userId, repo: repo))
     }
 
     var body: some View {
@@ -108,6 +121,7 @@ struct ScreenInbox: View {
         .toolbar(.hidden, for: .navigationBar)
         .refreshable { await viewModel.cargar() }
         .task { await viewModel.cargar() }
+        .swipeBackToDismiss()
     }
 
     private var header: some View {
@@ -263,16 +277,12 @@ struct AccountBackButton: View {
 
 #Preview("Notificaciones") {
     NavigationStack {
-        ScreenNotifications(
-            viewModel: NotificationsViewModel(userId: UUID(), repo: MockNotificacionRepository())
-        )
+        ScreenNotifications(userId: UUID(), repo: MockNotificacionRepository())
     }
 }
 
 #Preview("Inbox") {
     NavigationStack {
-        ScreenInbox(
-            viewModel: NotificationsViewModel(userId: UUID(), repo: MockNotificacionRepository())
-        )
+        ScreenInbox(userId: UUID(), repo: MockNotificacionRepository())
     }
 }

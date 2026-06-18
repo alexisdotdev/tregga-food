@@ -9,6 +9,9 @@ struct PersonalDataView: View {
     @Bindable var viewModel: AccountViewModel
     @Environment(\.dismiss) private var dismiss
 
+    private enum Campo: Hashable { case nombre, apellidoP, apellidoM, correo, telefono }
+    @FocusState private var foco: Campo?
+
     @State private var fullName = ""
     @State private var apellidoPaterno = ""
     @State private var apellidoMaterno = ""
@@ -36,11 +39,11 @@ struct PersonalDataView: View {
                     .padding(.vertical, 14)
 
                 VStack(spacing: 12) {
-                    campo("Nombre(s)", text: $fullName)
-                    campo("Apellido paterno", text: $apellidoPaterno)
-                    campo("Apellido materno", text: $apellidoMaterno)
-                    campo("Correo electrónico", text: $email, mode: .correo)
-                    campo("Teléfono", text: $phone, mode: .telefono)
+                    campo("Nombre(s)", text: $fullName, foco: .nombre)
+                    campo("Apellido paterno", text: $apellidoPaterno, foco: .apellidoP)
+                    campo("Apellido materno", text: $apellidoMaterno, foco: .apellidoM)
+                    campo("Correo electrónico", text: $email, mode: .correo, foco: .correo)
+                    campo("Teléfono", text: $phone, mode: .telefono, foco: .telefono)
                     fechaField
                 }
                 .padding(.horizontal, 16)
@@ -67,6 +70,7 @@ struct PersonalDataView: View {
         }
         .background(TreggaColors.bg)
         .navigationBarBackButtonHidden(true)
+        .keyboardNavToolbar($foco, order: [.nombre, .apellidoP, .apellidoM, .correo, .telefono])
         .onAppear(perform: hidratar)
         .confirmationDialog("¿Eliminar tu cuenta?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
             NavigationLink("Continuar", value: AccountRoute.accountDeletion)
@@ -104,6 +108,7 @@ struct PersonalDataView: View {
             CameraPicker { img in cropImage = AvatarCropImage(image: img) }
                 .ignoresSafeArea()
         }
+        .swipeBackToDismiss()
     }
 
     private var avatar: some View {
@@ -174,13 +179,15 @@ struct PersonalDataView: View {
         _ label: String,
         text: Binding<String>,
         keyboard: UIKeyboardType = .default,
-        mode: CampoMode = .nombre
+        mode: CampoMode = .nombre,
+        foco campo: Campo
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label.uppercased())
                 .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(TreggaColors.textSec)
             TextField("", text: text)
+                .focused($foco, equals: campo)
                 .keyboardType(mode == .telefono ? .phonePad : (mode == .correo ? .emailAddress : keyboard))
                 .textInputAutocapitalization(mode == .nombre ? .words : .never)
                 .autocorrectionDisabled()

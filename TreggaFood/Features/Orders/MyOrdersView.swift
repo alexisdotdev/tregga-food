@@ -24,6 +24,7 @@ struct MyOrdersView: View {
         }
         .background(TreggaColors.bg)
         .refreshable { await viewModel.cargar() }
+        .swipeToGoBack { onClose?() }
     }
 
     private var lista: some View {

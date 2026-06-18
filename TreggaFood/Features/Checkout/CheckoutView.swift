@@ -6,6 +6,7 @@ import TreggaDesignSystem
 /// Al confirmar muestra HangTight y luego la confirmación con order_number.
 struct CheckoutView: View {
     @State private var viewModel: CheckoutViewModel
+    @State private var showPicker = false
     /// Llamado al cerrar la confirmación: navega al tracking del pedido creado.
     let onFinish: (ResultadoPedido) -> Void
     @Environment(\.dismiss) private var dismiss
@@ -35,7 +36,19 @@ struct CheckoutView: View {
         .animation(.easeInOut(duration: 0.25), value: viewModel.phase)
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
+        .keyboardDismissToolbar()
         .task { await viewModel.load() }
+        .fullScreenCover(isPresented: $showPicker) {
+            LocationPickerView(center: viewModel.centroInicial) { label, address, refs, instrucciones, fotosData, _, place in
+                Task {
+                    await viewModel.crearConUbicacion(
+                        label: label, address: address, referencias: refs,
+                        instrucciones: instrucciones, fotosData: fotosData, place: place
+                    )
+                }
+            }
+        }
+        .swipeBackToDismiss()
     }
 
     private var content: some View {
@@ -92,18 +105,14 @@ struct CheckoutView: View {
             SectionLabel("Entregar en")
             if viewModel.cargandoDirecciones {
                 ProgressView().frame(maxWidth: .infinity).padding(.vertical, 12)
-            } else if viewModel.capturandoDireccion {
-                capturaDireccion
             } else {
                 ForEach(viewModel.direcciones) { dir in
                     direccionCard(dir)
                 }
-                Button {
-                    withAnimation { viewModel.capturandoDireccion = true; viewModel.direccionSeleccionada = nil }
-                } label: {
+                Button { showPicker = true } label: {
                     HStack(spacing: 8) {
                         TreggaIcon(.plus, size: 14, color: TreggaColors.text, weight: .bold)
-                        Text("Agregar otra dirección")
+                        Text(viewModel.direcciones.isEmpty ? "Agregar dirección de entrega" : "Agregar otra dirección")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(TreggaColors.text)
                     }
@@ -124,7 +133,7 @@ struct CheckoutView: View {
     private func direccionCard(_ dir: DireccionCliente) -> some View {
         let selected = viewModel.direccionSeleccionada?.id == dir.id
         return Button {
-            withAnimation { viewModel.direccionSeleccionada = dir; viewModel.capturandoDireccion = false }
+            withAnimation { viewModel.direccionSeleccionada = dir }
         } label: {
             HStack(alignment: .top, spacing: 12) {
                 TreggaIcon(.pin, size: 20, color: selected ? TreggaColors.primaryDark : TreggaColors.text)
@@ -163,52 +172,6 @@ struct CheckoutView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    private var capturaDireccion: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            fieldBox(
-                title: "Dirección de entrega",
-                placeholder: "Calle, número, colonia",
-                text: $viewModel.nuevaDireccionTexto
-            )
-            fieldBox(
-                title: "Referencias (opcional)",
-                placeholder: "Casa azul, frente al jardín",
-                text: $viewModel.nuevaDireccionReferencias
-            )
-            if !viewModel.direcciones.isEmpty {
-                Button {
-                    withAnimation {
-                        viewModel.capturandoDireccion = false
-                        viewModel.direccionSeleccionada = viewModel.direcciones.first(where: { $0.isDefault }) ?? viewModel.direcciones.first
-                    }
-                } label: {
-                    Text("Usar una dirección guardada")
-                        .font(.system(size: 13.5, weight: .bold))
-                        .foregroundStyle(TreggaColors.primaryDark)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    private func fieldBox(title: String, placeholder: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .treggaStyle(.caption)
-                .foregroundStyle(TreggaColors.textSec)
-            TextField(placeholder, text: text)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(TreggaColors.text)
-                .padding(.horizontal, 14)
-                .frame(height: 48)
-                .background(TreggaColors.surface, in: RoundedRectangle(cornerRadius: TreggaRadius.lg))
-                .overlay(
-                    RoundedRectangle(cornerRadius: TreggaRadius.lg)
-                        .stroke(TreggaColors.border, lineWidth: 1)
-                )
-        }
     }
 
     // MARK: - Pago

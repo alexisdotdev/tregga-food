@@ -11,6 +11,7 @@ struct HomeView: View {
     @State private var showNotifications = false
     @State private var showOffers = false
     @State private var showDirecciones = false
+    @State private var noLeidas = 0
     private let catalog: CatalogRepository
 
     @Environment(\.cartStore) private var cartEnv
@@ -50,6 +51,11 @@ struct HomeView: View {
         }
         .task { await viewModel.load() }
         .task { await resolveCliente() }
+        .task { await cargarNoLeidas() }
+        .onChange(of: showNotifications) { _, abierto in
+            // Al cerrar el inbox, las que se marcaron leídas bajan el contador.
+            if !abierto { Task { await cargarNoLeidas() } }
+        }
         .alert(
             "Carrito de otro negocio",
             isPresented: Binding(
@@ -65,10 +71,8 @@ struct HomeView: View {
         .sheet(isPresented: $showNotifications) {
             NavigationStack {
                 ScreenNotifications(
-                    viewModel: NotificationsViewModel(
-                        userId: deps?.authSession.tokens?.userId,
-                        repo: deps?.notificacionRepository ?? MockNotificacionRepository()
-                    )
+                    userId: deps?.authSession.tokens?.userId,
+                    repo: deps?.notificacionRepository ?? MockNotificacionRepository()
                 )
             }
         }
@@ -114,10 +118,22 @@ struct HomeView: View {
         }
     }
 
+    /// Cuenta las notificaciones no leídas (ya sin las de admin, que el repo
+    /// filtra) para el badge de la campanita.
+    private func cargarNoLeidas() async {
+        guard let deps, let userId = deps.authSession.tokens?.userId else { return }
+        if let items = try? await deps.notificacionRepository.fetch(userId: userId) {
+            noLeidas = items.filter { !$0.read }.count
+        }
+    }
+
     private func resolveCliente() async {
-        guard clienteId == nil, let deps,
-              let userId = deps.authSession.tokens?.userId else { return }
-        clienteId = try? await deps.clienteRepository.fetchByUserId(userId)?.id
+        guard let deps, let userId = deps.authSession.tokens?.userId else { return }
+        // El clienteId se resuelve una sola vez; la dirección activa se recarga
+        // siempre (p.ej. al volver del selector tras elegir otra → refresca header).
+        if clienteId == nil {
+            clienteId = try? await deps.clienteRepository.fetchByUserId(userId)?.id
+        }
         guard let cid = clienteId else { return }
         let direcciones = try? await deps.direccionRepository.fetchDelCliente(clienteId: cid)
         direccionDefault = direcciones?.first(where: \.isDefault) ?? direcciones?.first
@@ -159,6 +175,18 @@ struct HomeView: View {
                     ZStack {
                         Circle().fill(TreggaColors.surface).frame(width: 40, height: 40)
                         TreggaIcon(.bell, size: 20, color: TreggaColors.text)
+                    }
+                    .overlay(alignment: .topTrailing) {
+                        if noLeidas > 0 {
+                            Text(noLeidas > 9 ? "9+" : "\(noLeidas)")
+                                .font(.system(size: 10, weight: .heavy))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 5)
+                                .frame(minWidth: 16, minHeight: 16)
+                                .background(TreggaColors.danger, in: Capsule())
+                                .overlay(Capsule().stroke(TreggaColors.bg, lineWidth: 1.5))
+                                .offset(x: 5, y: -4)
+                        }
                     }
                 }
                 .buttonStyle(.plain)

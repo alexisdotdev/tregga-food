@@ -61,6 +61,7 @@ struct AddressesView: View {
                 Button("Cancelar", role: .cancel) {}
             }
         }
+        .swipeBackToDismiss()
     }
 
     private var vacio: some View {
@@ -146,6 +147,9 @@ struct AddressEditorSheet: View {
     @State private var referencias = ""
     @State private var isDefault = false
 
+    private enum Campo: Hashable { case direccion, referencias }
+    @FocusState private var foco: Campo?
+
     private let etiquetas = ["Casa", "Trabajo", "Otro"]
 
     var body: some View {
@@ -162,8 +166,8 @@ struct AddressEditorSheet: View {
                             }
                         }
                     }
-                    campo("Dirección", text: $address, placeholder: "Calle, número, colonia")
-                    campo("Referencias", text: $referencias, placeholder: "Casa azul, frente al parque")
+                    campo("Dirección", text: $address, placeholder: "Calle, número, colonia", foco: .direccion)
+                    campo("Referencias", text: $referencias, placeholder: "Casa azul, frente al parque", foco: .referencias)
                     Toggle(isOn: $isDefault) {
                         Text("Marcar como principal")
                             .font(.system(size: 14.5, weight: .semibold))
@@ -188,6 +192,7 @@ struct AddressEditorSheet: View {
                     Button("Cancelar") { dismiss() }
                 }
             }
+            .keyboardNavToolbar($foco, order: [.direccion, .referencias])
             .onAppear {
                 label = etiquetas.contains(state.label) ? state.label : "Otro"
                 address = state.address
@@ -197,12 +202,13 @@ struct AddressEditorSheet: View {
         }
     }
 
-    private func campo(_ title: String, text: Binding<String>, placeholder: String) -> some View {
+    private func campo(_ title: String, text: Binding<String>, placeholder: String, foco campo: Campo) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title.uppercased())
                 .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(TreggaColors.textSec)
             TextField(placeholder, text: text)
+                .focused($foco, equals: campo)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(TreggaColors.text)
                 .padding(.horizontal, 14)

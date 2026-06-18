@@ -65,6 +65,7 @@ public struct WelcomeView: View {
         .sheet(item: $selectedDoc) { doc in
             LegalDocumentView(document: doc, onBack: { selectedDoc = nil })
         }
+        .keyboardDismissToolbar()
     }
 
     private var hero: some View {

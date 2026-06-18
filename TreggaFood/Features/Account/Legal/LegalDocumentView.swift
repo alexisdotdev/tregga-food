@@ -54,6 +54,7 @@ struct LegalDocumentView: View {
             }
         }
         .background(TreggaColors.bg)
+        .swipeToGoBack { onBack?() }
     }
 
     private var disclaimerCard: some View {

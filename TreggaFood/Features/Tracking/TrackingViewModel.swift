@@ -14,6 +14,9 @@ final class TrackingViewModel {
     private(set) var phase: Phase = .loading
     private(set) var pedido: PedidoTracking?
     private(set) var repartidorCoord: TrackCoord?
+    /// Teléfono del repartidor (para llamar/WhatsApp). Se carga una vez cuando el
+    /// pedido ya tiene repartidor asignado.
+    private(set) var repartidorPhone: String?
 
     /// Polyline codificada de la ruta repartidor → casa (Directions API). El mapa
     /// la decodifica; si es `nil`, dibuja una recta de respaldo.
@@ -72,6 +75,9 @@ final class TrackingViewModel {
             if let repId = p.repartidorId {
                 if let ubic = try? await repo.fetchUbicacionRepartidor(repartidorId: repId) {
                     repartidorCoord = ubic.coord
+                }
+                if repartidorPhone == nil {
+                    repartidorPhone = try? await repo.telefonoRepartidor(pedidoId: pedidoId)
                 }
             }
             phase = .loaded
