@@ -18,6 +18,9 @@ public struct Negocio: Identifiable, Equatable, Hashable, Sendable {
     public let logoURL: String?
     public let coverImageURL: String?
     public let aceptaPedidos: Bool
+    /// ¿Se puede pedir AHORA? (no pausado + dentro de horario). Si es `false` se
+    /// muestra como "Cerrado" en el catálogo en vez de ocultarse.
+    public let disponibleAhora: Bool
 
     public init(
         id: UUID,
@@ -34,7 +37,8 @@ public struct Negocio: Identifiable, Equatable, Hashable, Sendable {
         descripcion: String? = nil,
         logoURL: String? = nil,
         coverImageURL: String? = nil,
-        aceptaPedidos: Bool = true
+        aceptaPedidos: Bool = true,
+        disponibleAhora: Bool = true
     ) {
         self.id = id
         self.name = name
@@ -51,6 +55,7 @@ public struct Negocio: Identifiable, Equatable, Hashable, Sendable {
         self.logoURL = logoURL
         self.coverImageURL = coverImageURL
         self.aceptaPedidos = aceptaPedidos
+        self.disponibleAhora = disponibleAhora
     }
 
     /// Línea de meta para FoodCard: "20–30 min".

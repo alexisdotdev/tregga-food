@@ -10,6 +10,18 @@ public protocol CatalogRepository: Sendable {
     func fetchModificadores(productoId: UUID) async throws -> [GrupoModificadores]
     /// Horarios de atención del negocio (para mostrar abierto/cerrado).
     func fetchHorarios(negocioId: UUID) async throws -> [HorarioNegocio]
+    /// Estado fresco de `acepta_pedidos` (+ activo/aprobado) del negocio. El Home
+    /// se cachea; al entrar al detalle revalidamos para no mostrar "Abierto" si el
+    /// dueño pausó después de cargar la lista.
+    func fetchAceptaPedidos(negocioId: UUID) async throws -> Bool
+    /// Stream que emite cada vez que cambia algún negocio (pausa/activación/status)
+    /// vía Supabase Realtime. El Home recarga el listado al recibir un evento, sin
+    /// pull-to-refresh. Si se pasa `negocioId`, solo escucha ese negocio (detalle).
+    func observeNegociosCambios(negocioId: UUID?) -> AsyncStream<Void>
+}
+
+public extension CatalogRepository {
+    func observeNegociosCambios() -> AsyncStream<Void> { observeNegociosCambios(negocioId: nil) }
 }
 
 // MARK: - Mock
@@ -107,6 +119,12 @@ public final class MockCatalogRepository: CatalogRepository {
             HorarioNegocio(diaSemana: dia, horaApertura: "11:00",
                            horaCierre: dia == 7 ? "18:00" : "22:00", isActive: true)
         }
+    }
+
+    public func fetchAceptaPedidos(negocioId: UUID) async throws -> Bool { true }
+
+    public func observeNegociosCambios(negocioId: UUID?) -> AsyncStream<Void> {
+        AsyncStream { $0.finish() }
     }
 
     private static let tacoId = UUID()

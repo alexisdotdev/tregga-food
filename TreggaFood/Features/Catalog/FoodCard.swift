@@ -14,6 +14,8 @@ struct FoodCard: View {
                     .frame(height: large ? 200 : 130)
                     .frame(maxWidth: .infinity)
                     .clipped()
+                    // Atenúa la portada de los cerrados (siguen visibles, no se pide).
+                    .overlay { if !negocio.disponibleAhora { Color.black.opacity(0.5) } }
 
                 HStack(spacing: 4) {
                     TreggaIcon(.star, size: 12, color: TreggaColors.star)
@@ -30,6 +32,19 @@ struct FoodCard: View {
                 .padding(.vertical, 4)
                 .background(Color.white.opacity(0.95), in: RoundedRectangle(cornerRadius: TreggaRadius.sm))
                 .padding(10)
+
+                if !negocio.disponibleAhora {
+                    Text("Cerrado")
+                        .font(.system(size: 11.5, weight: .heavy))
+                        .tracking(0.3)
+                        .textCase(.uppercase)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.black.opacity(0.7), in: Capsule())
+                        .padding(10)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                }
             }
             .clipShape(RoundedRectangle(cornerRadius: TreggaRadius.lg))
 

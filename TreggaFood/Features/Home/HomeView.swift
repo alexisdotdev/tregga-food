@@ -17,6 +17,7 @@ struct HomeView: View {
     @Environment(\.cartStore) private var cartEnv
     @Environment(\.appDependencies) private var deps
     @Environment(\.clientShell) private var shell
+    @Environment(\.scenePhase) private var scenePhase
 
     init(catalog: CatalogRepository) {
         self.catalog = catalog
@@ -49,9 +50,19 @@ struct HomeView: View {
                 .onChange(of: path) { _, p in shell?.setDeep(.inicio, deep: !p.isEmpty) }
             }
         }
-        .task { await viewModel.load() }
+        .task {
+            await viewModel.load()
+            // Tras la primera carga, escucha cambios de negocios en vivo
+            // (pausa/activación) para refrescar el listado sin pull-to-refresh.
+            viewModel.observarCambios()
+        }
         .task { await resolveCliente() }
         .task { await cargarNoLeidas() }
+        .onChange(of: scenePhase) { _, phase in
+            // Al volver al frente recargamos por si se perdieron eventos de
+            // realtime mientras la app estaba en segundo plano.
+            if phase == .active { Task { await viewModel.load() } }
+        }
         .onChange(of: showNotifications) { _, abierto in
             // Al cerrar el inbox, las que se marcaron leídas bajan el contador.
             if !abierto { Task { await cargarNoLeidas() } }

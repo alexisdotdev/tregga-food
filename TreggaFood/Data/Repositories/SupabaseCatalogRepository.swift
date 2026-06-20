@@ -27,6 +27,7 @@ public final class SupabaseCatalogRepository: CatalogRepository {
         let logo_url: String?
         let cover_image_url: String?
         let acepta_pedidos: Bool?
+        let disponible_ahora: Bool?
 
         func toDomain() -> Negocio {
             Negocio(
@@ -44,7 +45,8 @@ public final class SupabaseCatalogRepository: CatalogRepository {
                 descripcion: descripcion,
                 logoURL: logo_url,
                 coverImageURL: cover_image_url,
-                aceptaPedidos: acepta_pedidos ?? true
+                aceptaPedidos: acepta_pedidos ?? true,
+                disponibleAhora: disponible_ahora ?? true
             )
         }
     }
@@ -125,11 +127,13 @@ public final class SupabaseCatalogRepository: CatalogRepository {
     // MARK: - Queries
 
     public func fetchNegociosDisponibles() async throws -> [Negocio] {
-        let dtos: [NegocioDTO] = try await client.from("negocios")
+        // Vista `negocios_publicos`: TODOS los aprobados + activos, con el flag
+        // `disponible_ahora` (no pausado + dentro de horario). Los cerrados se
+        // muestran como "Cerrado" en vez de ocultarse; van al final del listado.
+        let dtos: [NegocioDTO] = try await client
+            .from("negocios_publicos")
             .select()
-            .eq("is_active", value: true)
-            .eq("acepta_pedidos", value: true)
-            .eq("status", value: "approved")
+            .order("disponible_ahora", ascending: false)
             .order("rating", ascending: false)
             .execute()
             .value
@@ -182,6 +186,75 @@ public final class SupabaseCatalogRepository: CatalogRepository {
                            horaApertura: String($0.hora_apertura.prefix(5)),
                            horaCierre: String($0.hora_cierre.prefix(5)),
                            isActive: $0.is_active)
+        }
+    }
+
+    public func fetchAceptaPedidos(negocioId: UUID) async throws -> Bool {
+        struct Row: Decodable {
+            let acepta_pedidos: Bool?
+            let is_active: Bool?
+            let status: String?
+        }
+        let rows: [Row] = try await client.from("negocios")
+            .select("acepta_pedidos,is_active,status")
+            .eq("id", value: negocioId.uuidString)
+            .limit(1)
+            .execute()
+            .value
+        guard let r = rows.first else { return false }
+        return (r.acepta_pedidos ?? false)
+            && (r.is_active ?? true)
+            && (r.status ?? "approved") == "approved"
+    }
+
+    public func observeNegociosCambios(negocioId: UUID?) -> AsyncStream<Void> {
+        AsyncStream { continuation in
+            let client = self.client
+            let task = Task {
+                // Nombre de canal único (incluye el negocio si es del detalle) para
+                // no chocar con otra suscripción ya activa al recrear la vista.
+                let canal = negocioId.map { "negocio-\($0.uuidString)" } ?? "negocios-cambios"
+                var intento = 0
+                // Bucle de resiliencia: si el canal se cae (websocket idle, red),
+                // re-suscribe y recarga — así no se pierde un evento posterior
+                // (p. ej. reanudar después de un rato pausado).
+                while !Task.isCancelled {
+                    let channel = client.channel(canal)
+                    let cambios = channel.postgresChange(
+                        AnyAction.self,
+                        schema: "public",
+                        table: "negocios",
+                        filter: negocioId.map { .eq("id", value: $0.uuidString) }
+                    )
+                    // Realtime necesita el JWT para autorizar el join con RLS.
+                    if let token = try? await client.auth.session.accessToken {
+                        await client.realtimeV2.setAuth(token)
+                    }
+                    do {
+                        try await channel.subscribeWithError()
+                    } catch {
+                        await client.removeChannel(channel)
+                        if Task.isCancelled { break }
+                        intento += 1
+                        try? await Task.sleep(for: .seconds(min(20, intento * 2)))
+                        continue
+                    }
+                    intento = 0
+                    // Catch-up al (re)conectar: recarga por si hubo cambios mientras
+                    // el canal estaba caído.
+                    continuation.yield(())
+                    for await _ in cambios {
+                        if Task.isCancelled { break }
+                        continuation.yield(())
+                    }
+                    // El stream terminó (canal caído/cerrado): limpiar y reintentar.
+                    await client.removeChannel(channel)
+                    if Task.isCancelled { break }
+                    try? await Task.sleep(for: .seconds(1))
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 

@@ -47,11 +47,15 @@ struct RestaurantView: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
-        .task { await viewModel.load() }
+        .task {
+            await viewModel.load()
+            viewModel.observarCambios()
+        }
         .task {
             guard let deps, let uid = deps.authSession.tokens?.userId else { return }
             isFav = ((try? await deps.favoritoRepository.idsFavoritos(userId: uid)) ?? []).contains(negocio.id)
         }
+        .onDisappear { viewModel.detenerObservacion() }
         .swipeBackToDismiss()
     }
 
@@ -150,10 +154,22 @@ struct RestaurantView: View {
         )
     }
 
-    /// Estado a mostrar: si el dueño cerró manualmente (no acepta pedidos),
-    /// se ve "Cerrado" aunque sea su horario; si no, lo derivado de los horarios.
+    /// `acepta_pedidos` vigente: el fresco del server si ya cargó, si no el del
+    /// objeto recibido del Home (que puede venir cacheado/desactualizado).
+    private var aceptaPedidosVigente: Bool {
+        viewModel.aceptaPedidosActual ?? negocio.aceptaPedidos
+    }
+
+    /// ¿Se puede pedir ahora? Pausa manual + dentro de horario. Sin horarios
+    /// configurados (estadoApertura nil) no bloquea por horario.
+    private var disponibleAhora: Bool {
+        aceptaPedidosVigente && (viewModel.estadoApertura?.abierto ?? true)
+    }
+
+    /// Estado a mostrar: si el dueño pausó (no acepta pedidos), se ve "Cerrado"
+    /// aunque sea su horario; si no, lo derivado de los horarios.
     private var estadoMostrado: EstadoApertura? {
-        guard negocio.aceptaPedidos else {
+        guard aceptaPedidosVigente else {
             return EstadoApertura(abierto: false, detalle: "No disponible ahora")
         }
         return viewModel.estadoApertura
@@ -180,6 +196,24 @@ struct RestaurantView: View {
         )
     }
 
+    /// Aviso cuando el negocio no recibe pedidos ahora (pausado o fuera de
+    /// horario): el menú se ve pero no se puede agregar al carrito.
+    private var noDisponibleBanner: some View {
+        HStack(spacing: 10) {
+            TreggaIcon(.info, size: 18, color: TreggaColors.danger)
+            Text(aceptaPedidosVigente
+                 ? "Este negocio está fuera de horario. Vuelve más tarde para pedir."
+                 : "Este negocio no está recibiendo pedidos ahora.")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(TreggaColors.text)
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(TreggaColors.danger.opacity(0.10), in: RoundedRectangle(cornerRadius: TreggaRadius.md))
+        .padding(.horizontal, 16)
+        .padding(.bottom, 4)
+    }
+
     private func metaItem(icon: TreggaIcon.Name, text: String, iconColor: Color = TreggaColors.textSec) -> some View {
         HStack(spacing: 4) {
             TreggaIcon(icon, size: 14, color: iconColor)
@@ -198,14 +232,20 @@ struct RestaurantView: View {
                 .padding(.top, 40)
         case .loaded(let sections):
             VStack(spacing: 0) {
+                if !disponibleAhora {
+                    noDisponibleBanner
+                }
                 ForEach(sections) { section in
                     SectionHeader(section.categoria.nombre)
                         .padding(.top, 8)
                     VStack(spacing: 0) {
                         ForEach(section.productos) { producto in
                             ProductoRow(producto: producto) {
+                                // Mientras no esté disponible no se puede pedir.
+                                guard disponibleAhora else { return }
                                 path.append(.itemDetail(producto, negocioName: negocio.name))
                             }
+                            .opacity(disponibleAhora ? 1 : 0.5)
                             if producto.id != section.productos.last?.id {
                                 TreggaDivider().padding(.horizontal, 16)
                             }
