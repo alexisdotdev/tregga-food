@@ -269,15 +269,12 @@ public final class SupabaseDireccionClienteRepository: DireccionClienteRepositor
     }
 
     public func hacerDefault(id: UUID, clienteId: UUID) async throws {
-        struct Flag: Encodable { let is_default: Bool }
-        // Desmarca todas las del cliente, luego marca la elegida.
-        try await client.from("direcciones_cliente")
-            .update(Flag(is_default: false))
-            .eq("cliente_id", value: clienteId.uuidString)
-            .execute()
-        try await client.from("direcciones_cliente")
-            .update(Flag(is_default: true))
-            .eq("id", value: id.uuidString)
+        // RPC ATÓMICA: desmarca + marca en una transacción. Antes eran 2 UPDATEs
+        // sueltos; si el segundo fallaba, el cliente quedaba sin default → pedido
+        // al domicilio equivocado.
+        struct Params: Encodable { let p_id: UUID; let p_cliente_id: UUID }
+        try await client
+            .rpc("set_direccion_default", params: Params(p_id: id, p_cliente_id: clienteId))
             .execute()
     }
 }

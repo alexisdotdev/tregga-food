@@ -14,6 +14,9 @@ struct CartTabView: View {
     @State private var clienteId: UUID?
     @State private var showPedidos = false
     @State private var pedidoEntregado: PedidoTracking?
+    @State private var clienteError: String?
+    /// Nota del cliente para el negocio (se pasa al checkout → al pedido).
+    @State private var notaPedido: String?
 
     private var cart: CartStore { cartEnv ?? CartStore() }
 
@@ -31,7 +34,7 @@ struct CartTabView: View {
                 } else {
                     CartView(
                         cart: cart,
-                        onCheckout: { path.append(.checkout) },
+                        onCheckout: { nota in irACheckout(nota: nota) },
                         onClose: { shell?.tab = .inicio }
                     )
                 }
@@ -64,6 +67,28 @@ struct CartTabView: View {
                     path.removeAll()
                 }
             )
+        }
+        .alert("No pudimos continuar", isPresented: Binding(
+            get: { clienteError != nil }, set: { if !$0 { clienteError = nil } }
+        )) {
+            Button("Entendido", role: .cancel) {}
+        } message: {
+            Text(clienteError ?? "")
+        }
+    }
+
+    /// Va al checkout SOLO con un `clienteId` real: si aún no se resolvió, lo
+    /// resuelve; si falla, avisa en vez de crear un pedido con id fantasma.
+    private func irACheckout(nota: String?) {
+        notaPedido = nota
+        if clienteId != nil { path.append(.checkout); return }
+        Task {
+            await resolveCliente()
+            if clienteId != nil {
+                path.append(.checkout)
+            } else {
+                clienteError = "No pudimos cargar tu cuenta. Revisa tu conexión e intenta de nuevo."
+            }
         }
     }
 
@@ -138,20 +163,29 @@ struct CartTabView: View {
     private func destination(for route: CartRoute) -> some View {
         switch route {
         case .checkout:
-            CheckoutView(
-                viewModel: CheckoutViewModel(
-                    cart: cart,
-                    clienteId: clienteId ?? UUID(),
-                    pedidoRepo: deps?.pedidoRepository ?? MockPedidoRepository(),
-                    direccionRepo: deps?.direccionRepository ?? MockDireccionClienteRepository(),
-                    storage: deps?.storageService ?? MockStorageService(),
-                    userId: deps?.authSession.tokens?.userId ?? clienteId ?? UUID()
-                ),
-                onFinish: { resultado in
-                    cart.clear()
-                    path = [.tracking(pedidoId: resultado.id)]
-                }
-            )
+            if let clienteId {
+                CheckoutView(
+                    viewModel: CheckoutViewModel(
+                        cart: cart,
+                        clienteId: clienteId,
+                        pedidoRepo: deps?.pedidoRepository ?? MockPedidoRepository(),
+                        direccionRepo: deps?.direccionRepository ?? MockDireccionClienteRepository(),
+                        storage: deps?.storageService ?? MockStorageService(),
+                        userId: deps?.authSession.tokens?.userId ?? clienteId,
+                        notasNegocio: notaPedido
+                    ),
+                    onFinish: { resultado in
+                        cart.clear()
+                        path = [.tracking(pedidoId: resultado.id)]
+                    }
+                )
+            } else {
+                // irACheckout garantiza clienteId no-nil; fallback seguro.
+                Text("No pudimos cargar tu cuenta. Vuelve a intentar.")
+                    .font(.system(size: 14))
+                    .foregroundStyle(TreggaColors.textSec)
+                    .padding(40)
+            }
         case .tracking(let pedidoId):
             TrackingView(
                 viewModel: TrackingViewModel(

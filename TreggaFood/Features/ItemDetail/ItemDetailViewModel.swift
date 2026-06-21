@@ -58,7 +58,13 @@ final class ItemDetailViewModel {
     func toggle(grupo: GrupoModificadores, modificador: Modificador) {
         var current = seleccion[grupo.id] ?? []
         if grupo.isSingleChoice {
-            current = [modificador.id]
+            // Opcional (no obligatorio): tocar la opción ya elegida la deselecciona
+            // (volver a cero); obligatorio: siempre queda una elegida.
+            if current.contains(modificador.id) && !grupo.isRequired {
+                current = []
+            } else {
+                current = [modificador.id]
+            }
         } else {
             if current.contains(modificador.id) {
                 current.remove(modificador.id)
@@ -69,9 +75,12 @@ final class ItemDetailViewModel {
         seleccion[grupo.id] = current
     }
 
-    /// Faltan grupos obligatorios por completar su mínimo.
+    /// Faltan grupos obligatorios por completar su mínimo. Mientras carga
+    /// (state != .ready) NO se puede agregar: `grupos` está vacío y `allSatisfy`
+    /// sobre vacío daría `true`, dejando agregar sin los modificadores obligatorios.
     var puedeAgregar: Bool {
-        grupos.allSatisfy { grupo in
+        guard case .ready = state else { return false }
+        return grupos.allSatisfy { grupo in
             (seleccion[grupo.id]?.count ?? 0) >= grupo.minSelecciones
         }
     }

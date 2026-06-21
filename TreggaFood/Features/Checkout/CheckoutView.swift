@@ -38,6 +38,14 @@ struct CheckoutView: View {
         .toolbar(.hidden, for: .navigationBar)
         .keyboardDismissToolbar()
         .task { await viewModel.load() }
+        .alert("Algo salió mal", isPresented: Binding(
+            get: { viewModel.errorCarga != nil }, set: { if !$0 { viewModel.clearErrorCarga() } }
+        )) {
+            Button("Reintentar") { Task { await viewModel.load() } }
+            Button("Cerrar", role: .cancel) {}
+        } message: {
+            Text(viewModel.errorCarga ?? "")
+        }
         .fullScreenCover(isPresented: $showPicker) {
             LocationPickerView(center: viewModel.centroInicial) { label, address, refs, instrucciones, fotosData, _, place in
                 Task {

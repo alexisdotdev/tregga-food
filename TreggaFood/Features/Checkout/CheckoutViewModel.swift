@@ -21,6 +21,11 @@ final class CheckoutViewModel {
     private(set) var direcciones: [DireccionCliente] = []
     private(set) var cargandoDirecciones: Bool = true
     private(set) var phase: Phase = .idle
+    /// Error no-bloqueante (cargar direcciones / guardar dirección) que antes se
+    /// tragaba con `try?` y dejaba el checkout bloqueado sin explicación.
+    private(set) var errorCarga: String?
+
+    func clearErrorCarga() { errorCarga = nil }
 
     let opcionesPropina: [Decimal] = [0, 10, 20]
     let deliveryFee: Decimal = 25
@@ -31,6 +36,7 @@ final class CheckoutViewModel {
     private let direccionRepo: DireccionClienteRepository
     private let storage: StorageService
     private let userId: UUID
+    private let notasNegocio: String?
 
     init(
         cart: CartStore,
@@ -38,7 +44,8 @@ final class CheckoutViewModel {
         pedidoRepo: PedidoRepository,
         direccionRepo: DireccionClienteRepository,
         storage: StorageService,
-        userId: UUID
+        userId: UUID,
+        notasNegocio: String? = nil
     ) {
         self.cart = cart
         self.clienteId = clienteId
@@ -46,6 +53,7 @@ final class CheckoutViewModel {
         self.direccionRepo = direccionRepo
         self.storage = storage
         self.userId = userId
+        self.notasNegocio = notasNegocio
     }
 
     /// Centro inicial del mapa al agregar dirección: la seleccionada (si tiene
@@ -70,12 +78,23 @@ final class CheckoutViewModel {
     var total: Decimal { subtotal + deliveryFee + propinaEfectiva }
 
     var puedeConfirmar: Bool {
-        !cart.isEmpty && direccionSeleccionada != nil
+        guard !cart.isEmpty, direccionSeleccionada != nil else { return false }
+        // Habilitado para enviar (.idle) o reintentar (.error); deshabilitado
+        // durante el vuelo (.confirming → evita doble pedido) y tras éxito.
+        switch phase {
+        case .idle, .error: return true
+        case .confirming, .success: return false
+        }
     }
 
     func load() async {
         cargandoDirecciones = true
-        direcciones = (try? await direccionRepo.fetchDelCliente(clienteId: clienteId)) ?? []
+        do {
+            direcciones = try await direccionRepo.fetchDelCliente(clienteId: clienteId)
+            errorCarga = nil
+        } catch {
+            errorCarga = "No pudimos cargar tus direcciones. Revisa tu conexión e intenta de nuevo."
+        }
         if direccionSeleccionada == nil || !direcciones.contains(where: { $0.id == direccionSeleccionada?.id }) {
             direccionSeleccionada = direcciones.first(where: { $0.isDefault }) ?? direcciones.first
         }
@@ -98,17 +117,23 @@ final class CheckoutViewModel {
                 urls.append(url.absoluteString)
             }
         }
-        let nueva = try? await direccionRepo.crear(
-            clienteId: clienteId, label: label, address: address, referencias: referencias,
-            isDefault: esPrimera,
-            lat: place?.lat, lng: place?.lng,
-            calle: place?.calle,
-            codigoPostal: place?.codigoPostal, colonia: place?.colonia,
-            municipio: place?.municipio, estado: place?.estado,
-            instrucciones: instrucciones, fotos: urls
-        )
-        if let nueva { direccionSeleccionada = nueva }
-        await load()
+        do {
+            let nueva = try await direccionRepo.crear(
+                clienteId: clienteId, label: label, address: address, referencias: referencias,
+                isDefault: esPrimera,
+                lat: place?.lat, lng: place?.lng,
+                calle: place?.calle,
+                codigoPostal: place?.codigoPostal, colonia: place?.colonia,
+                municipio: place?.municipio, estado: place?.estado,
+                instrucciones: instrucciones, fotos: urls
+            )
+            direccionSeleccionada = nueva
+            errorCarga = nil
+            await load()
+        } catch {
+            // Antes el `try?` lo tragaba: el cliente creía que guardó y no.
+            errorCarga = "No pudimos guardar tu dirección. Intenta de nuevo."
+        }
     }
 
     func seleccionarPropina(_ valor: Decimal) {
@@ -117,6 +142,12 @@ final class CheckoutViewModel {
     }
 
     func confirmar() async {
+        // No re-entrar si ya hay una confirmación en vuelo (doble tap → 2 pedidos)
+        // ni re-crear tras éxito; sí permite reintentar desde .error.
+        switch phase {
+        case .confirming, .success: return
+        case .idle, .error: break
+        }
         guard let negocioId = cart.negocioId, !cart.isEmpty else {
             phase = .error("Tu carrito está vacío.")
             return
@@ -143,7 +174,7 @@ final class CheckoutViewModel {
                 metodoPago: metodoPago,
                 deliveryFee: deliveryFee,
                 propina: propinaEfectiva,
-                notes: nil
+                notes: notasNegocio
             )
             phase = .success(resultado)
         } catch {

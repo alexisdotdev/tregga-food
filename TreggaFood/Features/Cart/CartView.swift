@@ -6,8 +6,8 @@ import TreggaDesignSystem
 /// estimado y CTA "Ir a pagar" hacia el checkout.
 struct CartView: View {
     @Bindable var cart: CartStore
-    /// Empuja el checkout.
-    let onCheckout: () -> Void
+    /// Empuja el checkout, pasando la nota para el negocio (nil si está vacía).
+    let onCheckout: (String?) -> Void
     /// Cierre del carrito. Si se provee, el ✕ lo llama (p.ej. volver a Inicio en
     /// el contexto de pestaña); si no, usa `dismiss`.
     var onClose: (() -> Void)? = nil
@@ -136,7 +136,10 @@ struct CartView: View {
                 kind: .dark,
                 iconRight: TreggaIcon.image(.arrow),
                 height: 56
-            ) { onCheckout() }
+            ) {
+                let texto = nota.trimmingCharacters(in: .whitespacesAndNewlines)
+                onCheckout(texto.isEmpty ? nil : texto)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)
