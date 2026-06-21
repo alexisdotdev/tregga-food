@@ -38,7 +38,20 @@ struct ItemDetailView: View {
             .background(TreggaColors.bg)
             .ignoresSafeArea(edges: .top)
 
-            cta
+            VStack(spacing: 8) {
+                if viewModel.hayGrupoRequeridoSinOpciones {
+                    // Un grupo obligatorio sin opciones disponibles: el CTA queda
+                    // deshabilitado; explicamos por qué en vez de dejarlo opaco.
+                    Text("Opciones no disponibles temporalmente")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(TreggaColors.danger)
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity)
+                        .background(TreggaColors.dangerBg, in: Capsule())
+                        .padding(.horizontal, 16)
+                }
+                cta
+            }
         }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)

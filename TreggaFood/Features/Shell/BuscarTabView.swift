@@ -8,6 +8,7 @@ import TreggaDesignSystem
 struct BuscarTabView: View {
     @Environment(\.appDependencies) private var deps
     @Environment(\.cartStore) private var cartEnv
+    @Environment(\.scenePhase) private var scenePhase
     @State private var path: [CatalogRoute] = []
     @State private var query = ""
     @State private var negocios: [Negocio] = []
@@ -81,6 +82,13 @@ struct BuscarTabView: View {
             .navigationDestination(for: CatalogRoute.self) { route in destination(for: route) }
         }
         .task { if negocios.isEmpty { negocios = (try? await catalog.fetchNegociosDisponibles()) ?? [] } }
+        // Recarga al volver al frente para no mostrar disponibilidad vieja
+        // (Home tiene realtime; Buscar al menos se refresca al reactivar la app).
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { negocios = (try? await catalog.fetchNegociosDisponibles()) ?? negocios }
+            }
+        }
         .keyboardDismissToolbar()
     }
 

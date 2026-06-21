@@ -85,6 +85,12 @@ final class ItemDetailViewModel {
         }
     }
 
+    /// Hay un grupo obligatorio cuyas opciones están TODAS agotadas (llega vacío
+    /// tras filtrar is_available): nunca se podrá completar → no es pedible.
+    var hayGrupoRequeridoSinOpciones: Bool {
+        grupos.contains { $0.isRequired && $0.modificadores.isEmpty }
+    }
+
     private var modificadoresSeleccionados: [Modificador] {
         grupos.flatMap { grupo in
             grupo.modificadores.filter { seleccion[grupo.id]?.contains($0.id) ?? false }

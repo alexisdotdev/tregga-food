@@ -23,6 +23,9 @@ struct FavoritosView: View {
                 .navigationDestination(for: CatalogRoute.self) { route in destination(for: route) }
         }
         .task { await cargar() }
+        // Al volver del restaurante (path vacío) recarga: si quitaste un favorito
+        // allá, la lista ya no lo muestra al regresar.
+        .onChange(of: path) { _, nuevo in if nuevo.isEmpty { Task { await cargar() } } }
     }
 
     @ViewBuilder
@@ -62,6 +65,7 @@ struct FavoritosView: View {
             }
             .padding(.bottom, 24)
         }
+        .refreshable { await cargar() }
     }
 
     private var empty: some View {
