@@ -86,9 +86,8 @@ public final class WelcomeViewModel {
                 throw error
             }
             switch kind {
-            case .repartidor, .other:
-                // Cuenta existente con ese correo → login por OTP de correo.
-                // (En la app de cliente cualquier rol existente entra por OTP.)
+            case .cliente:
+                // Cuenta de cliente → login por OTP de correo.
                 do {
                     try await authService.sendEmailOTP(email: email)
                     coordinator?.startOTP(.email(email))
@@ -96,6 +95,9 @@ public final class WelcomeViewModel {
                     self.error = "No pudimos enviar el código. Intenta de nuevo."
                     throw error
                 }
+            case .negocio, .repartidor:
+                // Cuenta de otro rol: las cuentas son separadas por rol.
+                self.error = "Ese correo ya tiene una cuenta de \(kind == .negocio ? "negocio" : "repartidor"). Usa su app, o un correo distinto para pedir como cliente."
             case .none:
                 throw AuthError.accountNotRegistered
             }
