@@ -240,12 +240,15 @@ struct RestaurantView: View {
                         .padding(.top, 8)
                     VStack(spacing: 0) {
                         ForEach(section.productos) { producto in
-                            ProductoRow(producto: producto) {
-                                // Mientras no esté disponible no se puede pedir.
-                                guard disponibleAhora else { return }
+                            let textoFranja = viewModel.textoFueraDeFranja(producto)
+                            let puedePedir = disponibleAhora && textoFranja == nil
+                            ProductoRow(producto: producto, franjaTexto: textoFranja) {
+                                // No se puede pedir si el negocio no recibe pedidos
+                                // o el platillo está fuera de su franja horaria.
+                                guard puedePedir else { return }
                                 path.append(.itemDetail(producto, negocioName: negocio.name))
                             }
-                            .opacity(disponibleAhora ? 1 : 0.5)
+                            .opacity(puedePedir ? 1 : 0.5)
                             if producto.id != section.productos.last?.id {
                                 TreggaDivider().padding(.horizontal, 16)
                             }
@@ -282,6 +285,8 @@ struct RestaurantView: View {
 /// Fila de producto dentro del menú del restaurante.
 private struct ProductoRow: View {
     let producto: Producto
+    /// Si el platillo está fuera de su franja, el texto "Disponible en la mañana…".
+    var franjaTexto: String? = nil
     let onTap: () -> Void
 
     var body: some View {
@@ -303,6 +308,15 @@ private struct ProductoRow: View {
                         .font(.system(size: 15, weight: .heavy))
                         .foregroundStyle(TreggaColors.text)
                         .padding(.top, 8)
+                    if let franjaTexto {
+                        HStack(spacing: 4) {
+                            TreggaIcon(.clock, size: 12, color: TreggaColors.accent)
+                            Text(franjaTexto)
+                                .font(.system(size: 12.5, weight: .heavy))
+                                .foregroundStyle(TreggaColors.accent)
+                        }
+                        .padding(.top, 4)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 

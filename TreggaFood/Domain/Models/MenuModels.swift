@@ -34,6 +34,8 @@ public struct Producto: Identifiable, Equatable, Hashable, Sendable {
     public let imageURL: String?
     public let isAvailable: Bool
     public let displayOrder: Int
+    /// Franjas del día en que se sirve (desayuno/comida/cena). Vacío = todo el día.
+    public let franjas: [String]
 
     public init(
         id: UUID,
@@ -44,7 +46,8 @@ public struct Producto: Identifiable, Equatable, Hashable, Sendable {
         precio: Decimal,
         imageURL: String? = nil,
         isAvailable: Bool = true,
-        displayOrder: Int = 0
+        displayOrder: Int = 0,
+        franjas: [String] = []
     ) {
         self.id = id
         self.categoriaId = categoriaId
@@ -55,6 +58,7 @@ public struct Producto: Identifiable, Equatable, Hashable, Sendable {
         self.imageURL = imageURL
         self.isAvailable = isAvailable
         self.displayOrder = displayOrder
+        self.franjas = franjas
     }
 }
 

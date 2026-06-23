@@ -41,8 +41,8 @@ public enum PedidoStatus: String, Sendable, CaseIterable {
         case .pending:     return "Buscando repartidor"
         case .assigned:    return "Repartidor asignado"
         case .enRecogida:  return "Pasando por tu pedido"
-        case .recogido:    return "Pedido recogido"
-        case .enEntrega:   return "En camino"
+        case .recogido:    return "Va en camino"
+        case .enEntrega:   return "Está llegando"
         case .completed:   return "Entregado"
         case .cancelled:   return "Cancelado"
         }
@@ -53,8 +53,8 @@ public enum PedidoStatus: String, Sendable, CaseIterable {
         case .pending:     return "Confirmado"
         case .assigned:    return "Asignado"
         case .enRecogida:  return "En el negocio"
-        case .recogido:    return "Recogido"
-        case .enEntrega:   return "En camino"
+        case .recogido:    return "En camino"
+        case .enEntrega:   return "Llegando"
         case .completed:   return "Entregado"
         case .cancelled:   return "Cancelado"
         }

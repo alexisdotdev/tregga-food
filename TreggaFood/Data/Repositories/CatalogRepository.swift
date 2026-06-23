@@ -1,4 +1,5 @@
 import Foundation
+import TreggaCore
 
 /// Catálogo de discovery + menú para la app de cliente (F2).
 public protocol CatalogRepository: Sendable {
@@ -6,6 +7,9 @@ public protocol CatalogRepository: Sendable {
     func fetchNegociosDisponibles() async throws -> [Negocio]
     /// Menú de un negocio agrupado por categoría (solo categorías/productos activos).
     func fetchMenu(negocioId: UUID) async throws -> [MenuSection]
+    /// Horarios de las franjas del menú (desayuno/comida/cena) del negocio, para
+    /// decidir si un platillo con franjas está disponible a la hora actual.
+    func fetchFranjasHorario(negocioId: UUID) async throws -> FranjasHorario
     /// Grupos de modificadores (con sus opciones) de un producto.
     func fetchModificadores(productoId: UUID) async throws -> [GrupoModificadores]
     /// Horarios de atención del negocio (para mostrar abierto/cerrado).
@@ -122,6 +126,8 @@ public final class MockCatalogRepository: CatalogRepository {
     }
 
     public func fetchAceptaPedidos(negocioId: UUID) async throws -> Bool { true }
+
+    public func fetchFranjasHorario(negocioId: UUID) async throws -> FranjasHorario { .porDefecto }
 
     public func observeNegociosCambios(negocioId: UUID?) -> AsyncStream<Void> {
         AsyncStream { $0.finish() }

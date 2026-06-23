@@ -79,6 +79,7 @@ public final class SupabaseCatalogRepository: CatalogRepository {
         let image_url: String?
         let is_available: Bool?
         let display_order: Int?
+        let franjas: [String]?
 
         func toDomain() -> Producto {
             Producto(
@@ -90,7 +91,8 @@ public final class SupabaseCatalogRepository: CatalogRepository {
                 precio: Decimal(precio ?? 0),
                 imageURL: image_url,
                 isAvailable: is_available ?? true,
-                displayOrder: display_order ?? 0
+                displayOrder: display_order ?? 0,
+                franjas: franjas ?? []
             )
         }
     }
@@ -167,6 +169,17 @@ public final class SupabaseCatalogRepository: CatalogRepository {
             guard !items.isEmpty else { return nil }
             return MenuSection(categoria: cat.toDomain(), productos: items)
         }
+    }
+
+    public func fetchFranjasHorario(negocioId: UUID) async throws -> FranjasHorario {
+        struct Row: Decodable { let franjas_horario: [String: [String: String]]? }
+        let rows: [Row] = try await client.from("negocios")
+            .select("franjas_horario")
+            .eq("id", value: negocioId.uuidString)
+            .limit(1)
+            .execute()
+            .value
+        return FranjasHorario.desdeJSON(rows.first?.franjas_horario ?? nil)
     }
 
     public func fetchHorarios(negocioId: UUID) async throws -> [HorarioNegocio] {

@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import TreggaCore
 
 @MainActor
 @Observable
@@ -16,6 +17,8 @@ final class RestaurantViewModel {
     private(set) var estadoApertura: EstadoApertura?
     /// `acepta_pedidos` fresco del server (el Home se cachea); nil hasta cargar.
     private(set) var aceptaPedidosActual: Bool?
+    /// Horarios de las franjas del negocio (defaults si no las configuró).
+    private(set) var franjasHorario: FranjasHorario = .porDefecto
     private let negocioId: UUID
     private let repository: CatalogRepository
     private var observeTask: Task<Void, Never>?
@@ -46,6 +49,7 @@ final class RestaurantViewModel {
         state = .loading
         async let horariosTask = (try? await repository.fetchHorarios(negocioId: negocioId)) ?? []
         async let aceptaTask = (try? await repository.fetchAceptaPedidos(negocioId: negocioId))
+        async let franjasTask = (try? await repository.fetchFranjasHorario(negocioId: negocioId)) ?? .porDefecto
         do {
             let menu = try await repository.fetchMenu(negocioId: negocioId)
             state = menu.isEmpty ? .empty : .loaded(menu)
@@ -54,5 +58,17 @@ final class RestaurantViewModel {
         }
         estadoApertura = EstadoApertura.calcular(await horariosTask)
         aceptaPedidosActual = await aceptaTask
+        franjasHorario = await franjasTask
+    }
+
+    /// ¿El platillo se sirve a esta hora? (franjas vacías = todo el día).
+    func disponibleAhora(_ producto: Producto) -> Bool {
+        DisponibilidadMenu.disponibleAhora(franjas: producto.franjas, horario: franjasHorario)
+    }
+
+    /// Texto "Disponible en la mañana/tarde/noche" si el platillo está fuera de su
+    /// franja ahora; nil si se puede pedir.
+    func textoFueraDeFranja(_ producto: Producto) -> String? {
+        disponibleAhora(producto) ? nil : DisponibilidadMenu.textoNoDisponible(franjas: producto.franjas)
     }
 }

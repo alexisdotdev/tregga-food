@@ -44,22 +44,20 @@ public final class SupabaseNotificacionRepository: NotificacionRepository {
         }
     }
 
-    /// `reference_type` de notificaciones que son para el **panel admin** (revisión
-    /// de altas) y no deben aparecer en la app del cliente. El mismo `user_id`
-    /// (un super_admin que también usa Food) las recibía mezcladas en su inbox.
-    private static let adminReferenceTypes: Set<String> = ["solicitud", "repartidor", "negocio"]
-
     public func fetch(userId: UUID) async throws -> [Notificacion] {
+        // Solo notificaciones dirigidas al rol cliente: una cuenta multi-rol
+        // (p. ej. un super_admin que también usa Food) recibía mezcladas en el
+        // mismo `user_id` las de negocio/repartidor/admin. El filtro por audiencia
+        // las separa en origen.
         let dtos: [NotificacionDTO] = try await client.from("notificaciones")
             .select("id,title,description,type,category,read,created_at,reference_type")
             .eq("user_id", value: userId.uuidString)
+            .eq("audience", value: "cliente")
             .order("created_at", ascending: false)
             .limit(100)
             .execute()
             .value
-        return dtos
-            .map { $0.toDomain() }
-            .filter { !Self.adminReferenceTypes.contains($0.referenceType ?? "") }
+        return dtos.map { $0.toDomain() }
     }
 
     public func marcarLeida(id: UUID) async throws {
@@ -73,6 +71,7 @@ public final class SupabaseNotificacionRepository: NotificacionRepository {
         try await client.from("notificaciones")
             .update(["read": true])
             .eq("user_id", value: userId.uuidString)
+            .eq("audience", value: "cliente")
             .eq("read", value: false)
             .execute()
     }
