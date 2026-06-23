@@ -87,6 +87,7 @@ struct ScreenNotifications: View {
                             } label: {
                                 Label("Borrar", systemImage: "trash")
                             }
+                            .tint(TreggaColors.danger)
                         }
                 }
             }
@@ -207,6 +208,7 @@ struct ScreenInbox: View {
                                 } label: {
                                     Label("Borrar", systemImage: "trash")
                                 }
+                                .tint(TreggaColors.danger)
                             }
                     }
                 }
