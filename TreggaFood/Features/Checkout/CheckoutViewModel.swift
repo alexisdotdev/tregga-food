@@ -27,6 +27,14 @@ final class CheckoutViewModel {
 
     func clearErrorCarga() { errorCarga = nil }
 
+    // Descuentos (motor de promociones)
+    private(set) var descuento: Decimal = 0
+    private(set) var promoTitulo: String?
+    private(set) var codigoAplicado: String?
+    var codigoInput: String = ""
+    private(set) var codigoError: String?
+    private(set) var aplicandoCodigo = false
+
     let opcionesPropina: [Decimal] = [0, 10, 20]
     let deliveryFee: Decimal = 25
 
@@ -75,7 +83,48 @@ final class CheckoutViewModel {
         return propina
     }
 
-    var total: Decimal { subtotal + deliveryFee + propinaEfectiva }
+    var total: Decimal { max(0, subtotal - descuento) + deliveryFee + propinaEfectiva }
+
+    /// Evalúa el descuento (promo automática o cupón aplicado) para el subtotal actual.
+    func cargarDescuento() async {
+        guard let negocioId = cart.negocioId, !cart.isEmpty else {
+            descuento = 0; promoTitulo = nil; return
+        }
+        let r = (try? await pedidoRepo.calcularDescuento(negocioId: negocioId, subtotal: subtotal, codigo: codigoAplicado))
+            ?? .ninguno
+        if r.ok, r.descuento > 0 {
+            descuento = r.descuento
+            promoTitulo = r.titulo
+        } else {
+            // Cupón dejó de aplicar (p. ej. subtotal bajó del mínimo): cae a automático.
+            if codigoAplicado != nil { codigoAplicado = nil; await cargarDescuento(); return }
+            descuento = 0; promoTitulo = nil
+        }
+    }
+
+    func aplicarCodigo() async {
+        let code = codigoInput.trimmingCharacters(in: .whitespaces)
+        guard let negocioId = cart.negocioId, !code.isEmpty else { return }
+        aplicandoCodigo = true
+        codigoError = nil
+        defer { aplicandoCodigo = false }
+        let r = (try? await pedidoRepo.calcularDescuento(negocioId: negocioId, subtotal: subtotal, codigo: code))
+            ?? DescuentoCalculado(ok: false, descuento: 0, titulo: nil, promocionId: nil, error: "error")
+        if r.ok, r.descuento > 0 {
+            codigoAplicado = code
+            descuento = r.descuento
+            promoTitulo = r.titulo
+            codigoInput = ""
+        } else {
+            codigoError = "Cupón inválido o no aplica a tu pedido."
+        }
+    }
+
+    func quitarCodigo() async {
+        codigoAplicado = nil
+        codigoError = nil
+        await cargarDescuento()
+    }
 
     var puedeConfirmar: Bool {
         guard !cart.isEmpty, direccionSeleccionada != nil else { return false }
@@ -99,6 +148,7 @@ final class CheckoutViewModel {
             direccionSeleccionada = direcciones.first(where: { $0.isDefault }) ?? direcciones.first
         }
         cargandoDirecciones = false
+        await cargarDescuento()
     }
 
     /// Alta de dirección con mapa+pin (mismo flujo que el selector de Direcciones):
@@ -174,7 +224,8 @@ final class CheckoutViewModel {
                 metodoPago: metodoPago,
                 deliveryFee: deliveryFee,
                 propina: propinaEfectiva,
-                notes: notasNegocio
+                notes: notasNegocio,
+                codigo: codigoAplicado
             )
             phase = .success(resultado)
         } catch {

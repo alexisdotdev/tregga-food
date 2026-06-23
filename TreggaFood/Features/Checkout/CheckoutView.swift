@@ -72,6 +72,9 @@ struct CheckoutView: View {
                     propinaSection
                         .padding(.horizontal, 16)
                         .padding(.top, 18)
+                    cuponSection
+                        .padding(.horizontal, 16)
+                        .padding(.top, 18)
                     TreggaDivider().padding(.vertical, 16)
                     resumenSection
                         .padding(.horizontal, 16)
@@ -297,11 +300,77 @@ struct CheckoutView: View {
         )
     }
 
+    // MARK: - Cupón
+
+    private var cuponSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionLabel("¿Tienes un cupón?")
+            if let aplicado = viewModel.codigoAplicado {
+                HStack(spacing: 8) {
+                    TreggaIcon(.tag, size: 15, color: TreggaColors.primary)
+                    Text(aplicado.uppercased())
+                        .font(.system(size: 14.5, weight: .heavy))
+                        .foregroundStyle(TreggaColors.text)
+                    Spacer()
+                    Button("Quitar") { Task { await viewModel.quitarCodigo() } }
+                        .font(.system(size: 13, weight: .heavy))
+                        .foregroundStyle(TreggaColors.danger)
+                }
+                .padding(14)
+                .background(TreggaColors.primarySoft, in: RoundedRectangle(cornerRadius: 12))
+            } else {
+                HStack(spacing: 8) {
+                    TextField("Código de cupón", text: $viewModel.codigoInput)
+                        .font(.system(size: 14.5, weight: .semibold))
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.characters)
+                        .padding(.horizontal, 14).frame(height: 46)
+                        .background(TreggaColors.surface, in: RoundedRectangle(cornerRadius: 12))
+                    Button {
+                        Task { await viewModel.aplicarCodigo() }
+                    } label: {
+                        Group {
+                            if viewModel.aplicandoCodigo { ProgressView().tint(.white) }
+                            else { Text("Aplicar").font(.system(size: 14, weight: .heavy)).foregroundStyle(.white) }
+                        }
+                        .frame(width: 92, height: 46)
+                        .background(
+                            viewModel.codigoInput.trimmingCharacters(in: .whitespaces).isEmpty
+                                ? TreggaColors.primary.opacity(0.4) : TreggaColors.primary,
+                            in: RoundedRectangle(cornerRadius: 12)
+                        )
+                    }
+                    .disabled(viewModel.codigoInput.trimmingCharacters(in: .whitespaces).isEmpty || viewModel.aplicandoCodigo)
+                }
+                if let err = viewModel.codigoError {
+                    Text(err)
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(TreggaColors.danger)
+                }
+            }
+        }
+    }
+
     // MARK: - Resumen
 
     private var resumenSection: some View {
         VStack(spacing: 8) {
             resumenRow("Subtotal", PriceFormat.pesos(viewModel.subtotal))
+            if viewModel.descuento > 0 {
+                HStack {
+                    HStack(spacing: 5) {
+                        TreggaIcon(.tag, size: 13, color: TreggaColors.primary)
+                        Text(viewModel.promoTitulo ?? "Descuento")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(TreggaColors.primary)
+                            .lineLimit(1)
+                    }
+                    Spacer()
+                    Text("−\(PriceFormat.pesos(viewModel.descuento))")
+                        .font(.system(size: 14, weight: .heavy))
+                        .foregroundStyle(TreggaColors.primary)
+                }
+            }
             resumenRow("Envío", PriceFormat.pesos(viewModel.deliveryFee))
             resumenRow("Propina", PriceFormat.pesos(viewModel.propinaEfectiva))
             HStack {

@@ -4,6 +4,17 @@ import Supabase
 
 /// Creación de pedidos del cliente vía RPC `crear_pedido_cliente` (F3)
 /// + lectura del historial y detalle de pedidos del cliente (F5).
+/// Resultado de evaluar el motor de descuentos para un carrito.
+public struct DescuentoCalculado: Sendable {
+    public let ok: Bool
+    public let descuento: Decimal
+    public let titulo: String?
+    public let promocionId: UUID?
+    public let error: String?
+
+    public static let ninguno = DescuentoCalculado(ok: true, descuento: 0, titulo: nil, promocionId: nil, error: nil)
+}
+
 public protocol PedidoRepository: Sendable {
     func crearPedido(
         clienteId: UUID,
@@ -13,8 +24,13 @@ public protocol PedidoRepository: Sendable {
         metodoPago: MetodoPago,
         deliveryFee: Decimal,
         propina: Decimal,
-        notes: String?
+        notes: String?,
+        codigo: String?
     ) async throws -> ResultadoPedido
+
+    /// Evalúa el motor de descuentos (RPC `calcular_descuento`): promo automática
+    /// del negocio o cupón por código. Para mostrar el descuento antes de pagar.
+    func calcularDescuento(negocioId: UUID, subtotal: Decimal, codigo: String?) async throws -> DescuentoCalculado
 
     /// Historial completo del cliente, ordenado por fecha descendente.
     func fetchHistorial(clienteId: UUID) async throws -> [PedidoResumen]
@@ -64,6 +80,7 @@ public final class SupabasePedidoRepository: PedidoRepository {
         let p_delivery_fee: Double
         let p_propina: Double
         let p_notes: String?
+        let p_codigo: String?
     }
 
     struct ResultadoDTO: Decodable {
@@ -82,6 +99,20 @@ public final class SupabasePedidoRepository: PedidoRepository {
         }
     }
 
+    public func calcularDescuento(negocioId: UUID, subtotal: Decimal, codigo: String?) async throws -> DescuentoCalculado {
+        struct P: Encodable { let p_negocio_id: String; let p_subtotal: Double; let p_codigo: String? }
+        struct R: Decodable { let ok: Bool; let descuento: Double?; let titulo: String?; let promocion_id: UUID?; let error: String? }
+        let trimmed = codigo?.trimmingCharacters(in: .whitespaces)
+        let r: R = try await client
+            .rpc("calcular_descuento", params: P(
+                p_negocio_id: negocioId.uuidString, p_subtotal: subtotal.doubleValue,
+                p_codigo: (trimmed?.isEmpty == false) ? trimmed : nil))
+            .execute()
+            .value
+        return DescuentoCalculado(ok: r.ok, descuento: Decimal(r.descuento ?? 0),
+                                  titulo: r.titulo, promocionId: r.promocion_id, error: r.error)
+    }
+
     public func crearPedido(
         clienteId: UUID,
         negocioId: UUID,
@@ -90,7 +121,8 @@ public final class SupabasePedidoRepository: PedidoRepository {
         metodoPago: MetodoPago,
         deliveryFee: Decimal,
         propina: Decimal,
-        notes: String?
+        notes: String?,
+        codigo: String?
     ) async throws -> ResultadoPedido {
         let itemsJSON = items.map { item in
             ItemJSON(
@@ -112,7 +144,8 @@ public final class SupabasePedidoRepository: PedidoRepository {
             p_payment_method: metodoPago.rawValue,
             p_delivery_fee: deliveryFee.doubleValue,
             p_propina: propina.doubleValue,
-            p_notes: notes
+            p_notes: notes,
+            p_codigo: (codigo?.trimmingCharacters(in: .whitespaces).isEmpty == false) ? codigo : nil
         )
         let dto: ResultadoDTO = try await client
             .rpc("crear_pedido_cliente", params: params)
@@ -274,7 +307,8 @@ public final class MockPedidoRepository: PedidoRepository {
         metodoPago: MetodoPago,
         deliveryFee: Decimal,
         propina: Decimal,
-        notes: String?
+        notes: String?,
+        codigo: String?
     ) async throws -> ResultadoPedido {
         let subtotal = items.reduce(Decimal(0)) { $0 + $1.subtotal }
         return ResultadoPedido(
@@ -283,6 +317,14 @@ public final class MockPedidoRepository: PedidoRepository {
             amount: subtotal + deliveryFee + propina,
             status: "pending"
         )
+    }
+
+    public func calcularDescuento(negocioId: UUID, subtotal: Decimal, codigo: String?) async throws -> DescuentoCalculado {
+        if let c = codigo?.trimmingCharacters(in: .whitespaces), c.lowercased() == "crepa25" {
+            return DescuentoCalculado(ok: true, descuento: 25, titulo: "$25 con código", promocionId: UUID(), error: nil)
+        }
+        if codigo?.isEmpty == false { return DescuentoCalculado(ok: false, descuento: 0, titulo: nil, promocionId: nil, error: "codigo_invalido") }
+        return DescuentoCalculado(ok: true, descuento: subtotal * Decimal(0.2), titulo: "20% en tu pedido", promocionId: UUID(), error: nil)
     }
 
     private static let activoId = UUID()
