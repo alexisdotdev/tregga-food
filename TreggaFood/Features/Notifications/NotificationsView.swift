@@ -18,12 +18,9 @@ struct ScreenNotifications: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                header
-                content
-            }
-            .padding(.bottom, 40)
+        VStack(alignment: .leading, spacing: 0) {
+            header
+            content
         }
         .background(TreggaColors.bg)
         .navigationBarTitleDisplayMode(.inline)
@@ -31,7 +28,6 @@ struct ScreenNotifications: View {
         .navigationDestination(item: $selected) { n in
             NotificationDetailView(notificacion: n, onEliminar: { Task { await viewModel.eliminar(n.id) } })
         }
-        .refreshable { await viewModel.cargar() }
         .task { await viewModel.cargar() }
         .swipeBackToDismiss()
     }
@@ -75,15 +71,28 @@ struct ScreenNotifications: View {
             NoConnectionView(message: msg) { Task { await viewModel.cargar() } }
                 .padding(.top, 40)
         case .loaded(let items):
-            LazyVStack(spacing: 0) {
+            List {
                 ForEach(items) { n in
                     NotificacionRow(notificacion: n)
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                         .onTapGesture {
                             selected = n
                             Task { await viewModel.marcarLeida(n.id) }
                         }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                Task { await viewModel.eliminar(n.id) }
+                            } label: {
+                                Label("Borrar", systemImage: "trash")
+                            }
+                        }
                 }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .refreshable { await viewModel.cargar() }
         }
     }
 }
@@ -108,18 +117,14 @@ struct ScreenInbox: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                header
-                filtros
-                content
-            }
-            .padding(.bottom, 40)
+        VStack(alignment: .leading, spacing: 0) {
+            header
+            filtros
+            content
         }
         .background(TreggaColors.bg)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .navigationBar)
-        .refreshable { await viewModel.cargar() }
         .task { await viewModel.cargar() }
         .swipeBackToDismiss()
     }
@@ -189,12 +194,25 @@ struct ScreenInbox: View {
                 )
                 .padding(.top, 40)
             } else {
-                LazyVStack(spacing: 0) {
+                List {
                     ForEach(filtradas) { n in
                         NotificacionRow(notificacion: n)
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
                             .onTapGesture { Task { await viewModel.marcarLeida(n.id) } }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    Task { await viewModel.eliminar(n.id) }
+                                } label: {
+                                    Label("Borrar", systemImage: "trash")
+                                }
+                            }
                     }
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .refreshable { await viewModel.cargar() }
             }
         }
     }
