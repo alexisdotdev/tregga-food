@@ -449,9 +449,6 @@ private struct HangTightOverlay: View {
     var body: some View {
         ZStack {
             TreggaColors.primarySoft.ignoresSafeArea()
-            MotionStripes(color: TreggaColors.primaryDeep, tint: TreggaColors.primarySoft)
-                .ignoresSafeArea()
-                .opacity(0.4)
             VStack(spacing: 16) {
                 ProgressView()
                     .controlSize(.large)
