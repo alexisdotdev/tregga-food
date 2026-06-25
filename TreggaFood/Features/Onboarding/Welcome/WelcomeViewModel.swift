@@ -75,9 +75,9 @@ public final class WelcomeViewModel {
 
         case .email(let email):
             coordinator?.pendingEmail = email
-            let kind: AccountKind
+            let roles: Set<AccountKind>
             do {
-                kind = try await authService.emailAccountKind(email: email)
+                roles = try await authService.emailAccountRoles(email: email)
             } catch let e as AuthError where e == .weakConnection {
                 self.error = "Tu conexión es inestable. Verifica tu señal e intenta de nuevo."
                 throw e
@@ -85,21 +85,19 @@ public final class WelcomeViewModel {
                 self.error = "No pudimos verificar el correo. Revisa tu conexión e intenta de nuevo."
                 throw error
             }
-            switch kind {
-            case .cliente:
-                // Cuenta de cliente → login por OTP de correo.
-                do {
-                    try await authService.sendEmailOTP(email: email)
-                    coordinator?.startOTP(.email(email))
-                } catch {
-                    self.error = "No pudimos enviar el código. Intenta de nuevo."
-                    throw error
-                }
-            case .negocio, .repartidor:
-                // Cuenta de otro rol: las cuentas son separadas por rol.
-                self.error = "Ese correo ya tiene una cuenta de \(kind == .negocio ? "negocio" : "repartidor"). Usa su app, o un correo distinto para pedir como cliente."
-            case .none:
+            // Cliente es el rol base de Tregga: cualquier cuenta existente (aunque
+            // también sea de negocio o repartidor) puede pedir como cliente con el
+            // mismo correo. Solo un correo sin cuenta va al registro. `completeAuth`
+            // asegura el perfil de cliente (vincular_cliente) tras el OTP.
+            guard !roles.isEmpty else {
                 throw AuthError.accountNotRegistered
+            }
+            do {
+                try await authService.sendEmailOTP(email: email)
+                coordinator?.startOTP(.email(email))
+            } catch {
+                self.error = "No pudimos enviar el código. Intenta de nuevo."
+                throw error
             }
 
         case .invalid:
