@@ -142,8 +142,8 @@ private struct RatingView: View {
         .overlay(alignment: .topTrailing) {
             Button(action: onClose) {
                 ZStack {
-                    Circle().fill(.white.opacity(0.95)).frame(width: 36, height: 36)
-                    TreggaIcon(.close, size: 18, color: TreggaColors.text)
+                    Circle().fill(TreggaColors.surface).frame(width: 36, height: 36)
+                    TreggaIcon(.close, size: 18, color: TreggaColors.textSec)
                 }
             }
             .buttonStyle(.plain)
