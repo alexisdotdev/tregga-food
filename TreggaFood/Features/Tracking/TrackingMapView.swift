@@ -8,6 +8,8 @@ struct TrackingMapView: UIViewRepresentable {
     let pickup: TrackCoord?
     let delivery: TrackCoord?
     let repartidor: TrackCoord?
+    /// Tipo de vehículo del repartidor para elegir el ícono del pin.
+    var vehiculoTipo: String? = nil
     /// Ruta repartidor → casa, codificada (Directions). Si es `nil` y `showRoute`,
     /// se dibuja una recta de respaldo.
     var routeEncoded: String? = nil
@@ -48,17 +50,25 @@ struct TrackingMapView: UIViewRepresentable {
         let coord = context.coordinator
 
         if let pickup {
-            let m = coord.pickupMarker ?? marker(on: mapView, color: .black, title: "Negocio")
+            let m = coord.pickupMarker ?? circleMarker(on: mapView, icon: pickupIcon(), title: "Negocio")
             m.position = CLLocationCoordinate2D(latitude: pickup.lat, longitude: pickup.lng)
             coord.pickupMarker = m
         }
         if let delivery {
-            let m = coord.deliveryMarker ?? marker(on: mapView, color: UIColor(red: 0.02, green: 0.37, blue: 0.18, alpha: 1), title: "Tu dirección")
+            let m = coord.deliveryMarker ?? circleMarker(on: mapView, icon: deliveryIcon(), title: "Tu dirección")
             m.position = CLLocationCoordinate2D(latitude: delivery.lat, longitude: delivery.lng)
             coord.deliveryMarker = m
         }
         if let repartidor {
-            let m = coord.repartidorMarker ?? marker(on: mapView, color: UIColor(red: 0.05, green: 0.71, blue: 0.36, alpha: 1), title: "Repartidor")
+            let icon = repartidorIcon(vehiculoTipo: vehiculoTipo)
+            let m: GMSMarker
+            if let existing = coord.repartidorMarker {
+                m = existing
+                // Actualiza el ícono por si vehiculoTipo llegó después de crear el marker.
+                m.icon = icon
+            } else {
+                m = circleMarker(on: mapView, icon: icon, title: "Repartidor")
+            }
             m.position = CLLocationCoordinate2D(latitude: repartidor.lat, longitude: repartidor.lng)
             coord.repartidorMarker = m
             // Sigue al repartidor con un pan suave una vez encuadrado.
@@ -116,12 +126,63 @@ struct TrackingMapView: UIViewRepresentable {
         coord.routePolyline = line
     }
 
-    private func marker(on mapView: GMSMapView, color: UIColor, title: String) -> GMSMarker {
+    // MARK: - Pin helpers
+
+    private func circleMarker(on mapView: GMSMapView, icon: UIImage, title: String) -> GMSMarker {
         let m = GMSMarker()
-        m.icon = GMSMarker.markerImage(with: color)
+        m.icon = icon
         m.title = title
-        m.groundAnchor = CGPoint(x: 0.5, y: 1.0)
+        m.groundAnchor = CGPoint(x: 0.5, y: 0.5)
         m.map = mapView
         return m
+    }
+
+    /// Pin naranja con ícono de tienda para el negocio (pickup).
+    private func pickupIcon() -> UIImage {
+        pinImage(
+            sfSymbol: "storefront.fill", fallback: "bag.fill",
+            background: UIColor(red: 1.0, green: 0.42, blue: 0.17, alpha: 1)
+        )
+    }
+
+    /// Pin verde oscuro con casa para el cliente (delivery).
+    private func deliveryIcon() -> UIImage {
+        pinImage(
+            sfSymbol: "house.fill", fallback: "house.fill",
+            background: UIColor(red: 0.02, green: 0.37, blue: 0.18, alpha: 1)
+        )
+    }
+
+    /// Pin verde con ícono según el tipo de vehículo del repartidor.
+    private func repartidorIcon(vehiculoTipo: String?) -> UIImage {
+        let symbol: String
+        switch vehiculoTipo?.lowercased() {
+        case "bicicleta_electrica":
+            symbol = "bicycle"
+        default: // moto, motoneta, nil → scooter
+            symbol = "scooter"
+        }
+        return pinImage(
+            sfSymbol: symbol, fallback: "bicycle",
+            background: UIColor(red: 0.05, green: 0.71, blue: 0.36, alpha: 1)
+        )
+    }
+
+    /// Renderiza un círculo de color con el SF Symbol dado en blanco centrado.
+    private func pinImage(sfSymbol: String, fallback: String, background: UIColor) -> UIImage {
+        let size: CGFloat = 36
+        let cfg = UIImage.SymbolConfiguration(pointSize: 15, weight: .bold)
+        let glyph = UIImage(systemName: sfSymbol, withConfiguration: cfg)
+                 ?? UIImage(systemName: fallback, withConfiguration: cfg)
+        return UIGraphicsImageRenderer(size: CGSize(width: size, height: size)).image { _ in
+            background.setFill()
+            UIBezierPath(ovalIn: CGRect(x: 0, y: 0, width: size, height: size)).fill()
+            if let glyph {
+                let tinted = glyph.withTintColor(.white, renderingMode: .alwaysOriginal)
+                let x = (size - tinted.size.width) / 2
+                let y = (size - tinted.size.height) / 2
+                tinted.draw(at: CGPoint(x: x, y: y))
+            }
+        }
     }
 }

@@ -34,6 +34,7 @@ struct TrackingView: View {
                 pickup: viewModel.pedido?.pickup,
                 delivery: viewModel.pedido?.delivery,
                 repartidor: viewModel.repartidorCoord,
+                vehiculoTipo: viewModel.pedido?.vehiculoTipo,
                 routeEncoded: viewModel.routeEncoded,
                 showRoute: viewModel.pedido?.status.driverHeadingToClient ?? false,
                 controller: mapController

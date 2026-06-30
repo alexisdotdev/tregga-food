@@ -82,6 +82,9 @@ public struct PedidoTracking: Equatable, Sendable, Identifiable {
     public let delivery: TrackCoord?
     public let estimatedDurationMin: Int?
     public let amount: Decimal
+    /// Tipo de vehículo del repartidor (e.g. "moto", "motoneta", "bicicleta_electrica").
+    /// Nil si no hay repartidor asignado o no se pudo obtener.
+    public let vehiculoTipo: String?
 
     public init(
         id: UUID,
@@ -94,7 +97,8 @@ public struct PedidoTracking: Equatable, Sendable, Identifiable {
         pickup: TrackCoord?,
         delivery: TrackCoord?,
         estimatedDurationMin: Int?,
-        amount: Decimal
+        amount: Decimal,
+        vehiculoTipo: String? = nil
     ) {
         self.id = id
         self.orderNumber = orderNumber
@@ -107,6 +111,7 @@ public struct PedidoTracking: Equatable, Sendable, Identifiable {
         self.delivery = delivery
         self.estimatedDurationMin = estimatedDurationMin
         self.amount = amount
+        self.vehiculoTipo = vehiculoTipo
     }
 
     /// Iniciales para el avatar del repartidor (e.g. "Miguel A." -> "MA").

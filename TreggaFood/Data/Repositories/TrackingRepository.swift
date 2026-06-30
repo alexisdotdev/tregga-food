@@ -37,7 +37,7 @@ public final class SupabaseTrackingRepository: TrackingRepository {
         let estimated_duration_min: Int?
         let amount: Double?
 
-        func toDomain() -> PedidoTracking {
+        func toDomain(vehiculoTipo: String? = nil) -> PedidoTracking {
             let pickup: TrackCoord? = {
                 guard let la = pickup_lat, let lo = pickup_lng else { return nil }
                 return TrackCoord(lat: la, lng: lo)
@@ -57,10 +57,13 @@ public final class SupabaseTrackingRepository: TrackingRepository {
                 pickup: pickup,
                 delivery: delivery,
                 estimatedDurationMin: estimated_duration_min,
-                amount: Decimal(amount ?? 0)
+                amount: Decimal(amount ?? 0),
+                vehiculoTipo: vehiculoTipo
             )
         }
     }
+
+    struct VehiculoTipoRow: Decodable { let tipo: String? }
 
     struct RepartidorLocationDTO: Decodable {
         let current_lat: Double?
@@ -78,7 +81,18 @@ public final class SupabaseTrackingRepository: TrackingRepository {
             .single()
             .execute()
             .value
-        return dto.toDomain()
+        let tipo = dto.repartidor_id != nil ? await fetchVehiculoTipo(repartidorId: dto.repartidor_id!) : nil
+        return dto.toDomain(vehiculoTipo: tipo)
+    }
+
+    private func fetchVehiculoTipo(repartidorId: UUID) async -> String? {
+        let rows: [VehiculoTipoRow] = (try? await client.from("vehiculos")
+            .select("tipo")
+            .eq("repartidor_id", value: repartidorId.uuidString)
+            .limit(1)
+            .execute()
+            .value) ?? []
+        return rows.first?.tipo
     }
 
     public func fetchUbicacionRepartidor(repartidorId: UUID) async throws -> UbicacionRepartidor? {
@@ -102,7 +116,9 @@ public final class SupabaseTrackingRepository: TrackingRepository {
             .limit(1)
             .execute()
             .value
-        return dtos.first?.toDomain()
+        guard let dto = dtos.first else { return nil }
+        let tipo = dto.repartidor_id != nil ? await fetchVehiculoTipo(repartidorId: dto.repartidor_id!) : nil
+        return dto.toDomain(vehiculoTipo: tipo)
     }
 
     public func telefonoRepartidor(pedidoId: UUID) async throws -> String? {
