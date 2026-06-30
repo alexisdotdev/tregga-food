@@ -21,11 +21,21 @@ final class RatingViewModel {
     private let pedido: PedidoTracking
     private let clienteId: UUID?
     private let repo: CalificacionRepository
+    private let clienteRepo: ClienteRepository
+    private let userId: UUID?
 
-    init(pedido: PedidoTracking, clienteId: UUID?, repo: CalificacionRepository) {
+    init(
+        pedido: PedidoTracking,
+        clienteId: UUID?,
+        repo: CalificacionRepository,
+        clienteRepo: ClienteRepository,
+        userId: UUID?
+    ) {
         self.pedido = pedido
         self.clienteId = clienteId
         self.repo = repo
+        self.clienteRepo = clienteRepo
+        self.userId = userId
     }
 
     var repartidorName: String { pedido.repartidorName ?? "tu repartidor" }
@@ -46,7 +56,13 @@ final class RatingViewModel {
             phase = .error("Elige cuántas estrellas antes de enviar.")
             return
         }
-        guard clienteId != nil else {
+        // Si clienteId llegó nil (timing: sesión no lista al crear el VM), intentamos
+        // resolverlo ahora con el userId de sesión antes de bloquear con error.
+        var resolvedClienteId = clienteId
+        if resolvedClienteId == nil, let uid = userId {
+            resolvedClienteId = try? await clienteRepo.fetchByUserId(uid)?.id
+        }
+        guard resolvedClienteId != nil else {
             phase = .error("No pudimos identificar tu cuenta. Reinicia sesión e intenta de nuevo.")
             return
         }
@@ -58,7 +74,7 @@ final class RatingViewModel {
         do {
             try await repo.calificar(
                 pedidoId: pedido.id,
-                clienteId: clienteId,
+                clienteId: resolvedClienteId,
                 repartidorId: pedido.repartidorId,
                 negocioId: pedido.negocioId,
                 rating: rating,

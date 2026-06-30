@@ -10,9 +10,22 @@ struct DeliveryRatingFlow: View {
     @State private var mostrandoRating = false
     let onDone: () -> Void
 
-    init(pedido: PedidoTracking, clienteId: UUID?, repo: CalificacionRepository, onDone: @escaping () -> Void) {
+    init(
+        pedido: PedidoTracking,
+        clienteId: UUID?,
+        repo: CalificacionRepository,
+        clienteRepository: ClienteRepository,
+        userId: UUID?,
+        onDone: @escaping () -> Void
+    ) {
         self.pedido = pedido
-        _viewModel = State(initialValue: RatingViewModel(pedido: pedido, clienteId: clienteId, repo: repo))
+        _viewModel = State(initialValue: RatingViewModel(
+            pedido: pedido,
+            clienteId: clienteId,
+            repo: repo,
+            clienteRepo: clienteRepository,
+            userId: userId
+        ))
         self.onDone = onDone
     }
 

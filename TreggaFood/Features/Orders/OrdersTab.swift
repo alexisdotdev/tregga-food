@@ -41,6 +41,8 @@ struct OrdersTab: View {
                 pedido: pedido,
                 clienteId: clienteId,
                 repo: deps?.calificacionRepository ?? MockCalificacionRepository(),
+                clienteRepository: deps?.clienteRepository ?? MockClienteRepository(),
+                userId: deps?.authSession.tokens?.userId,
                 onDone: {
                     pedidoParaCalificar = nil
                     path.removeAll()

@@ -61,6 +61,8 @@ struct CartTabView: View {
                 pedido: pedido,
                 clienteId: clienteId,
                 repo: deps?.calificacionRepository ?? MockCalificacionRepository(),
+                clienteRepository: deps?.clienteRepository ?? MockClienteRepository(),
+                userId: deps?.authSession.tokens?.userId,
                 onDone: {
                     pedidoEntregado = nil
                     cart.clear()
