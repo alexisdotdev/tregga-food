@@ -11,6 +11,17 @@ struct OrderDetailView: View {
     let onCalificar: (PedidoDetalle) -> Void
     let onBack: () -> Void
 
+    @Environment(\.appDependencies) private var deps
+    @Environment(\.cartStore) private var cart
+    @Environment(\.clientShell) private var shell
+
+    @State private var volviendoAPedir = false
+    @State private var noDisponibles: [String] = []
+    @State private var huboModificadores = false
+    @State private var mostrarResultadoReorden = false
+    /// Pedido en espera de confirmar el reemplazo del carrito (otro negocio).
+    @State private var reordenPendiente: PedidoDetalle?
+
     var body: some View {
         ZStack(alignment: .bottom) {
             content
@@ -21,6 +32,51 @@ struct OrderDetailView: View {
         .background(TreggaColors.bg)
         .task { await viewModel.cargar() }
         .swipeToGoBack(onBack)
+        .alert(
+            "Carrito de otro negocio",
+            isPresented: Binding(
+                get: { cart?.pendingConflict != nil || reordenPendiente != nil },
+                set: { if !$0 { cart?.resolverConflicto(reemplazar: false); reordenPendiente = nil } }
+            )
+        ) {
+            Button("Vaciar y agregar", role: .destructive) {
+                if let pedido = reordenPendiente {
+                    cart?.clear()
+                    reordenPendiente = nil
+                    Task { await agregarVigentes(pedido) }
+                } else {
+                    cart?.resolverConflicto(reemplazar: true)
+                }
+            }
+            Button("Cancelar", role: .cancel) {
+                cart?.resolverConflicto(reemplazar: false)
+                reordenPendiente = nil
+            }
+        } message: {
+            Text("Tu carrito tiene productos de \(cart?.negocioName ?? "otro negocio"). Para pedir de otro negocio vaciaremos el carrito actual.")
+        }
+        // Solo aparece si hubo algo que avisar (faltantes y/o modificadores no
+        // reconstruidos); al aceptar se navega al carrito — el requerimiento es
+        // cerrar el detalle tras agregar.
+        .alert(
+            noDisponibles.isEmpty ? "Revisa tu carrito" : "Algunos productos ya no están disponibles",
+            isPresented: $mostrarResultadoReorden
+        ) {
+            Button("Ver carrito") { irAlCarrito() }
+        } message: {
+            Text(noDisponiblesMensaje)
+        }
+    }
+
+    private var noDisponiblesMensaje: String {
+        var partes: [String] = []
+        if !noDisponibles.isEmpty {
+            partes.append(noDisponibles.joined(separator: ", "))
+        }
+        if huboModificadores {
+            partes.append("Revisa las personalizaciones en tu carrito: se agregaron los productos base.")
+        }
+        return partes.joined(separator: "\n\n")
     }
 
     @ViewBuilder
@@ -331,9 +387,24 @@ struct OrderDetailView: View {
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(TreggaColors.danger.opacity(0.35), lineWidth: 1))
                     }
                     .buttonStyle(.plain)
-                    TreggaButton("Volver a pedir", kind: .primary, isFullWidth: false, height: 50) {
-                        // TODO(F6): re-poblar el carrito desde este pedido.
+                    Button {
+                        Task { await volverAPedir(detalle) }
+                    } label: {
+                        Group {
+                            if volviendoAPedir {
+                                ProgressView().tint(.white)
+                            } else {
+                                Text("Volver a pedir")
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundStyle(.white)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(TreggaColors.primary, in: RoundedRectangle(cornerRadius: 14))
                     }
+                    .buttonStyle(.plain)
+                    .disabled(volviendoAPedir)
                     .frame(maxWidth: .infinity)
                 }
             }
@@ -342,6 +413,62 @@ struct OrderDetailView: View {
         .padding(.top, 10)
         .padding(.bottom, 16)
         .background(.bar)
+    }
+
+    // MARK: - Volver a pedir
+
+    /// Punto de entrada del botón: si el carrito tiene productos de OTRO
+    /// negocio, pide confirmación (mismo mecanismo que `CartStore`) antes de
+    /// tocar nada; si no, agrega directo.
+    private func volverAPedir(_ detalle: PedidoDetalle) async {
+        guard let cart, let negocioId = detalle.negocioId else { return }
+        if let actual = cart.negocioId, actual != negocioId {
+            reordenPendiente = detalle
+            return
+        }
+        await agregarVigentes(detalle)
+    }
+
+    /// Re-consulta los productos vigentes del pedido y agrega al carrito los que
+    /// siguen disponibles. Los modificadores originales solo quedan como texto
+    /// (sin ids) en `PedidoDetalleItem`, así que v1 agrega el producto base y
+    /// avisa al usuario que revise las personalizaciones en el carrito.
+    private func agregarVigentes(_ detalle: PedidoDetalle) async {
+        guard let catalog = deps?.catalogRepository, let cart, let negocioId = detalle.negocioId else { return }
+        volviendoAPedir = true
+        defer { volviendoAPedir = false }
+
+        let ids = detalle.items.compactMap(\.productoId)
+        let vigentes: [UUID: Producto]
+        do {
+            vigentes = Dictionary(uniqueKeysWithValues: try await catalog.fetchProductosPorIds(ids).map { ($0.id, $0) })
+        } catch {
+            vigentes = [:]
+        }
+
+        var faltantes: [String] = []
+        huboModificadores = detalle.items.contains { !$0.modificadores.isEmpty }
+
+        for item in detalle.items {
+            guard let productoId = item.productoId, let producto = vigentes[productoId], producto.isAvailable else {
+                faltantes.append(item.nombre)
+                continue
+            }
+            let selection = ProductSelection(producto: producto, cantidad: item.cantidad, modificadores: [], total: producto.precio * Decimal(item.cantidad))
+            cart.add(selection: selection, negocioId: negocioId, negocioName: detalle.negocioName)
+        }
+
+        if !faltantes.isEmpty || huboModificadores {
+            noDisponibles = faltantes
+            mostrarResultadoReorden = true
+        } else {
+            irAlCarrito()
+        }
+    }
+
+    private func irAlCarrito() {
+        shell?.tab = .carrito
+        onBack()
     }
 
     // MARK: - Soporte

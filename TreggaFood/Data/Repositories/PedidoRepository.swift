@@ -262,6 +262,7 @@ public final class SupabasePedidoRepository: PedidoRepository {
     private static func toDetalle(_ row: PedidoRowDTO, calificacion: PedidoCalificacion?) -> PedidoDetalle {
         let parsedItems: [PedidoDetalleItem] = (row.items ?? []).map { item in
             PedidoDetalleItem(
+                productoId: item.producto_id.flatMap(UUID.init),
                 nombre: item.nombre ?? "Producto",
                 cantidad: item.cantidad ?? 1,
                 precioUnitario: Decimal(item.precio_unitario ?? 0),

@@ -12,6 +12,9 @@ public protocol CatalogRepository: Sendable {
     func fetchFranjasHorario(negocioId: UUID) async throws -> FranjasHorario
     /// Grupos de modificadores (con sus opciones) de un producto.
     func fetchModificadores(productoId: UUID) async throws -> [GrupoModificadores]
+    /// Productos vigentes por id (incluye `is_available`), para "Volver a pedir".
+    /// Ids que ya no existen simplemente no aparecen en el resultado.
+    func fetchProductosPorIds(_ ids: [UUID]) async throws -> [Producto]
     /// Horarios de atención del negocio (para mostrar abierto/cerrado).
     func fetchHorarios(negocioId: UUID) async throws -> [HorarioNegocio]
     /// Estado fresco de `acepta_pedidos` (+ activo/aprobado) del negocio. El Home
@@ -128,6 +131,14 @@ public final class MockCatalogRepository: CatalogRepository {
     public func fetchAceptaPedidos(negocioId: UUID) async throws -> Bool { true }
 
     public func fetchFranjasHorario(negocioId: UUID) async throws -> FranjasHorario { .porDefecto }
+
+    public func fetchProductosPorIds(_ ids: [UUID]) async throws -> [Producto] {
+        // Mock: no hay un catálogo persistente por id: se simula que todos siguen
+        // vigentes y disponibles, para poder probar el flujo "Volver a pedir".
+        ids.map { id in
+            Producto(id: id, categoriaId: UUID(), negocioId: UUID(), nombre: "Producto", precio: 0)
+        }
+    }
 
     public func observeNegociosCambios(negocioId: UUID?) -> AsyncStream<Void> {
         AsyncStream { $0.finish() }

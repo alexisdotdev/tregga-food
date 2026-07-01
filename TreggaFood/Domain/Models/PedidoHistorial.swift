@@ -38,6 +38,9 @@ public struct PedidoResumen: Identifiable, Equatable, Sendable {
 /// Item del pedido ya parseado para el detalle (F5).
 public struct PedidoDetalleItem: Identifiable, Equatable, Sendable {
     public let id: UUID
+    /// Id del producto original (para "Volver a pedir"). `nil` si el pedido
+    /// es viejo y no lo trae el jsonb.
+    public let productoId: UUID?
     public let nombre: String
     public let cantidad: Int
     public let precioUnitario: Decimal
@@ -46,6 +49,7 @@ public struct PedidoDetalleItem: Identifiable, Equatable, Sendable {
 
     public init(
         id: UUID = UUID(),
+        productoId: UUID? = nil,
         nombre: String,
         cantidad: Int,
         precioUnitario: Decimal,
@@ -53,6 +57,7 @@ public struct PedidoDetalleItem: Identifiable, Equatable, Sendable {
         subtotal: Decimal
     ) {
         self.id = id
+        self.productoId = productoId
         self.nombre = nombre
         self.cantidad = cantidad
         self.precioUnitario = precioUnitario

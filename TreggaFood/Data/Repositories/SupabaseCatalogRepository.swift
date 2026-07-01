@@ -271,6 +271,16 @@ public final class SupabaseCatalogRepository: CatalogRepository {
         }
     }
 
+    public func fetchProductosPorIds(_ ids: [UUID]) async throws -> [Producto] {
+        guard !ids.isEmpty else { return [] }
+        let dtos: [ProductoDTO] = try await client.from("productos")
+            .select()
+            .in("id", values: ids.map(\.uuidString))
+            .execute()
+            .value
+        return dtos.map { $0.toDomain() }
+    }
+
     public func fetchModificadores(productoId: UUID) async throws -> [GrupoModificadores] {
         let grupos: [GrupoDTO] = try await client.from("grupos_modificadores")
             .select()
