@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import TreggaCore
 import TreggaDesignSystem
 
@@ -317,7 +318,7 @@ struct OrderDetailView: View {
             } else {
                 HStack(spacing: 10) {
                     Button {
-                        // TODO(F6): flujo de soporte / reporte de problema.
+                        reportarProblema(detalle)
                     } label: {
                         Text("Reportar problema")
                             .font(.system(size: 15, weight: .bold))
@@ -341,5 +342,17 @@ struct OrderDetailView: View {
         .padding(.top, 10)
         .padding(.bottom, 16)
         .background(.bar)
+    }
+
+    // MARK: - Soporte
+
+    private func reportarProblema(_ detalle: PedidoDetalle) {
+        let folio = detalle.orderNumber.isEmpty ? "s/n" : detalle.orderNumber
+        let mensaje = "Hola, necesito ayuda con mi pedido \(folio) de \(detalle.negocioName)."
+        let digits = TreggaSupport.whatsappE164.filter(\.isNumber)
+        guard let encoded = mensaje.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: "https://wa.me/\(digits)?text=\(encoded)"),
+              UIApplication.shared.canOpenURL(url) else { return }
+        UIApplication.shared.open(url)
     }
 }
