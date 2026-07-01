@@ -27,8 +27,12 @@ public final class SupabaseAccountRepository: AccountRepository {
     }
 
     public func solicitarDescargaDatos(userId: UUID) async throws {
-        // TODO: backend aún no expone endpoint de export. La UI confirma la
-        // solicitud; cuando exista el RPC/edge function se cablea aquí.
+        struct Insert: Encodable {
+            let user_id: String
+        }
+        try await client.from("solicitudes_export")
+            .insert(Insert(user_id: userId.uuidString))
+            .execute()
     }
 }
 
