@@ -200,6 +200,7 @@ public final class SupabasePedidoRepository: PedidoRepository {
         let subtotal: Double?
         let delivery_fee: Double?
         let propina: Double?
+        let descuento: Double?
         let amount: Double?
         let payment_method: String?
         let payment_status: String?
@@ -215,7 +216,7 @@ public final class SupabasePedidoRepository: PedidoRepository {
         "id,order_number,negocio_name,status,items,amount,created_at"
 
     private static let detalleColumns =
-        "id,order_number,negocio_id,negocio_name,repartidor_id,repartidor_name,status,items,subtotal,delivery_fee,propina,amount,payment_method,payment_status,delivery_address,created_at,completed_at,cancelled_at,cancellation_reason,negocio_confirmed_at"
+        "id,order_number,negocio_id,negocio_name,repartidor_id,repartidor_name,status,items,subtotal,delivery_fee,propina,descuento,amount,payment_method,payment_status,delivery_address,created_at,completed_at,cancelled_at,cancellation_reason,negocio_confirmed_at"
 
     public func fetchHistorial(clienteId: UUID) async throws -> [PedidoResumen] {
         let rows: [PedidoRowDTO] = try await client.from("pedidos")
@@ -283,6 +284,7 @@ public final class SupabasePedidoRepository: PedidoRepository {
             subtotal: Decimal(row.subtotal ?? 0),
             deliveryFee: Decimal(row.delivery_fee ?? 0),
             propina: Decimal(row.propina ?? 0),
+            descuento: Decimal(row.descuento ?? 0),
             total: Decimal(row.amount ?? 0),
             metodoPago: MetodoPago(rawValue: row.payment_method ?? "efectivo") ?? .efectivo,
             paymentStatus: row.payment_status,

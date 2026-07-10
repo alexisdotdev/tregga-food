@@ -287,6 +287,20 @@ struct OrderDetailView: View {
             SectionHeader("Desglose")
             VStack(spacing: 6) {
                 desgloseRow("Subtotal", detalle.subtotal)
+                if detalle.descuento > 0 {
+                    HStack {
+                        HStack(spacing: 5) {
+                            TreggaIcon(.tag, size: 13, color: TreggaColors.primary)
+                            Text("Descuento")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(TreggaColors.primary)
+                        }
+                        Spacer()
+                        Text("−\(PriceFormat.pesos(detalle.descuento))")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(TreggaColors.primary)
+                    }
+                }
                 desgloseRow("Envío", detalle.deliveryFee)
                 if detalle.propina > 0 { desgloseRow("Propina", detalle.propina) }
                 HStack {

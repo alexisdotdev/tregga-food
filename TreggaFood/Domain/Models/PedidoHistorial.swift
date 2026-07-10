@@ -92,6 +92,9 @@ public struct PedidoDetalle: Identifiable, Equatable, Sendable {
     public let subtotal: Decimal
     public let deliveryFee: Decimal
     public let propina: Decimal
+    /// Descuento aplicado (promo/cupón). 0 si no hubo.
+    /// `amount = subtotal − descuento + deliveryFee + propina`.
+    public let descuento: Decimal
     public let total: Decimal
     public let metodoPago: MetodoPago
     public let paymentStatus: String?
@@ -116,6 +119,7 @@ public struct PedidoDetalle: Identifiable, Equatable, Sendable {
         subtotal: Decimal,
         deliveryFee: Decimal,
         propina: Decimal,
+        descuento: Decimal = 0,
         total: Decimal,
         metodoPago: MetodoPago,
         paymentStatus: String?,
@@ -138,6 +142,7 @@ public struct PedidoDetalle: Identifiable, Equatable, Sendable {
         self.subtotal = subtotal
         self.deliveryFee = deliveryFee
         self.propina = propina
+        self.descuento = descuento
         self.total = total
         self.metodoPago = metodoPago
         self.paymentStatus = paymentStatus
