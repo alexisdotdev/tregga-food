@@ -118,11 +118,12 @@ public struct PedidoTracking: Equatable, Sendable, Identifiable {
         status == .pending && negocioConfirmedAt == nil
     }
 
-    /// El negocio no pudo tomar el pedido (rechazo o timeout), distinto de una
-    /// cancelación por otra causa.
+    /// El pedido lo canceló el negocio (rechazo, timeout o cancelación ya aceptado),
+    /// distinto de una cancelación por otra causa.
     public var canceladoPorNegocio: Bool {
         status == .cancelled
-            && (cancellationReason == "negocio_timeout" || cancellationReason == "negocio_rechazo")
+            && (cancellationReason == "negocio_timeout" || cancellationReason == "negocio_rechazo"
+                || cancellationReason == "negocio_cancelo")
     }
 
     /// Etapa del timeline del cliente combinando las DOS máquinas de estado:

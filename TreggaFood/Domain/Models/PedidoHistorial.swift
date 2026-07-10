@@ -168,10 +168,11 @@ public struct PedidoDetalle: Identifiable, Equatable, Sendable {
         status == .pending && negocioConfirmedAt == nil
     }
 
-    /// El negocio no pudo tomar el pedido (rechazo o timeout).
+    /// El pedido lo canceló el negocio (rechazo, timeout o cancelación ya aceptado).
     public var canceladoPorNegocio: Bool {
         status == .cancelled
-            && (cancellationReason == "negocio_timeout" || cancellationReason == "negocio_rechazo")
+            && (cancellationReason == "negocio_timeout" || cancellationReason == "negocio_rechazo"
+                || cancellationReason == "negocio_cancelo")
     }
 
     /// Título del banner de estado, combinando las dos máquinas de estado: mientras
