@@ -157,10 +157,10 @@ struct TrackingMapView: UIViewRepresentable {
     private func repartidorIcon(vehiculoTipo: String?) -> UIImage {
         let symbol: String
         switch vehiculoTipo?.lowercased() {
-        case "bicicleta_electrica":
+        case let t? where t.hasPrefix("bicicleta"):
             symbol = "bicycle"
-        default: // moto, motoneta, nil → scooter
-            symbol = "scooter"
+        default: // moto, motoneta, nil → motocicleta
+            symbol = "motorcycle"
         }
         return pinImage(
             sfSymbol: symbol, fallback: "bicycle",

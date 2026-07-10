@@ -36,6 +36,8 @@ public final class SupabaseTrackingRepository: TrackingRepository {
         let delivery_lng: Double?
         let estimated_duration_min: Int?
         let amount: Double?
+        let negocio_confirmed_at: Date?
+        let cancellation_reason: String?
 
         func toDomain(vehiculoTipo: String? = nil) -> PedidoTracking {
             let pickup: TrackCoord? = {
@@ -58,7 +60,9 @@ public final class SupabaseTrackingRepository: TrackingRepository {
                 delivery: delivery,
                 estimatedDurationMin: estimated_duration_min,
                 amount: Decimal(amount ?? 0),
-                vehiculoTipo: vehiculoTipo
+                vehiculoTipo: vehiculoTipo,
+                negocioConfirmedAt: negocio_confirmed_at,
+                cancellationReason: cancellation_reason
             )
         }
     }
@@ -72,7 +76,7 @@ public final class SupabaseTrackingRepository: TrackingRepository {
     }
 
     private static let columns =
-        "id,order_number,status,repartidor_id,repartidor_name,negocio_id,negocio_name,pickup_lat,pickup_lng,delivery_lat,delivery_lng,estimated_duration_min,amount"
+        "id,order_number,status,repartidor_id,repartidor_name,negocio_id,negocio_name,pickup_lat,pickup_lng,delivery_lat,delivery_lng,estimated_duration_min,amount,negocio_confirmed_at,cancellation_reason"
 
     public func fetchPedido(id: UUID) async throws -> PedidoTracking {
         let dto: PedidoDTO = try await client.from("pedidos")

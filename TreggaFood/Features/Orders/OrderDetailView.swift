@@ -151,7 +151,7 @@ struct OrderDetailView: View {
                 TreggaIcon(cancelled ? .close : .check, size: 20, color: .white, weight: .bold)
             }
             VStack(alignment: .leading, spacing: 1) {
-                Text(detalle.status.titulo)
+                Text(detalle.estadoTitulo)
                     .font(.system(size: 15, weight: .heavy))
                     .foregroundStyle(cancelled ? TreggaColors.accent : TreggaColors.primaryDeep)
                 Text(subStatus(detalle))
@@ -168,6 +168,9 @@ struct OrderDetailView: View {
     }
 
     private func subStatus(_ detalle: PedidoDetalle) -> String {
+        if detalle.esperandoNegocio {
+            return "Estamos confirmando tu pedido con el negocio."
+        }
         if detalle.status.isCompleted, let c = detalle.completedAt {
             return "Entregado el \(OrderDateFormat.headerSub(c))"
         }
@@ -348,10 +351,21 @@ struct OrderDetailView: View {
         .padding(.top, 18)
     }
 
+    /// Traduce el enum `cancellation_reason` de la DB a texto para el cliente.
+    private func motivoLegible(_ motivo: String) -> String {
+        switch motivo {
+        case "negocio_timeout": return "El negocio no alcanzó a tomar tu pedido a tiempo. No se te hizo ningún cargo."
+        case "negocio_rechazo": return "El negocio no pudo tomar tu pedido. No se te hizo ningún cargo."
+        case "negocio_cancelo": return "El negocio canceló tu pedido."
+        case "sin_repartidor":  return "No encontramos un repartidor disponible para tu pedido."
+        default:                return motivo
+        }
+    }
+
     private func motivoCancelacion(_ motivo: String) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             SectionHeader("Motivo de cancelación")
-            Text(motivo)
+            Text(motivoLegible(motivo))
                 .font(.system(size: 13.5, weight: .medium))
                 .foregroundStyle(TreggaColors.textSec)
                 .padding(14)

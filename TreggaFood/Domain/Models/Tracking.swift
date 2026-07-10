@@ -25,17 +25,6 @@ public enum PedidoStatus: String, Sendable, CaseIterable {
         self = PedidoStatus(rawValue: raw) ?? .pending
     }
 
-    /// Etapa del timeline (0...3): Confirmado, Preparando, En camino, Entregado.
-    public var stepIndex: Int {
-        switch self {
-        case .pending, .assigned:       return 0
-        case .enRecogida, .recogido:    return 1
-        case .enEntrega:                return 2
-        case .completed:                return 3
-        case .cancelled:                return 0
-        }
-    }
-
     public var titulo: String {
         switch self {
         case .pending:     return "Buscando repartidor"
@@ -85,6 +74,10 @@ public struct PedidoTracking: Equatable, Sendable, Identifiable {
     /// Tipo de vehículo del repartidor (e.g. "moto", "motoneta", "bicicleta_electrica").
     /// Nil si no hay repartidor asignado o no se pudo obtener.
     public let vehiculoTipo: String?
+    /// Momento en que el negocio aceptó el pedido. `nil` = el negocio aún no lo confirma.
+    public let negocioConfirmedAt: Date?
+    /// Motivo de cancelación (solo cuando `status == .cancelled`).
+    public let cancellationReason: String?
 
     public init(
         id: UUID,
@@ -98,7 +91,9 @@ public struct PedidoTracking: Equatable, Sendable, Identifiable {
         delivery: TrackCoord?,
         estimatedDurationMin: Int?,
         amount: Decimal,
-        vehiculoTipo: String? = nil
+        vehiculoTipo: String? = nil,
+        negocioConfirmedAt: Date? = nil,
+        cancellationReason: String? = nil
     ) {
         self.id = id
         self.orderNumber = orderNumber
@@ -112,6 +107,38 @@ public struct PedidoTracking: Equatable, Sendable, Identifiable {
         self.estimatedDurationMin = estimatedDurationMin
         self.amount = amount
         self.vehiculoTipo = vehiculoTipo
+        self.negocioConfirmedAt = negocioConfirmedAt
+        self.cancellationReason = cancellationReason
+    }
+
+    /// El negocio todavía no acepta el pedido: fase previa a la búsqueda de repartidor.
+    /// Mientras `status == .pending` sin `negocioConfirmedAt`, NO hay dispatch en curso
+    /// (el `auto_assign` corre hasta que el negocio confirma).
+    public var esperandoNegocio: Bool {
+        status == .pending && negocioConfirmedAt == nil
+    }
+
+    /// El negocio no pudo tomar el pedido (rechazo o timeout), distinto de una
+    /// cancelación por otra causa.
+    public var canceladoPorNegocio: Bool {
+        status == .cancelled
+            && (cancellationReason == "negocio_timeout" || cancellationReason == "negocio_rechazo")
+    }
+
+    /// Etapa del timeline del cliente combinando las DOS máquinas de estado:
+    /// [-1 Esperando negocio · 0 Confirmado · 1 Preparando · 2 En camino · 3 Entregado].
+    /// En cuanto el negocio acepta (`negocioConfirmedAt`), el pedido está "Preparando"
+    /// aunque el repartidor apenas vaya en camino al local (`assigned`). El `status`
+    /// del enum solo describe al repartidor, por eso no basta con él.
+    public var timelineStep: Int {
+        switch status {
+        case .completed:            return 3
+        case .recogido, .enEntrega: return 2   // el repartidor ya lleva el pedido al cliente
+        case .enRecogida:           return 1   // recogiendo en el negocio
+        case .assigned:             return 1   // negocio preparando + repartidor asignado
+        case .pending:              return negocioConfirmedAt == nil ? -1 : 1
+        case .cancelled:            return 0
+        }
     }
 
     /// Iniciales para el avatar del repartidor (e.g. "Miguel A." -> "MA").

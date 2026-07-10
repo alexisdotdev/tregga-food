@@ -208,13 +208,14 @@ public final class SupabasePedidoRepository: PedidoRepository {
         let completed_at: Date?
         let cancelled_at: Date?
         let cancellation_reason: String?
+        let negocio_confirmed_at: Date?
     }
 
     private static let historialColumns =
         "id,order_number,negocio_name,status,items,amount,created_at"
 
     private static let detalleColumns =
-        "id,order_number,negocio_id,negocio_name,repartidor_id,repartidor_name,status,items,subtotal,delivery_fee,propina,amount,payment_method,payment_status,delivery_address,created_at,completed_at,cancelled_at,cancellation_reason"
+        "id,order_number,negocio_id,negocio_name,repartidor_id,repartidor_name,status,items,subtotal,delivery_fee,propina,amount,payment_method,payment_status,delivery_address,created_at,completed_at,cancelled_at,cancellation_reason,negocio_confirmed_at"
 
     public func fetchHistorial(clienteId: UUID) async throws -> [PedidoResumen] {
         let rows: [PedidoRowDTO] = try await client.from("pedidos")
@@ -290,7 +291,8 @@ public final class SupabasePedidoRepository: PedidoRepository {
             completedAt: row.completed_at,
             cancelledAt: row.cancelled_at,
             cancellationReason: row.cancellation_reason,
-            calificacion: calificacion
+            calificacion: calificacion,
+            negocioConfirmedAt: row.negocio_confirmed_at
         )
     }
 }

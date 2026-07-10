@@ -480,7 +480,7 @@ private struct OrderSuccessOverlay: View {
                     Circle().fill(TreggaColors.primarySoft).frame(width: 96, height: 96)
                     TreggaIcon(.check, size: 44, color: TreggaColors.primary, weight: .bold)
                 }
-                Text("¡Pedido confirmado!")
+                Text("¡Pedido enviado!")
                     .treggaStyle(.h2)
                     .foregroundStyle(TreggaColors.text)
                 if !resultado.orderNumber.isEmpty {
@@ -488,7 +488,7 @@ private struct OrderSuccessOverlay: View {
                         .font(.system(size: 15, weight: .heavy))
                         .foregroundStyle(TreggaColors.primaryDark)
                 }
-                Text("Estamos buscando un repartidor para ti. Te avisaremos cuando lo asignemos.")
+                Text("Estamos confirmando tu pedido con el negocio. Te avisaremos en cuanto lo acepte y busquemos un repartidor.")
                     .treggaStyle(.sub)
                     .foregroundStyle(TreggaColors.textSec)
                     .multilineTextAlignment(.center)

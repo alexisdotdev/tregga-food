@@ -101,6 +101,8 @@ public struct PedidoDetalle: Identifiable, Equatable, Sendable {
     public let cancelledAt: Date?
     public let cancellationReason: String?
     public let calificacion: PedidoCalificacion?
+    /// Momento en que el negocio aceptó el pedido. `nil` = el negocio aún no lo confirma.
+    public let negocioConfirmedAt: Date?
 
     public init(
         id: UUID,
@@ -122,7 +124,8 @@ public struct PedidoDetalle: Identifiable, Equatable, Sendable {
         completedAt: Date?,
         cancelledAt: Date?,
         cancellationReason: String?,
-        calificacion: PedidoCalificacion?
+        calificacion: PedidoCalificacion?,
+        negocioConfirmedAt: Date? = nil
     ) {
         self.id = id
         self.orderNumber = orderNumber
@@ -144,8 +147,31 @@ public struct PedidoDetalle: Identifiable, Equatable, Sendable {
         self.cancelledAt = cancelledAt
         self.cancellationReason = cancellationReason
         self.calificacion = calificacion
+        self.negocioConfirmedAt = negocioConfirmedAt
     }
 
     /// El pedido sigue en curso (no terminal) → permite seguir el tracking.
     public var enCurso: Bool { !status.isTerminal }
+
+    /// El negocio todavía no acepta el pedido: fase previa a la búsqueda de repartidor.
+    public var esperandoNegocio: Bool {
+        status == .pending && negocioConfirmedAt == nil
+    }
+
+    /// El negocio no pudo tomar el pedido (rechazo o timeout).
+    public var canceladoPorNegocio: Bool {
+        status == .cancelled
+            && (cancellationReason == "negocio_timeout" || cancellationReason == "negocio_rechazo")
+    }
+
+    /// Título del banner de estado, combinando las dos máquinas de estado: mientras
+    /// el negocio no confirma, `pending` NO es "Buscando repartidor" sino "Esperando
+    /// al negocio"; una vez que acepta, el pedido está "En preparación".
+    public var estadoTitulo: String {
+        if esperandoNegocio { return "Esperando al negocio" }
+        switch status {
+        case .pending, .assigned: return "En preparación"
+        default:                  return status.titulo
+        }
+    }
 }

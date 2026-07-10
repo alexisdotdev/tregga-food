@@ -132,13 +132,13 @@ struct TrackingView: View {
                 .padding(.bottom, 14)
 
             VStack(alignment: .leading, spacing: 6) {
-                Tag(pedido.status.tagLabel, tone: .soft)
-                if let eta = pedido.estimatedDurationMin, !pedido.status.isTerminal {
+                Tag(pedido.esperandoNegocio ? "Enviado" : pedido.status.tagLabel, tone: .soft)
+                if let eta = pedido.estimatedDurationMin, !pedido.status.isTerminal, !pedido.esperandoNegocio {
                     (Text("Llega en ") + Text("\(eta) min").foregroundColor(TreggaColors.primary))
                         .treggaStyle(.h2)
                         .foregroundStyle(TreggaColors.text)
                 } else {
-                    Text(pedido.status.titulo)
+                    Text(pedido.esperandoNegocio ? "Esperando al negocio" : pedido.status.titulo)
                         .treggaStyle(.h2)
                         .foregroundStyle(TreggaColors.text)
                 }
@@ -149,7 +149,7 @@ struct TrackingView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)
 
-            timeline(pedido.status.stepIndex)
+            timeline(pedido.timelineStep)
                 .padding(.top, 16)
 
             TreggaDivider().padding(.vertical, 14)
@@ -169,6 +169,9 @@ struct TrackingView: View {
     private func subtitulo(_ pedido: PedidoTracking) -> String {
         let nombre = pedido.repartidorName ?? "Tu repartidor"
         let negocio = pedido.negocioName ?? "el negocio"
+        if pedido.esperandoNegocio {
+            return "Estamos confirmando tu pedido con \(negocio). Te avisaremos en cuanto lo acepte."
+        }
         switch pedido.status {
         case .pending:    return "Estamos asignando un repartidor a tu pedido."
         case .assigned:   return "\(nombre) va en camino a \(negocio)."
@@ -176,7 +179,10 @@ struct TrackingView: View {
         case .recogido:   return "\(nombre) ya tiene tu pedido y sale hacia ti."
         case .enEntrega:  return "\(nombre) ya pasó por tu pedido en \(negocio)."
         case .completed:  return "¡Tu pedido fue entregado! Buen provecho."
-        case .cancelled:  return "Este pedido fue cancelado."
+        case .cancelled:
+            return pedido.canceladoPorNegocio
+                ? "El negocio no pudo tomar tu pedido. No se te hará ningún cargo."
+                : "Este pedido fue cancelado."
         }
     }
 
