@@ -342,6 +342,19 @@ struct OrderDetailView: View {
                             .font(.system(size: 13.5, weight: .medium))
                             .foregroundStyle(TreggaColors.textSec)
                     }
+                    if let reply = cal.reply, !reply.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Respuesta de \(detalle.negocioName)")
+                                .font(.system(size: 12, weight: .heavy))
+                                .foregroundStyle(TreggaColors.textSec)
+                            Text(reply)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(TreggaColors.text)
+                        }
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(TreggaColors.surface, in: RoundedRectangle(cornerRadius: 10))
+                    }
                 }
                 .padding(14)
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -71,11 +71,16 @@ public struct PedidoCalificacion: Equatable, Sendable {
     public let rating: Int
     public let comment: String?
     public let tags: [String]
+    /// Respuesta del negocio a la reseña (`calificaciones.reply`). `nil` si no ha respondido.
+    public let reply: String?
+    public let replyAt: Date?
 
-    public init(rating: Int, comment: String?, tags: [String]) {
+    public init(rating: Int, comment: String?, tags: [String], reply: String? = nil, replyAt: Date? = nil) {
         self.rating = rating
         self.comment = comment
         self.tags = tags
+        self.reply = reply
+        self.replyAt = replyAt
     }
 }
 

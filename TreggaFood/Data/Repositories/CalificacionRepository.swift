@@ -66,18 +66,26 @@ public final class SupabaseCalificacionRepository: CalificacionRepository {
         let rating: Int
         let comment: String?
         let tags: [String]?
+        let reply: String?
+        let reply_at: Date?
     }
 
     public func fetchDelPedido(pedidoId: UUID) async throws -> PedidoCalificacion? {
         let dtos: [CalificacionDTO] = try await client.from("calificaciones")
-            .select("rating,comment,tags")
+            .select("rating,comment,tags,reply,reply_at")
             .eq("pedido_id", value: pedidoId.uuidString)
             .eq("rated_by", value: "cliente")
             .limit(1)
             .execute()
             .value
         guard let dto = dtos.first else { return nil }
-        return PedidoCalificacion(rating: dto.rating, comment: dto.comment, tags: dto.tags ?? [])
+        return PedidoCalificacion(
+            rating: dto.rating,
+            comment: dto.comment,
+            tags: dto.tags ?? [],
+            reply: dto.reply,
+            replyAt: dto.reply_at
+        )
     }
 }
 
