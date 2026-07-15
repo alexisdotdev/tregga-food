@@ -137,52 +137,37 @@ struct TrackingMapView: UIViewRepresentable {
         return m
     }
 
-    /// Pin naranja con ícono de tienda para el negocio (pickup).
+    /// Pin naranja con emoji de tienda para el negocio (pickup). Emoji para igualar el
+    /// estilo de los pines de la ruta en Android (preferencia del usuario).
     private func pickupIcon() -> UIImage {
-        pinImage(
-            sfSymbol: "storefront.fill", fallback: "bag.fill",
-            background: UIColor(red: 1.0, green: 0.42, blue: 0.17, alpha: 1)
-        )
+        pinImage(emoji: "🏪", background: UIColor(red: 1.0, green: 0.42, blue: 0.17, alpha: 1))
     }
 
     /// Pin verde oscuro con casa para el cliente (delivery).
     private func deliveryIcon() -> UIImage {
-        pinImage(
-            sfSymbol: "house.fill", fallback: "house.fill",
-            background: UIColor(red: 0.02, green: 0.37, blue: 0.18, alpha: 1)
-        )
+        pinImage(emoji: "🏠", background: UIColor(red: 0.02, green: 0.37, blue: 0.18, alpha: 1))
     }
 
-    /// Pin verde con ícono según el tipo de vehículo del repartidor.
+    /// Pin verde con emoji según el tipo de vehículo del repartidor.
     private func repartidorIcon(vehiculoTipo: String?) -> UIImage {
-        let symbol: String
-        switch vehiculoTipo?.lowercased() {
-        case let t? where t.hasPrefix("bicicleta"):
-            symbol = "bicycle"
-        default: // moto, motoneta, nil → motocicleta
-            symbol = "motorcycle"
-        }
-        return pinImage(
-            sfSymbol: symbol, fallback: "bicycle",
-            background: UIColor(red: 0.05, green: 0.71, blue: 0.36, alpha: 1)
-        )
+        let emoji = vehiculoTipo?.lowercased().hasPrefix("bicicleta") == true ? "🚲" : "🛵"
+        return pinImage(emoji: emoji, background: UIColor(red: 0.05, green: 0.71, blue: 0.36, alpha: 1))
     }
 
-    /// Renderiza un círculo de color con el SF Symbol dado en blanco centrado.
-    private func pinImage(sfSymbol: String, fallback: String, background: UIColor) -> UIImage {
-        let size: CGFloat = 36
-        let cfg = UIImage.SymbolConfiguration(pointSize: 15, weight: .bold)
-        let glyph = UIImage(systemName: sfSymbol, withConfiguration: cfg)
-                 ?? UIImage(systemName: fallback, withConfiguration: cfg)
+    /// Renderiza un círculo de color con el emoji centrado (espejo del `pinDescriptor`
+    /// de Android, que dibuja el emoji sobre el círculo de color del rol).
+    private func pinImage(emoji: String, background: UIColor) -> UIImage {
+        let size: CGFloat = 40
         return UIGraphicsImageRenderer(size: CGSize(width: size, height: size)).image { _ in
             background.setFill()
             UIBezierPath(ovalIn: CGRect(x: 0, y: 0, width: size, height: size)).fill()
-            if let glyph {
-                let tinted = glyph.withTintColor(.white, renderingMode: .alwaysOriginal)
-                let x = (size - tinted.size.width) / 2
-                let y = (size - tinted.size.height) / 2
-                tinted.draw(at: CGPoint(x: x, y: y))
-            }
+            let font = UIFont.systemFont(ofSize: size * 0.5)
+            let str = emoji as NSString
+            let textSize = str.size(withAttributes: [.font: font])
+            str.draw(
+                at: CGPoint(x: (size - textSize.width) / 2, y: (size - textSize.height) / 2),
+                withAttributes: [.font: font]
+            )
         }
     }
 }

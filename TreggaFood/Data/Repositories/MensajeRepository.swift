@@ -27,7 +27,9 @@ public final class SupabaseMensajeRepository: MensajeRepository {
 
         func toDomain(miUserId: UUID?) -> Mensaje {
             let role = sender_role ?? ""
-            let esMio = role == "cliente" || (miUserId != nil && sender_id == miUserId)
+            // "Mío" por ROL (no por sender_id): con la misma cuenta como cliente y repartidor
+            // el sender_id coincide en ambos lados y colapsaba todo a un solo lado.
+            let esMio = role == "cliente"
             return Mensaje(
                 id: id,
                 content: content,
