@@ -389,7 +389,8 @@ struct OnboardingFlowView: View {
                 SignupEmailView(
                     state: coordinator.signup,
                     onBack: { coordinator.backSignup() },
-                    onContinue: { Task { await coordinator.validarYAvanzarEmail() } }
+                    onContinue: { Task { await coordinator.validarYAvanzarEmail() } },
+                    onIniciarSesion: { coordinator.iniciarSesionCuentaExistente() }
                 )
             case .signupPhoto:
                 SignupPhotoView(

@@ -20,6 +20,9 @@ public final class SignupFlowState {
     public var fechaNacimiento: Date?
     /// Error de duplicados (correo/teléfono ya registrados) para el paso 2.
     public var emailDuplicadoError: String?
+    /// La cuenta ya existe (correo/teléfono): en vez de bloquear, ofrecemos
+    /// "Iniciar sesión" (modelo Uber: una identidad, se agrega el rol cliente).
+    public var mostrarIniciarSesion: Bool = false
 
     // Paso 3: foto de perfil
     public var fotoPerfilURL: URL?
@@ -49,6 +52,7 @@ public final class SignupFlowState {
         email = ""
         fechaNacimiento = nil
         emailDuplicadoError = nil
+        mostrarIniciarSesion = false
         fotoPerfilURL = nil
         direccionCalle = ""
         colonia = ""

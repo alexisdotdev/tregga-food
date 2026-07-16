@@ -115,26 +115,32 @@ public final class OnboardingCoordinator {
     /// `true` mientras se verifican los duplicados del paso 2 (correo/teléfono).
     public private(set) var validandoEmail = false
 
+    /// Login pendiente cuando el paso 2 detecta una cuenta existente (modelo Uber:
+    /// no se crea otra cuenta, se inicia sesión y se agrega el rol cliente).
+    public private(set) var pendingLoginKind: OTPViewModel.Kind?
+
     /// Verifica contra la base que el correo y el teléfono del paso 2 no estén
     /// ya registrados antes de avanzar. Si alguno existe (o hay error de red),
     /// publica el mensaje en `signup.emailDuplicadoError` y NO avanza.
     public func validarYAvanzarEmail() async {
         signup.emailDuplicadoError = nil
+        signup.mostrarIniciarSesion = false
+        pendingLoginKind = nil
         validandoEmail = true
         defer { validandoEmail = false }
 
         let email = signup.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let e164 = signup.phoneE164Normalized
 
         do {
-            // "Registrado" = existe cualquier cuenta con ese correo (cliente,
-            // repartidor o admin), no solo repartidor — por eso usamos el kind.
+            // Login SOLO por correo (ver IDENTIDAD-Y-LOGIN-reglas.md). Una sola
+            // identidad por persona: si el correo ya pertenece a una cuenta (cualquier
+            // rol), NO creamos otra — ofrecemos iniciar sesión y al entrar se agrega el
+            // rol cliente (`vincular_cliente` en `completeAuth`). El teléfono es solo
+            // contacto; el índice `clientes_phone_unique` evita duplicar el cliente.
             if try await authService.emailAccountKind(email: email) != .none {
-                signup.emailDuplicadoError = "Ese correo ya está registrado. Inicia sesión."
-                return
-            }
-            if !e164.isEmpty, try await authService.phoneIsRegistered(phoneE164: e164) {
-                signup.emailDuplicadoError = "Ese teléfono ya está registrado. Inicia sesión."
+                signup.emailDuplicadoError = "Ya tienes una cuenta Tregga con ese correo. Inicia sesión y activamos tu perfil de cliente."
+                signup.mostrarIniciarSesion = true
+                pendingLoginKind = .email(email)
                 return
             }
         } catch {
@@ -143,6 +149,19 @@ public final class OnboardingCoordinator {
         }
 
         advanceSignup()
+    }
+
+    /// "Iniciar sesión" desde el paso 2 cuando la cuenta ya existe: cierra la
+    /// sesión anónima del alta y arranca el login por OTP (correo o teléfono). Al
+    /// completar, `completeAuth` agrega el rol cliente a esa misma cuenta.
+    public func iniciarSesionCuentaExistente() {
+        guard let kind = pendingLoginKind else { return }
+        pendingLoginKind = nil
+        signup.mostrarIniciarSesion = false
+        Task {
+            await cleanupAnonymousSessionIfNeeded()
+            startOTP(kind)
+        }
     }
 
     public func backSignup() {

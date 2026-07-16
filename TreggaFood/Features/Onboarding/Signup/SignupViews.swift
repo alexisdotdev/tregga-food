@@ -190,14 +190,22 @@ public struct SignupEmailView: View {
     @Bindable var state: SignupFlowState
     let onBack: () -> Void
     let onContinue: () -> Void
+    /// Modelo Uber: si la cuenta ya existe, en vez de bloquear ofrecemos login.
+    var onIniciarSesion: (() -> Void)? = nil
 
     private enum Campo: Hashable { case email, telefono }
     @FocusState private var foco: Campo?
 
-    public init(state: SignupFlowState, onBack: @escaping () -> Void, onContinue: @escaping () -> Void) {
+    public init(
+        state: SignupFlowState,
+        onBack: @escaping () -> Void,
+        onContinue: @escaping () -> Void,
+        onIniciarSesion: (() -> Void)? = nil
+    ) {
         self.state = state
         self.onBack = onBack
         self.onContinue = onContinue
+        self.onIniciarSesion = onIniciarSesion
     }
 
     public var body: some View {
@@ -226,8 +234,19 @@ public struct SignupEmailView: View {
                     if let error = state.emailDuplicadoError {
                         Text(error)
                             .font(.system(size: 12.5, weight: .semibold))
-                            .foregroundStyle(TreggaColors.danger)
+                            .foregroundStyle(state.mostrarIniciarSesion ? TreggaColors.text : TreggaColors.danger)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    if state.mostrarIniciarSesion {
+                        Button { onIniciarSesion?() } label: {
+                            Text("Iniciar sesión")
+                                .font(.system(size: 15, weight: .heavy))
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 48)
+                                .background(TreggaColors.primary, in: RoundedRectangle(cornerRadius: 14))
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -293,21 +312,11 @@ public struct SignupEmailView: View {
     private var fechaNacimientoField: some View {
         VStack(alignment: .leading, spacing: 6) {
             fieldLabel("Fecha de nacimiento")
-            DatePicker(
-                "",
-                selection: Binding(
-                    get: { state.fechaNacimiento ?? Date(timeIntervalSince1970: 0) },
-                    set: { state.fechaNacimiento = $0 }
-                ),
-                in: ...Date(),
-                displayedComponents: .date
-            )
-            .labelsHidden()
-            .datePickerStyle(.compact)
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(TreggaColors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            BirthdateWheelPicker(date: $state.fechaNacimiento)
+                .padding(.horizontal, 6)
+                .frame(maxWidth: .infinity)
+                .background(TreggaColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
 
             if !state.esMayorDeEdad && state.fechaNacimiento != nil {
                 Text("Debes ser mayor de 18 años")
@@ -527,6 +536,12 @@ public struct SignupAddressView: View {
     @State private var lookupTask: Task<Void, Never>?
     @State private var lookupError: String?
     @State private var loadingCP = false
+    @State private var locationProvider = CurrentLocationProvider()
+    @State private var buscandoUbicacion = false
+    @State private var ubicacionDenegada = false
+    /// Evita que el `onChange` del C.P. dispare un lookup a SEPOMEX cuando el C.P.
+    /// lo acabamos de rellenar desde el GPS (ya tenemos los datos de Google).
+    @State private var suppressCPLookup = false
 
     private enum Campo: Hashable { case calle, cp, colonia, referencias }
     @FocusState private var foco: Campo?
@@ -562,6 +577,11 @@ public struct SignupAddressView: View {
                 Spacer().frame(height: 16)
 
                 miniMapa
+
+                Spacer().frame(height: 12)
+
+                ubicacionActualButton
+                    .padding(.horizontal, 20)
 
                 Spacer().frame(height: 16)
 
@@ -603,6 +623,61 @@ public struct SignupAddressView: View {
         .safeAreaInset(edge: .bottom) { backContinueBar(canContinue: state.addressStepValid, onContinue: onContinue) }
         .background(TreggaColors.bg)
         .keyboardNavToolbar($foco, order: [.calle, .cp, .colonia, .referencias])
+        .alert("Ubicación desactivada", isPresented: $ubicacionDenegada) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Activa el permiso de ubicación en Ajustes para usar tu ubicación actual.")
+        }
+    }
+
+    /// CTA de GPS: obtiene la ubicación actual y autocompleta los campos vía
+    /// reverse-geocoding de Google (mismo mecanismo que el selector de Direcciones).
+    private var ubicacionActualButton: some View {
+        Button {
+            Task { await rellenarDesdeUbicacion() }
+        } label: {
+            HStack(spacing: 8) {
+                if buscandoUbicacion {
+                    ProgressView().controlSize(.mini)
+                } else {
+                    TreggaIcon(.location, size: 16, color: TreggaColors.primary)
+                }
+                Text("Usar mi ubicación actual")
+                    .font(.system(size: 14, weight: .heavy))
+                    .foregroundStyle(TreggaColors.primary)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 46)
+            .background(TreggaColors.card, in: Capsule())
+            .overlay(Capsule().stroke(TreggaColors.primary.opacity(0.4), lineWidth: 1.2))
+        }
+        .buttonStyle(.plain)
+        .disabled(buscandoUbicacion)
+    }
+
+    private func rellenarDesdeUbicacion() async {
+        buscandoUbicacion = true
+        defer { buscandoUbicacion = false }
+        guard let coord = await locationProvider.current() else {
+            ubicacionDenegada = true
+            return
+        }
+        guard let place = await GeocodingService().reverse(lat: coord.lat, lng: coord.lng) else {
+            lookupError = "No pudimos obtener tu dirección. Escríbela manualmente."
+            return
+        }
+        lookupError = nil
+        if let calle = place.calle, !calle.isEmpty { state.direccionCalle = calle }
+        if let muni = place.municipio, !muni.isEmpty { state.municipio = muni }
+        if let edo = place.estado, !edo.isEmpty { state.estado = edo }
+        if let col = place.colonia, !col.isEmpty {
+            colonias = []
+            state.colonia = col
+        }
+        if let cp = place.codigoPostal, cp != state.codigoPostal {
+            suppressCPLookup = true
+            state.codigoPostal = cp
+        }
     }
 
     private var miniMapa: some View {
@@ -685,6 +760,12 @@ public struct SignupAddressView: View {
     }
 
     private func handleCPChange(_ raw: String) {
+        // El C.P. lo acabamos de escribir desde el GPS: no relanzar el lookup ni
+        // pisar los datos que ya trajo Google.
+        if suppressCPLookup {
+            suppressCPLookup = false
+            return
+        }
         let digits = raw.filter(\.isNumber)
         lookupError = nil
         guard digits.count == 5, let repo = postalCodeRepo else {
@@ -714,6 +795,11 @@ public struct SignupAddressView: View {
                 }
             } catch PostalCodeError.invalidFormat {
                 lookupError = "C.P. inválido"
+            } catch PostalCodeError.serviceUnavailable {
+                // El servicio de C.P. está caído: NO decir "no encontrado" (el C.P.
+                // puede ser válido). Guiar al GPS y no pisar lo ya rellenado.
+                guard !Task.isCancelled else { return }
+                lookupError = "No pudimos verificar el C.P. ahora. Usa \"Usar mi ubicación actual\" o escribe tu colonia."
             } catch {
                 lookupError = "Error al consultar el C.P."
             }
