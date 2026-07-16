@@ -16,7 +16,7 @@ struct ContentView: View {
     /// Apariencia elegida en Cuenta → Preferencias. Persistida local.
     @AppStorage("APPEARANCE_MODE") private var appearanceRaw: String = AppearanceMode.system.rawValue
 
-    enum Phase { case loading, unauthenticated, welcomeBack, authenticated }
+    enum Phase { case loading, unauthenticated, authenticated }
 
     /// Gate de arranque por configuración remota (`app_config`).
     enum AppGate: Equatable { case none, maintenance, forceUpdate(String?) }
@@ -62,13 +62,6 @@ struct ContentView: View {
                 } else {
                     SplashScreen()
                 }
-            case .welcomeBack:
-                WelcomeBackView(
-                    displayName: remembered.displayName ?? "",
-                    kind: BiometricAuthService.shared.availableKind,
-                    onIngresar: { await ingresarConBiometria() },
-                    onUseAccount: { phase = .unauthenticated }
-                )
             case .authenticated:
                 ClientTabView(onSignOut: signOut)
                     .environment(\.cartStore, cart)
@@ -138,30 +131,11 @@ struct ContentView: View {
                     await captureRememberedUser()
                 }
                 phase = .authenticated
-            } else if remembered.hasRemembered, BiometricAuthService.shared.isAvailable,
-                      let token = await remembered.refreshToken() {
-                // Sesión cerrada/vencida pero el dispositivo recuerda al usuario.
-                // Validamos su refresh token contra el servidor (legible sin Face ID):
-                // SOLO si la cuenta sigue viva ofrecemos welcomeBack + Face ID; si el
-                // token murió (cuenta borrada/baneada) → login. Nunca pedimos Face ID
-                // por una cuenta inexistente. Ante error de red conservamos el
-                // ofrecimiento (Face ID reintenta). El token rota: re-guardamos el nuevo.
-                do {
-                    let tokens = try await deps.authService.restoreSession(refreshToken: token)
-                    await remembered.save(
-                        displayName: remembered.displayName ?? "",
-                        refreshToken: tokens.refreshToken,
-                        userId: tokens.userId
-                    )
-                    phase = .welcomeBack
-                } catch AuthError.networkFailure {
-                    phase = .welcomeBack
-                } catch AuthError.weakConnection {
-                    phase = .welcomeBack
-                } catch {
-                    phase = .unauthenticated
-                }
             } else {
+                // Sin sesión → login. Si el dispositivo recuerda al usuario y hay
+                // biometría, el Welcome muestra el CTA "Entrar con Face ID" (el tap
+                // valida el token y restaura la sesión). No auto-disparamos biometría
+                // ni mostramos una pantalla intermedia.
                 phase = .unauthenticated
             }
         }
@@ -271,11 +245,14 @@ struct ContentView: View {
             if BiometricLockPreference.isEnabled,
                BiometricAuthService.shared.isAvailable,
                deps.authSession.tokens != nil {
+                // Biometría activa: recordamos al usuario y cerramos localmente (sin
+                // revocar el token) → al login, donde el CTA "Entrar con Face ID"
+                // permite volver sin reescribir correo ni esperar el OTP.
                 await captureRememberedUser()
                 try? await deps.authService.signOutLocal()
                 await deps.authSession.clear()
                 recreateCoordinator(deps)
-                phase = .welcomeBack
+                phase = .unauthenticated
             } else {
                 BiometricLockPreference.reset()
                 await remembered.clear()
