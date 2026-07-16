@@ -253,12 +253,23 @@ public final class OnboardingCoordinator {
         // 3 — foto: ya fue subida en la pantalla de foto; aquí solo su URL.
         let avatarURL: String? = signup.fotoPerfilURL?.absoluteString
 
-        // 4 — el endpoint ya creó el cliente; recuperamos su id para la dirección.
+        // 4 — id del cliente para la dirección. En prod el endpoint ya creó la fila
+        // `clientes`; si no está (alta sin API / timing), la aseguramos con
+        // `vincular_cliente` (idempotente) para no perder la dirección de entrega.
         var clienteId: UUID?
         do {
             clienteId = try await clienteRepository.fetchByUserId(userId)?.id
         } catch {
             print("[submitSignup] fetchByUserId falló:", error)
+        }
+        if clienteId == nil {
+            do {
+                clienteId = try await clienteRepository.linkOrCreate(
+                    userId: userId, phone: phone, fullName: fullName, email: email
+                ).id
+            } catch {
+                print("[submitSignup] linkOrCreate (asegurar cliente) falló:", error)
+            }
         }
 
         // 5 — perfil (no bloqueante)
@@ -283,11 +294,17 @@ public final class OnboardingCoordinator {
             print("[submitSignup] profile actualizar falló:", error)
         }
 
-        // 6 — dirección principal (no bloqueante)
+        // 6 — dirección principal (no bloqueante). Guardamos también los componentes
+        // capturados en el onboarding (CP/colonia/municipio/estado) para que la
+        // dirección de entrega quede completa, no solo el texto.
         if let clienteId {
             let calle = signup.direccionCalle.trimmingCharacters(in: .whitespaces)
             let colonia = signup.colonia.trimmingCharacters(in: .whitespaces)
-            let address = [calle, colonia].filter { !$0.isEmpty }.joined(separator: ", ")
+            let municipio = signup.municipio.trimmingCharacters(in: .whitespaces)
+            let estado = signup.estado.trimmingCharacters(in: .whitespaces)
+            let cp = signup.codigoPostal.filter(\.isNumber)
+            let address = [calle, colonia, municipio, estado]
+                .filter { !$0.isEmpty }.joined(separator: ", ")
             let refs = signup.referencias.trimmingCharacters(in: .whitespaces)
             do {
                 _ = try await direccionRepository.crear(
@@ -295,7 +312,16 @@ public final class OnboardingCoordinator {
                     label: "Casa",
                     address: address,
                     referencias: refs.isEmpty ? nil : refs,
-                    isDefault: true
+                    isDefault: true,
+                    lat: nil,
+                    lng: nil,
+                    calle: calle.isEmpty ? nil : calle,
+                    codigoPostal: cp.isEmpty ? nil : cp,
+                    colonia: colonia.isEmpty ? nil : colonia,
+                    municipio: municipio.isEmpty ? nil : municipio,
+                    estado: estado.isEmpty ? nil : estado,
+                    instrucciones: nil,
+                    fotos: []
                 )
             } catch {
                 print("[submitSignup] crear dirección falló:", error)
