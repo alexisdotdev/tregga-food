@@ -24,13 +24,10 @@ public final class WelcomeViewModel {
     }
 
     public var detectedKind: ContactKind {
+        // Login SOLO por correo (el teléfono no es identidad única). Ver
+        // IDENTIDAD-Y-LOGIN-reglas.md. Un input tipo teléfono queda inválido.
         let trimmed = contactInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.contains("@") {
-            return emailLooksValid(trimmed) ? .email(trimmed) : .invalid
-        }
-        let digits = trimmed.filter(\.isNumber)
-        if digits.count == 10 { return .phone(e164: "+52\(digits)") }
-        return .invalid
+        return emailLooksValid(trimmed) ? .email(trimmed) : .invalid
     }
 
     public var canContinue: Bool {
@@ -43,7 +40,7 @@ public final class WelcomeViewModel {
     /// ofrezca crear cuenta o continuar con Google.
     public func continuar() async throws {
         guard canContinue else {
-            error = "Ingresa un teléfono (10 dígitos) o correo válido"
+            error = "Ingresa tu correo electrónico"
             return
         }
         loading = true
@@ -101,7 +98,7 @@ public final class WelcomeViewModel {
             }
 
         case .invalid:
-            error = "Ingresa un teléfono (10 dígitos) o correo válido"
+            error = "Ingresa tu correo electrónico"
         }
     }
 

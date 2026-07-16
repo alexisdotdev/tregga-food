@@ -113,13 +113,7 @@ public struct WelcomeView: View {
     private var contactField: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                TextField("Teléfono o correo", text: $viewModel.contactInput)
-                    .onChange(of: viewModel.contactInput) { _, new in
-                        let isEmail = new.contains { $0.isLetter || $0 == "@" }
-                        guard !isEmail else { return }
-                        let formatted = PhoneFormatter.format(new)
-                        if formatted != new { viewModel.contactInput = formatted }
-                    }
+                TextField("Correo electrónico", text: $viewModel.contactInput)
                     .font(.system(size: 15.5, weight: .heavy))
                     .foregroundStyle(TreggaColors.text)
                     .keyboardType(.emailAddress)
