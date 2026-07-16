@@ -10,12 +10,33 @@ public struct WelcomeView: View {
     @State private var googleError: String?
     @State private var showNotRegisteredDialog = false
     @State private var selectedDoc: LegalDocument?
+    @State private var biometricWorking = false
     @Environment(\.webAuthenticationSession) private var webAuth
+
+    /// Nombre del usuario recordado en el dispositivo (para el re-login biométrico).
+    /// Nil = no hay usuario recordado o la biometría no está disponible.
+    private let rememberedName: String?
+    /// Re-login por Face ID/Touch ID. Devuelve true si entró (la vista se reemplaza).
+    private let onBiometricLogin: (() async -> Bool)?
 
     private let heroHeight: CGFloat = 320
 
-    public init(viewModel: WelcomeViewModel) {
+    public init(
+        viewModel: WelcomeViewModel,
+        rememberedName: String? = nil,
+        onBiometricLogin: (() async -> Bool)? = nil
+    ) {
         self._viewModel = State(initialValue: viewModel)
+        self.rememberedName = rememberedName
+        self.onBiometricLogin = onBiometricLogin
+    }
+
+    private var mostrarBiometrico: Bool {
+        rememberedName != nil && onBiometricLogin != nil && BiometricAuthService.shared.isAvailable
+    }
+
+    private var biometricLabel: String {
+        BiometricAuthService.shared.availableKind == .touchID ? "Touch ID" : "Face ID"
     }
 
     public var body: some View {
@@ -32,6 +53,10 @@ public struct WelcomeView: View {
                     contactField
                     Spacer().frame(height: 12)
                     continueButton
+                    if mostrarBiometrico {
+                        Spacer().frame(height: 12)
+                        biometricButton
+                    }
                     Spacer().frame(height: 20)
                     divider
                     Spacer().frame(height: 16)
@@ -156,6 +181,41 @@ public struct WelcomeView: View {
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }
         .disabled(!viewModel.canContinue || viewModel.loading)
+        .padding(.horizontal, 20)
+    }
+
+    /// Re-login rápido con Face ID/Touch ID cuando el dispositivo recuerda al
+    /// usuario (aparece debajo de "Continuar"). Evita reescribir correo + OTP.
+    private var biometricButton: some View {
+        Button {
+            guard let onBiometricLogin, !biometricWorking else { return }
+            Task {
+                biometricWorking = true
+                _ = await onBiometricLogin()
+                biometricWorking = false
+            }
+        } label: {
+            HStack(spacing: 10) {
+                if biometricWorking {
+                    ProgressView().controlSize(.small)
+                } else {
+                    TreggaIcon(
+                        BiometricAuthService.shared.availableKind == .touchID ? .touchId : .faceId,
+                        size: 20, color: TreggaColors.primary
+                    )
+                }
+                Text("Entrar con \(biometricLabel)")
+                    .font(.system(size: 15.5, weight: .heavy))
+                    .foregroundStyle(TreggaColors.primary)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background(TreggaColors.surface)
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(TreggaColors.primary.opacity(0.5), lineWidth: 1.5))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
+        .buttonStyle(.plain)
+        .disabled(biometricWorking)
         .padding(.horizontal, 20)
     }
 

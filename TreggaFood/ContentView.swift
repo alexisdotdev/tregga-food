@@ -50,7 +50,15 @@ struct ContentView: View {
                 SplashScreen()
             case .unauthenticated:
                 if let coordinator {
-                    OnboardingFlowView(coordinator: coordinator)
+                    OnboardingFlowView(
+                        coordinator: coordinator,
+                        // Si el dispositivo recuerda al usuario (Face ID activo),
+                        // ofrecemos re-login biométrico directo en el Welcome — así
+                        // no depende de que el arranque haya elegido `welcomeBack`.
+                        rememberedName: (remembered.hasRemembered && BiometricAuthService.shared.isAvailable)
+                            ? remembered.displayName : nil,
+                        onBiometricLogin: { await ingresarConBiometria() }
+                    )
                 } else {
                     SplashScreen()
                 }
@@ -355,14 +363,18 @@ struct SplashScreen: View {
 struct OnboardingFlowView: View {
     @Environment(\.appDependencies) private var deps
     let coordinator: OnboardingCoordinator
+    var rememberedName: String? = nil
+    var onBiometricLogin: (() async -> Bool)? = nil
 
     var body: some View {
         Group {
             switch coordinator.destination {
             case .welcome:
-                WelcomeView(viewModel: WelcomeViewModel(
-                    authService: authService, coordinator: coordinator
-                ))
+                WelcomeView(
+                    viewModel: WelcomeViewModel(authService: authService, coordinator: coordinator),
+                    rememberedName: rememberedName,
+                    onBiometricLogin: onBiometricLogin
+                )
             case .otp(let kind):
                 OTPView(viewModel: OTPViewModel(
                     kind: kind,
