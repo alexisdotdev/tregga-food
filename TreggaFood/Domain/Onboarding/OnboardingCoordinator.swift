@@ -193,31 +193,37 @@ public final class OnboardingCoordinator {
         signupError = nil
         defer { signupSubmitting = false }
 
-        // 1 — sesión
-        await ensureAnonymousSession()
-        guard let userId = authSession.tokens?.userId else {
-            await cleanupAnonymousSessionIfNeeded()
-            signupError = "No se pudo iniciar la sesión. Revisa tu conexión e intenta de nuevo."
-            return
-        }
+        let fullName = signup.nombres.trimmingCharacters(in: .whitespaces)
+        let phone = signup.phoneE164Normalized
+        let email = signup.email.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        // 2 — foto: ya fue subida en la pantalla de foto; aquí solo su URL.
-        let avatarURL: String? = signup.fotoPerfilURL?.absoluteString
-
-        // 3 — credenciales (crítico)
+        // 1 — alta vía la API de Next.js (crítico). Enruta por el servidor a propósito: solo así
+        // se captura la IP pública en profiles.registration_ip. El endpoint crea cuenta+cliente+
+        // perfil (nombre/apellidos/phone) y devuelve la sesión; la establecemos aquí.
+        let userId: UUID
         do {
-            try await authService.registerEmailPassword(
-                email: signup.email.trimmingCharacters(in: .whitespacesAndNewlines),
-                password: signup.password
+            let tokens = try await authService.registerCliente(
+                email: email,
+                password: signup.password,
+                fullName: fullName,
+                apellidoPaterno: signup.apellidoPaterno.trimmingCharacters(in: .whitespaces),
+                apellidoMaterno: signup.apellidoMaterno.isEmpty
+                    ? nil : signup.apellidoMaterno.trimmingCharacters(in: .whitespaces),
+                phone: phone.isEmpty ? nil : phone
             )
+            await authSession.persist(tokens)
+            userId = tokens.userId
         } catch {
-            print("[submitSignup] registerEmailPassword falló:", error)
-            await cleanupAnonymousSessionIfNeeded()
-            signupError = "No pudimos crear tu cuenta con ese correo. Quizá ya está registrado o hubo un problema de conexión."
+            print("[submitSignup] registerCliente falló:", error)
+            if case let AuthError.unknown(msg) = error {
+                signupError = msg
+            } else {
+                signupError = "No pudimos crear tu cuenta. Revisa tu conexión e intenta de nuevo."
+            }
             return
         }
 
-        // 3b — correo de verificación (no bloqueante): manda un enlace para que
+        // 2 — correo de verificación (no bloqueante): manda un enlace para que
         // el cliente confirme la propiedad de su correo. Si falla, no afecta el alta.
         do {
             try await authService.requestEmailVerification()
@@ -225,22 +231,15 @@ public final class OnboardingCoordinator {
             print("[submitSignup] requestEmailVerification falló:", error)
         }
 
-        let fullName = signup.nombres.trimmingCharacters(in: .whitespaces)
-        let phone = signup.phoneE164Normalized
-        let email = signup.email.trimmingCharacters(in: .whitespacesAndNewlines)
+        // 3 — foto: ya fue subida en la pantalla de foto; aquí solo su URL.
+        let avatarURL: String? = signup.fotoPerfilURL?.absoluteString
 
-        // 4 — link/create cliente (no bloqueante: ya hay cuenta)
+        // 4 — el endpoint ya creó el cliente; recuperamos su id para la dirección.
         var clienteId: UUID?
         do {
-            let cliente = try await clienteRepository.linkOrCreate(
-                userId: userId,
-                phone: phone,
-                fullName: fullName,
-                email: email
-            )
-            clienteId = cliente.id
+            clienteId = try await clienteRepository.fetchByUserId(userId)?.id
         } catch {
-            print("[submitSignup] linkOrCreate falló:", error)
+            print("[submitSignup] fetchByUserId falló:", error)
         }
 
         // 5 — perfil (no bloqueante)
