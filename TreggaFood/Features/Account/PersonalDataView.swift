@@ -217,22 +217,24 @@ struct PersonalDataView: View {
             Text("FECHA DE NACIMIENTO")
                 .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(TreggaColors.textSec)
-            HStack {
-                if tieneFecha {
-                    DatePicker("", selection: $fechaNacimiento, displayedComponents: .date)
-                        .labelsHidden()
-                        .tint(TreggaColors.primary)
-                } else {
+            if tieneFecha {
+                BirthdateWheelPicker(date: $fechaNacimiento)
+                    .padding(.horizontal, 6)
+                    .frame(maxWidth: .infinity)
+                    .background(TreggaColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            } else {
+                HStack {
                     Button("Agregar fecha") { tieneFecha = true }
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(TreggaColors.primary)
+                    Spacer()
                 }
-                Spacer()
+                .padding(.horizontal, 14)
+                .frame(height: 48)
+                .background(TreggaColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            .padding(.horizontal, 14)
-            .frame(height: 48)
-            .background(TreggaColors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
 
