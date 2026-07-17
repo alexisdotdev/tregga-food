@@ -4,12 +4,21 @@
 <dict>
 	<key>CFBundleDisplayName</key>
 	<string>Tregga Food</string>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.813041197537-3fbjrtm0suula02ja85q4277vs6b42uj</string>
+			</array>
+		</dict>
+	</array>
 	<key>GOOGLE_MAPS_API_KEY</key>
 	<string>$(GOOGLE_MAPS_API_KEY)</string>
 	<key>GOOGLE_MAPS_MAP_ID</key>
 	<string>$(GOOGLE_MAPS_MAP_ID)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>Tregga usa la cámara para tu foto de perfil y para fotos de la entrada de tu domicilio.</string>
 	<key>NSFaceIDUsageDescription</key>
@@ -22,11 +31,11 @@
 	<string>$(SUPABASE_ANON_KEY)</string>
 	<key>SupabaseURL</key>
 	<string>$(SUPABASE_URL)</string>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
 </dict>
 </plist>

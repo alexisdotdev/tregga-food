@@ -22,6 +22,8 @@ struct TreggaFoodApp: App {
             ContentView()
                 .environment(\.appDependencies, deps)
                 .environment(\.locale, Locale(identifier: "es_MX"))
+                // Callback del sign-in nativo de Google (GoogleSignIn SDK).
+                .onOpenURL { _ = GoogleSignInHelper.handle($0) }
         }
         // El badge del ícono lo pone el push (badge:1) y no se borraba solo; lo
         // reseteamos al volver al frente, como Business/Delivery.

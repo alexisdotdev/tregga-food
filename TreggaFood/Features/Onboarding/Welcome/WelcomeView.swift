@@ -307,9 +307,10 @@ public struct WelcomeView: View {
     private func runGoogle() {
         Task {
             do {
-                try await viewModel.continuarConGoogle { url in
-                    try await webAuth.authenticate(using: url, callbackURLScheme: "app.tregga.food")
-                }
+                // Sign-in NATIVO de Google (selector de cuenta de Google, sin el
+                // diálogo del dominio de Supabase). Devuelve el idToken → Supabase.
+                let g = try await GoogleSignInHelper.signIn()
+                try await viewModel.continuarConGoogle(idToken: g.idToken, accessToken: g.accessToken)
             } catch is CancellationError {
             } catch {
                 googleError = error.localizedDescription

@@ -102,12 +102,14 @@ public final class WelcomeViewModel {
         }
     }
 
-    public func continuarConGoogle(launchFlow: @escaping OAuthLaunchFlow) async throws {
+    /// Sign-in nativo con Google: la View obtiene el `idToken` con el SDK y aquí
+    /// lo canjeamos con Supabase (`signInWithIdToken`) → `completeAuth`.
+    public func continuarConGoogle(idToken: String, accessToken: String?) async throws {
         loading = true
         defer { loading = false }
         error = nil
         do {
-            let tokens = try await authService.signInWithGoogle(launchFlow: launchFlow)
+            let tokens = try await authService.signInWithGoogle(idToken: idToken, accessToken: accessToken)
             await coordinator?.completeAuth(tokens: tokens)
         } catch is CancellationError {
             throw CancellationError()
