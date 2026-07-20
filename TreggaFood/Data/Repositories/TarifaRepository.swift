@@ -9,6 +9,21 @@ public struct TarifaReparto: Sendable, Equatable {
     public let tarifa: Decimal
     /// Lo que gana el repartidor. Hoy coincide con la tarifa (se queda el envío completo).
     public let gananciaRepartidor: Decimal
+    /// Parámetros con los que el servidor calculó la tarifa, para poder mostrar
+    /// el desglose ("base $15 + $6/km × 2.85 km") sin hardcodear nada: son
+    /// configurables desde el panel de super-admin y `system_config` no es
+    /// legible desde la app (RLS de super_admin).
+    public let tarifaBase: Decimal
+    public let incrementoPorKm: Decimal
+    public let kmBaseIncluidos: Double
+
+    /// Desglose legible. `nil` si no hubo distancia calculable.
+    public var desglose: String? {
+        guard distanciaKm > 0 else { return nil }
+        let base = NSDecimalNumber(decimal: tarifaBase).intValue
+        let porKm = NSDecimalNumber(decimal: incrementoPorKm).intValue
+        return "base $\(base) + $\(porKm)/km × \(String(format: "%.2f", distanciaKm)) km"
+    }
 }
 
 /// Calcula el envío contra la API en vez de asumir una cifra fija.
@@ -45,6 +60,10 @@ public final class SupabaseTarifaRepository: TarifaRepository {
             let duracion_min: Int
             let tarifa_reparto: Double
             let ganancia_repartidor: Double
+            // Aditivos (web 704022c). Opcionales para no romper si faltan.
+            let tarifa_base: Double?
+            let incremento_por_km: Double?
+            let km_base_incluidos: Double?
         }
 
         // El endpoint autentica por Bearer (además de cookies para la web).
@@ -71,7 +90,10 @@ public final class SupabaseTarifaRepository: TarifaRepository {
             distanciaKm: r.distancia_km,
             duracionMin: r.duracion_min,
             tarifa: Decimal(r.tarifa_reparto),
-            gananciaRepartidor: Decimal(r.ganancia_repartidor)
+            gananciaRepartidor: Decimal(r.ganancia_repartidor),
+            tarifaBase: Decimal(r.tarifa_base ?? 0),
+            incrementoPorKm: Decimal(r.incremento_por_km ?? 0),
+            kmBaseIncluidos: r.km_base_incluidos ?? 0
         )
     }
 }
@@ -87,6 +109,7 @@ public final class MockTarifaRepository: TarifaRepository {
 
     public func calcular(pickupLat: Double, pickupLng: Double,
                          deliveryLat: Double, deliveryLng: Double) async throws -> TarifaReparto {
-        TarifaReparto(distanciaKm: 0.97, duracionMin: 4, tarifa: tarifa, gananciaRepartidor: tarifa)
+        TarifaReparto(distanciaKm: 0.97, duracionMin: 4, tarifa: tarifa, gananciaRepartidor: tarifa,
+                      tarifaBase: 15, incrementoPorKm: 6, kmBaseIncluidos: 0)
     }
 }
