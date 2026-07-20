@@ -11,6 +11,7 @@ public struct WelcomeView: View {
     @State private var showNotRegisteredDialog = false
     @State private var selectedDoc: LegalDocument?
     @State private var biometricWorking = false
+    @State private var showPassword = false
     @Environment(\.webAuthenticationSession) private var webAuth
 
     /// Nombre del usuario recordado en el dispositivo (para el re-login biométrico).
@@ -50,7 +51,13 @@ public struct WelcomeView: View {
                     Spacer().frame(height: 6)
                     subtitle
                     Spacer().frame(height: 18)
+                    methodSelector
+                    Spacer().frame(height: 12)
                     contactField
+                    if viewModel.method == .password {
+                        Spacer().frame(height: 12)
+                        passwordField
+                    }
                     Spacer().frame(height: 12)
                     continueButton
                     if mostrarBiometrico {
@@ -159,28 +166,96 @@ public struct WelcomeView: View {
         .padding(.horizontal, 20)
     }
 
+    private var primaryTitle: String {
+        if viewModel.method == .password {
+            return viewModel.loading ? "Entrando..." : "Iniciar sesión"
+        }
+        return viewModel.loading ? "Enviando..." : "Continuar"
+    }
+
     private var continueButton: some View {
         Button {
             Task {
-                do { try await viewModel.continuar() }
+                do {
+                    if viewModel.method == .password {
+                        try await viewModel.loginConPassword()
+                    } else {
+                        try await viewModel.continuar()
+                    }
+                }
                 catch AuthError.accountNotRegistered { showNotRegisteredDialog = true }
                 catch {}
             }
         } label: {
             HStack(spacing: 8) {
-                Text(viewModel.loading ? "Enviando..." : "Continuar")
+                Text(primaryTitle)
                     .font(.system(size: 16, weight: .heavy))
-                    .foregroundStyle(viewModel.canContinue ? .white : TreggaColors.textTer)
-                if !viewModel.loading {
-                    TreggaIcon(.arrow, size: 18, color: viewModel.canContinue ? .white : TreggaColors.textTer)
+                    .foregroundStyle(viewModel.canSubmit ? .white : TreggaColors.textTer)
+                if !viewModel.loading && viewModel.method == .code {
+                    TreggaIcon(.arrow, size: 18, color: viewModel.canSubmit ? .white : TreggaColors.textTer)
                 }
             }
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .background(viewModel.canContinue ? TreggaColors.primary : TreggaColors.surface)
+            .background(viewModel.canSubmit ? TreggaColors.primary : TreggaColors.surface)
             .clipShape(RoundedRectangle(cornerRadius: 14))
         }
-        .disabled(!viewModel.canContinue || viewModel.loading)
+        .disabled(!viewModel.canSubmit || viewModel.loading)
+        .padding(.horizontal, 20)
+    }
+
+    /// Selector segmentado Código / Contraseña (pill activo en primary).
+    private var methodSelector: some View {
+        HStack(spacing: 4) {
+            segButton("Código", .code)
+            segButton("Contraseña", .password)
+        }
+        .padding(4)
+        .background(TreggaColors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 20)
+    }
+
+    private func segButton(_ title: String, _ m: WelcomeViewModel.LoginMethod) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.15)) { viewModel.method = m }
+        } label: {
+            Text(title)
+                .font(.system(size: 14, weight: .heavy))
+                .foregroundStyle(viewModel.method == m ? .white : TreggaColors.textSec)
+                .frame(maxWidth: .infinity)
+                .frame(height: 40)
+                .background(viewModel.method == m ? TreggaColors.primary : Color.clear)
+                .clipShape(RoundedRectangle(cornerRadius: 9))
+        }
+    }
+
+    private var passwordField: some View {
+        HStack(spacing: 8) {
+            Group {
+                if showPassword {
+                    TextField("Contraseña", text: $viewModel.password)
+                } else {
+                    SecureField("Contraseña", text: $viewModel.password)
+                }
+            }
+            .font(.system(size: 15.5, weight: .heavy))
+            .foregroundStyle(TreggaColors.text)
+            .tint(TreggaColors.primary)
+            .textContentType(.password)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled(true)
+            Button {
+                showPassword.toggle()
+            } label: {
+                TreggaIcon(showPassword ? .eyeOff : .eye, size: 20, color: TreggaColors.textSec)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 56)
+        .background(TreggaColors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
         .padding(.horizontal, 20)
     }
 
