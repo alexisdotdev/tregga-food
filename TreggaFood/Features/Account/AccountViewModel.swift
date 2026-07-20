@@ -159,25 +159,6 @@ public final class AccountViewModel {
         self.direcciones = (try? await direccionRepo.fetchDelCliente(clienteId: clienteId)) ?? []
     }
 
-    public func crearDireccion(label: String, address: String, referencias: String?, isDefault: Bool) async {
-        guard let clienteId = cliente?.id else { return }
-        _ = try? await direccionRepo.crear(
-            clienteId: clienteId, label: label, address: address,
-            referencias: referencias, isDefault: isDefault
-        )
-        await recargarDirecciones()
-    }
-
-    public func editarDireccion(id: UUID, label: String, address: String, referencias: String?) async {
-        _ = try? await direccionRepo.editar(id: id, label: label, address: address, referencias: referencias)
-        await recargarDirecciones()
-    }
-
-    public func eliminarDireccion(id: UUID) async {
-        try? await direccionRepo.eliminar(id: id)
-        await recargarDirecciones()
-    }
-
     public func hacerDireccionPrincipal(id: UUID) async {
         guard let clienteId = cliente?.id else { return }
         try? await direccionRepo.hacerDefault(id: id, clienteId: clienteId)

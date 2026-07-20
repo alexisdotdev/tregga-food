@@ -5,7 +5,6 @@ import TreggaDesignSystem
 /// Destinos de navegación dentro de la sección Cuenta.
 enum AccountRoute: Hashable {
     case personalData
-    case addresses
     case paymentMethods
     case notifications
     case privacy
@@ -98,8 +97,6 @@ struct CuentaTab: View {
         switch route {
         case .personalData:
             PersonalDataView(viewModel: viewModel)
-        case .addresses:
-            AddressesView(viewModel: viewModel)
         case .paymentMethods:
             PaymentMethodsView()
         case .notifications:
