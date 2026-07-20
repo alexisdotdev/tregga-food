@@ -1,3 +1,5 @@
+# Tregga Food — iOS
+
 # CLAUDE.md
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
@@ -62,9 +64,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
-**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
-
-App nativa para clientes de Tregga. Segunda de las 4 apps nativas del ecosistema en migrar desde KMP. La app KMP legacy vive en `/Volumes/devcraftstudio/Developer/tregga-saas/tregga-mobile/` y queda en archive mode — consultarla SOLO para entender lógica de negocio ya resuelta (Supabase, pedidos, pagos, push).
+App nativa para **clientes** de Tregga (~19k LOC, 127 archivos Swift, 19 features). **Fase actual: pruebas** — el flujo del pedido completo (descubrir → menú → carrito → checkout con cupones → tracking → chat → calificación) corre end-to-end contra Supabase, sin mocks en la ruta. La app KMP legacy en `/Volumes/devcraftstudio/Developer/tregga-saas/tregga-mobile/` queda en archive mode — consultarla SOLO para lógica de negocio ya resuelta.
 
 ## Responder en español
 
@@ -72,140 +72,146 @@ Siempre responde en español.
 
 ## Stack
 
-- **Swift 6** + **SwiftUI**
-- **iOS 18.0+** (deployment real: 18.6, default de Xcode 26)
-- **Observation** framework (`@Observable`) para state management
-- **Swift Concurrency** (async/await + actors)
-- **Swift Testing** (no XCTest)
-- `supabase-swift` (oficial) — pendiente integrar
-- `URLSession` para Next.js API
-- **Google Maps** para mapas y rutas
-- **Firebase Messaging** (FCM) para push — pendiente
-- **TreggaDesignSystem** Swift Package local
+- **SwiftUI** sobre **Swift 5 language mode** (⚠️ NO Swift 6 mode: `SWIFT_VERSION = 5.0` con `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` + `SWIFT_APPROACHABLE_CONCURRENCY`)
+- **iOS 18.6+** (nivel proyecto; ⚠️ el target de app dice 26.0 — inconsistencia por unificar)
+- `TARGETED_DEVICE_FAMILY = "1,2"` — sin layouts iPad específicos
+- **Observation** (`@Observable`) + Swift Concurrency + **Swift Testing** (no XCTest)
+- **supabase-swift 2.46** (Supabase, Auth, PostgREST, Storage) — integrado y por default
+- **Google Maps SDK 10.13** + **Routes API** (polyline del tracking)
+- **Firebase 12.14**: FirebaseMessaging (FCM) + FirebaseCrashlytics — integrados; entitlement `aps-environment = production`
+- **GoogleSignIn-iOS 9.2** (login Google nativo con `signInWithIdToken`)
+- Paquetes compartidos por ruta relativa: `../tregga-shared/TreggaCore` + `../tregga-shared/TreggaDesignSystem`
 
-Backend sin cambios respecto al KMP legacy: Supabase project `uuvqihdzfvusjtpeixtw` + Next.js API en `../../tregga-saas/tregga-frontend/` (legacy path) o `https://tregga.app`.
+Backend: Supabase project `uuvqihdzfvusjtpeixtw` + API Next.js `https://tregga.app` (`Config.API_BASE` en TreggaCore).
 
-## Estructura
+## Estructura (Clean Architecture 3 capas — sin UseCases; VMs llaman repos directo)
 
 ```
-tregga-Food/
-├── TreggaFood.xcodeproj           # bundle ID: app.tregga.food
-├── TreggaFood/                    # app target (synchronized folders)
-│   ├── Features/                      # Una carpeta por feature
-│   │   └── Onboarding/Splash/         # ✓ DScreenSplash
-│   ├── DevTools/                      # DesignShowcase (preview-only)
-│   ├── Assets.xcassets/               # logo-tregga.imageset
-│   ├── TreggaFoodApp.swift        # @main
-│   └── ContentView.swift              # root del runtime
-├── Packages/
-│   └── TreggaDesignSystem/            # SPM local — design system
-│       ├── Package.swift
-│       ├── Sources/TreggaDesignSystem/
-│       │   ├── Tokens/                # Color+Tregga, Typography, Spacing
-│       │   ├── Components/            # Screen, TreggaButton, Chip, Tag,
-│       │   │                          # SearchBar, TreggaDivider, SectionHeader
-│       │   ├── Driver/                # DStat, DKV, DriverHeader, DriverBottomNav,
-│       │   │                          # DStepProgress, MotoIcon
-│       │   ├── Patterns/              # MotionStripes
-│       │   └── Icons/                 # TreggaIcon
-│       └── Tests/TreggaDesignSystemTests/
-├── TreggaFoodTests/
-└── TreggaFoodUITests/
+TreggaFood/
+├── TreggaFoodApp.swift            # @main, AppDelegate adaptor (FCM), locale es_MX
+├── ContentView.swift              # 432 líneas: gate remoto → splash → onboarding → shell
+├── Core/
+│   ├── DI/AppDependencies.swift   # composition root; inyectado vía EnvironmentValues.appDependencies
+│   ├── Auth/ Security/ Push/ Notifications/ Support/ UI/ + GoogleMapsBootstrap, AppearanceMode
+├── Domain/
+│   ├── Models/                    # Pedido, PedidoHistorial, Tracking, Negocio, MenuModels, Cliente…
+│   └── Onboarding/OnboardingCoordinator.swift
+├── Data/
+│   ├── Repositories/              # 17 archivos: protocolo + SupabaseX + MockX cada uno
+│   └── Storage/                   # SupabaseStorageService
+└── Features/                      # 19 carpetas:
+    Home · Catalog · Restaurant · ItemDetail · Cart · Checkout · Orders · Tracking · Chat ·
+    Rating · Direcciones · MapaNegocios · Offers · Notifications · Help · Account ·
+    Onboarding · Common · Shell
 ```
 
-`TreggaFood/` y `Packages/TreggaDesignSystem/Sources/TreggaDesignSystem/` usan **synchronized folders** (Xcode 26). Crear `.swift` en cualquier subcarpeta lo hace aparecer en Xcode automáticamente, sin "Add Files to Project".
+Shell autenticado: `ClientTabView` con 5 tabs keep-alive (inicio · live/mapa · buscar · carrito · cuenta) y barra flotante custom (`ClientBottomBar`).
 
-## Estado actual (al cierre 2026-05-16)
+## Estado actual (2026-07-19 · fase de pruebas)
 
-- ✅ Proyecto Xcode 26 inicializado, bundle ID `app.tregga.food`, iOS 18+
-- ✅ Paquete `TreggaDesignSystem` completo (19 archivos fuente), build verificado contra iOS 18 SDK
-- ✅ Pantalla **00 Splash** corriendo en simulador, validada por el usuario
-- ⏳ **Siguiente**: pantalla **01 Welcome** (teléfono MX + OTP) + `OnboardingCoordinator` + auto-advance del Splash
+- ✅ **Onboarding/auth completos**: Welcome (correo + Google + Face ID) → OTP → signup 8 pantallas (`Signup/SignupViews.swift`) → permisos. Re-login **biométrico** solo tras logout (NO candado de arranque — decisión en `ContentView.swift:132-136`); restauración de sesión con refresh REAL contra backend y tolerancia offline (conserva sesión en `networkFailure`/`weakConnection`).
+- ✅ **Flujo del pedido e2e contra Supabase**: Home (vista `negocios_publicos` + **Realtime** con backoff y re-auth) → Restaurant (menú + horarios + revalida `acepta_pedidos`) → ItemDetail (modificadores) → CartStore → Checkout → Tracking (polling 4.5s, Google Maps + Routes API, notificación local a 300m) → Chat (polling 3s) → `DeliveryRatingFlow`.
+- ✅ **Checkout defensivo**: guard de reentrancia anti doble-pedido, gate `count_repartidores_activos` **fail-open**, resolución de `clienteId` real ANTES de navegar, cupones vía RPC `calcular_descuento`, push al negocio vía POST `https://tregga.app/api/pedidos/notify-negocio` (fire-and-forget).
+- ✅ **Cuenta completa** (11 rutas): datos personales, direcciones (mapa/GPS/SEPOMEX), favoritos, preferencias, privacidad, seguridad (cambio de contraseña real), exportación de datos, **eliminación de cuenta vía RPC `delete_my_account`** (App Store 5.1.1(v)), inbox, legal in-app.
+- ✅ **Push FCM** con ciclo de vida del token ligado a sesión (`device_tokens`, upsert/desactivar) + feature Notifications real (tabla `notificaciones`).
+- ✅ **Gates remotos** mantenimiento/actualización forzada (`app_config`), fail-open.
+- ✅ **Pagos — decisión de producto (Opción C, `docs/stripe-plan.md`)**: SOLO efectivo y transferencia, liquidados directo al repartidor. `MetodoPago.seleccionables = [.efectivo, .transferencia]` (`Domain/Models/Pedido.swift:14`); **tarjeta NO seleccionable**. `Features/Checkout/PaymentGateway.swift` (StubStripeGateway) es **código muerto sin referencias** — no hay riesgo funcional; decidir borrar o cablear si se retoma Stripe (Opción B: Connect Express).
+- ⚠️ **Solo 7 `@Test` para 19k LOC** — la brecha principal para producción es verificación, no funcionalidad. Prioridad: `CheckoutViewModel`, `CartStore`, `PedidoStatus`, mapeos DTO. Los mocks y protocolos ya existen, están sin usar.
+- ⚠️ **`deliveryFee = 25` hardcodeado en el cliente** (`CheckoutViewModel.swift:42`) — un cliente modificado podría mandar otro monto a la RPC. Mover server-side.
+- ⚠️ **Push sin deep-link**: `didReceive response` no navega al tracking del pedido.
+- ⚠️ **Carrito sin persistencia** (estado en memoria; matar la app lo vacía).
 
-22 pantallas totales a implementar. Lista en `README.md`.
+## Capa de datos
+
+- **17 repositorios** (patrón: `protocol X: Sendable` + `SupabaseX` + `MockX`, DTOs privados snake_case sin CodingKeys + `toDomain()`): Catalog, Pedido, Tracking, DireccionCliente, Cliente, Profile, Mensaje, Calificacion, Notificacion, Preferencias, Favorito, Oferta, AppConfig, Account, Feedback, Storage, DeviceToken.
+- **Tablas/vistas (23)**: `negocios_publicos` (vista), `negocios`, `categorias_menu`, `productos`, `grupos_modificadores`, `modificadores`, `horarios_negocio`, `pedidos`, `repartidores`, `vehiculos`, `clientes`, `profiles`, `direcciones_cliente`, `mensajes`, `calificaciones`, `notificaciones`, `preferencias_usuario`, `favoritos`, `promociones`, `reportes`, `solicitudes_export`, `device_tokens`, `app_config`.
+- **RPCs (7)**: `crear_pedido_cliente`, `calcular_descuento`, `count_repartidores_activos`, `get_repartidor_phone` (SECURITY DEFINER), `vincular_cliente`, `set_direccion_default`, `delete_my_account`.
+- **Realtime** solo en catálogo; tracking y chat van por **polling** (migrar chat a Realtime es mejora pendiente).
+- Estados del pedido (`Domain/Models/Tracking.swift`): `pending · assigned · en_recogida · recogido · en_entrega · completed · cancelled` — idénticos en las 6 apps y el enum del server. `pending` sin `negocioConfirmedAt` = "esperando al negocio" (paso −1).
+
+## Flags de desarrollo
+
+- `-USE_MOCK YES` — activa mocks (solo DEBUG). ⚠️ El flag es `USE_MOCK`, NO `USE_SUPABASE_BACKEND` (el docstring viejo de `AppDependencies.swift` miente). Release: siempre backend real.
+- `-BYPASS_OTP YES` — acepta cualquier código (solo DEBUG).
+
+## Identidad y login (canónico, ver `../docs/`)
+
+Reglas de producto 2026-07-16/18 (`../docs/IDENTIDAD-Y-LOGIN-reglas.md`, `../docs/APPS-HANDOFF-auth-api-roles-e-ip.md`):
+- **Correo = identidad**; login SOLO por correo (código OTP **o** contraseña). Teléfono = contacto, NO login.
+- **Persona = una cuenta, roles agregables**: un repartidor que entra a Food se convierte en cliente automáticamente (`vincular_cliente`, idempotente, NO pisa roles). Rol efectivo = `roles[] ∪ {role}`.
+- **El REGISTRO de cliente pasa por `POST /api/cliente/register`** (captura IP server-side); login directo a Supabase OK.
+- "Recordar sesión" conserva la sesión → CTA "Continuar como <correo>"; si biometría activa, manda el CTA biométrico.
 
 ## Convenciones
 
-- **Commits**: español, presente, imperativo. Uso de corchetes al principio para indicar el tipo de cambio: `[feat]`, `[fix]`, `[docs]`, `[refactor]`, `[test]`, `[chore]`.
-- **Idioma código**: inglés (clases, funciones, variables).
-- **Idioma UI/strings**: español (es-MX). Locale `es`.
-- **Comentarios**: español cuando sea necesario. **Default: ningún comentario**, solo cuando el WHY no es obvio (constraint oculta, workaround específico).
+- **Commits**: español, presente, imperativo, prefijo `[feat]`/`[fix]`/`[docs]`/`[refactor]`/`[test]`/`[chore]`.
+- **Idioma código**: inglés. **UI/strings**: español (es-MX). **Comentarios**: default ninguno; español solo cuando el WHY no es obvio.
 - **Tests**: Swift Testing (`@Test`, `#expect`), no XCTest.
-- **Branches**: `main` estable. Feature branches `feat/<name>`, `fix/<name>`.
+- **Branches**: `main` estable; `feat/<name>`, `fix/<name>`.
+- **Patrones defensivos ya establecidos** (mantener al tocar checkout/sesión): reentrancia por `phase`, fail-open en gates de red, ids reales antes de navegar, errores visibles en vez de `try?` silencioso, revalidar `acepta_pedidos` al entrar al detalle.
 
 ## Comandos útiles
 
-Xcode está en `/Volumes/devcraftstudio/Aplicaciones/Xcode.app/` (disco externo, NO `/Applications/`). Cualquier `xcodebuild` necesita `DEVELOPER_DIR` explícito:
+Xcode está en `/Volumes/devcraftstudio/Aplicaciones/Xcode.app/` (disco externo). `xcodebuild` necesita `DEVELOPER_DIR` explícito:
 
 ```bash
-# Compilar paquete TreggaDesignSystem standalone (rápido, no necesita el .xcodeproj)
-cd Packages/TreggaDesignSystem
-DEVELOPER_DIR="/Volumes/devcraftstudio/Aplicaciones/Xcode.app/Contents/Developer" \
-  xcodebuild -scheme TreggaDesignSystem \
-  -destination 'generic/platform=iOS Simulator' \
-  -derivedDataPath /tmp/treggads-dd build 2>&1 | tail -40
-
-# Compilar app completa
 DEVELOPER_DIR="/Volumes/devcraftstudio/Aplicaciones/Xcode.app/Contents/Developer" \
   xcodebuild -project TreggaFood.xcodeproj -scheme TreggaFood \
   -destination 'generic/platform=iOS Simulator' \
   -derivedDataPath /tmp/tregga-app-dd build 2>&1 | grep -E "(error|warning|BUILD)"
 
-# Tests
 DEVELOPER_DIR="/Volumes/devcraftstudio/Aplicaciones/Xcode.app/Contents/Developer" \
   xcodebuild test -project TreggaFood.xcodeproj -scheme TreggaFood \
-  -destination 'platform=iOS Simulator,name=iPhone 16 Pro'
-
-# Abrir en Xcode
-open TreggaFood.xcodeproj
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
 ```
+
+Vía XcodeBuildMCP: usar **id explícito** de sims iOS 26 (iPhone 17 Pro `CBE92E2E-10DF-478E-A87F-DB40EEF3BE52`, iPad Pro 11" `654E7117-1EFA-4BE0-AAAD-076EEEE1B2AA`).
 
 ## Diseño
 
-Toda la dirección visual viene del **handoff de Claude Design** en `/tmp/tregga-handoff/tregga/` (vida limitada — re-fetchear si se borra el `/tmp`).
-
-Brand:
-- `primary` `#0DB55C` · `primaryDeep` `#055E2D` · `primarySoft` `#E4F7EC`
-- `accent` `#FF6B2C` (promos, cobros externos)
-- Light + dark mode completo
-- Fonts: Plus Jakarta Sans (body) + Sora (display) — pendientes de registrar; ahora SF Pro de fallback en `TreggaFontResolver`.
-
-Al portar una pantalla del handoff:
-1. Leer el `.jsx` correspondiente (e.g. `driver-onboarding.jsx`)
-2. Traducir estructura + valores literales (sizes, colors, radii) a SwiftUI
-3. Usar tokens del paquete (`TreggaColors.X`, `.treggaStyle(.h2)`, `TreggaRadius.lg`) en lugar de literales
+Brand: `primary` `#0DB55C` · `primaryDeep` `#055E2D` · `primarySoft` `#E4F7EC` · `accent` `#FF6B2C`. Light + dark completo (`AppearanceMode`). Tokens y componentes en `../tregga-shared/TreggaDesignSystem`; iconos vía `TreggaIcon` (Hugeicons). El handoff original en `/tmp/tregga-handoff/` es efímero; el canon vigente son las pantallas ya portadas (iOS es la fuente de verdad de paridad con Android).
 
 ## Apps del ecosistema
 
-| App | Repo | Bundle ID | Estado |
-|---|---|---|---|
-| Tregga Delivery (repartidor) | `tregga-delivery` | `app.tregga.delivery` | Listo |
-| Tregga Food (cliente) | `tregga-food` | `app.tregga.food` | 🚧 En desarrollo |
-| Tregga Admin | `tregga-admin` | `app.tregga.admin` | 📋 Pendiente |
-| Tregga Food Place (negocio) | `tregga-food-place` | `app.tregga.foodplace` | 📋 Pendiente |
+| App | Rol | Repo | Bundle ID | Estado |
+|---|---|---|---|---|
+| Tregga Delivery | Repartidor | `tregga-delivery` | `app.tregga.delivery` | 🧪 Fase de pruebas (beta avanzada; pagos mock) |
+| Tregga Food | Cliente | `tregga-food` | `app.tregga.food` | 🧪 Fase de pruebas (flujo e2e completo) |
+| Tregga Business | Negocio | `tregga-business` | `app.tregga.business` | 🧪 Fase de pruebas (la más completa) |
+| Tregga Admin | Operador | `tregga-admin` | `app.tregga.admin` | 📋 Pendiente (carpeta vacía) |
 
-Versiones Android nativas (Compose + Material 3 Expressive, Android 10+) viven en repos paralelos `*-android` — futuro.
+Ports **Android nativos** (Compose) viven en `../Android/` y están ACTIVOS — paridad auditada (`../tregga-business/docs/paridad-ui-2026-07.md`).
 
 ## Gotchas conocidos
 
-- **"Add Local Package" en Xcode tiene 2 pasos**: agregar la referencia AL PROYECTO + vincular el producto AL TARGET. El segundo paso es fácil de saltar; si se salta, build falla con `error: Unable to find module dependency: 'TreggaDesignSystem'`. Fix: Target → General → Frameworks, Libraries, and Embedded Content → `+` → seleccionar la library del paquete.
-- **Diagnostics del LSP (SourceKit) pueden ser falsos positivos** — "No such module 'TreggaDesignSystem'" o "Cannot find 'TreggaColors' in scope" aparecen cuando el LSP lintea archivos individuales sin contexto de proyecto. La verdad la dice `xcodebuild`.
-- **Test target bundle IDs** quedaron con formato viejo (`app.tregga.TreggaDeliveryTests` en vez de `app.tregga.delivery.tests`). Cosmético, no bloquea. Fix futuro: Target settings → Bundle Identifier.
+- **`Config.SUPABASE_URL`/`SUPABASE_ANON_KEY` hacen `fatalError()`** si falta `secrets.xcconfig` (gitignored). La cabecera del xcconfig dice "Tregga Delivery" — copia/pega, ignorar.
+- **`PaymentMethodsView` está hardcodeada** (`Account/AccountSecondaryViews.swift`) — NO refleja `MetodoPago.seleccionables`; si cambia el enum, actualizarla a mano.
+- **`ScreenOffers`: botón "Aprovechar" es cosmético** (`Features/Offers/OffersView.swift:5`) — el cupón real se aplica en Checkout.
+- **`HelpData.swift` y `LegalDocuments.swift` son estáticos in-app** (sin backend, a propósito). Los legales declaran a Stripe como sub-encargado aunque no hay integración — revisar al publicar.
+- **Diagnostics del LSP pueden ser falsos positivos** — la verdad la dice `xcodebuild`.
+- **Bundle IDs de tests** con formato viejo. **`print()` como logging** en AppDelegate/PushTokenCoordinator.
+- `BuscarTabView` no tiene realtime (solo refresca al reactivar la app — comentario en `:86`).
+
+## Pendientes para producción
+
+1. **Tests** (prioridad 1: CheckoutViewModel, CartStore, PedidoStatus, DTOs).
+2. `deliveryFee` server-side.
+3. Deep-link del push al tracking.
+4. `os.Logger` + configurar/usar Crashlytics (linkeado, sin evidencia de uso).
+5. Persistencia del carrito.
+6. Borrar o cablear `PaymentGateway.swift`.
+7. Unificar deployment target (26.0 vs 18.6) y postura Swift 6.
+8. Chat a Realtime.
 
 ## Documentación relacionada
 
-- `README.md` — overview público del repo + plan de 22 pantallas
-- `../../tregga-saas/tregga-mobile/MIGRATION.md` — razones de la migración (uncommitted; el usuario lo commitea)
-- `../../tregga-saas/tregga-mobile/CLAUDE.md` — contexto KMP legacy. Útil para consultar lógica de negocio (Supabase, pedidos, pagos, push) ya resuelta.
-- `/tmp/tregga-handoff/tregga/` — design handoff con todos los `.jsx` y screenshots
-
+- `../docs/` — **reglas transversales del ecosistema** (identidad/login, contrato de auth API, handoffs).
+- `docs/stripe-plan.md` — decisión de pagos (Opción C vigente; plan técnico de Stripe diferido).
+- `../tregga-business/docs/auditoria-cross-app-2026-07.md` — auditoría de las 6 apps (críticos corregidos; el 🟠#5 "desglose sin línea de descuento" ya se muestra en `OrderDetailView`).
+- `README.md` — overview público del repo (creado 2026-07-19).
 
 ## Metodología de desarrollo
-- **Pincipios SOLID**: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion.
-- **Clean Architecture**: separación clara entre capas (UI, Domain, Data) y dependencias unidireccionales.
-- **Test-Driven Development (TDD)**: escribir tests antes de implementar la funcionalidad, asegurando código testeable y de calidad.
-- **Code Reviews**: revisión de código entre pares para mantener estándares de calidad y compartir conocimiento.
-- **Continuous Integration**: integración continua con pipelines de build y test para detectar errores temprano.
-- **Documentación**: mantener documentación actualizada y clara para facilitar onboarding y mantenimiento.
+- **Principios SOLID** y **Clean Architecture** (capas UI/Domain/Data, dependencias unidireccionales).
+- **TDD** cuando aplique; **code reviews**; **documentación actualizada**.
 
-## Animaciones y transiciones suaves usando `withAnimation` y `matchedGeometryEffect` para mejorar la experiencia de usuario. Evitar animaciones complejas que puedan afectar el rendimiento en dispositivos más antiguos. Priorizar la fluidez y la simplicidad en las interacciones visuales. tambien recordar que puedes verificar el uso de animaciones en el simulador de Xcode para asegurarte de que se ejecutan sin problemas en diferentes dispositivos y versiones de iOS y liquidglass.
+## Animaciones y transiciones suaves usando `withAnimation` y `matchedGeometryEffect` para mejorar la experiencia de usuario. Evitar animaciones complejas que puedan afectar el rendimiento en dispositivos más antiguos. Priorizar la fluidez y la simplicidad en las interacciones visuales. También verificar animaciones en el simulador (distintos dispositivos, versiones de iOS y Liquid Glass).
