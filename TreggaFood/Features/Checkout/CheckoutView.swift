@@ -373,7 +373,11 @@ struct CheckoutView: View {
                         .foregroundStyle(TreggaColors.primary)
                 }
             }
-            resumenRow("Envío", PriceFormat.pesos(viewModel.deliveryFee))
+            resumenRow(viewModel.envioEsEstimado ? "Envío · estimado" : "Envío",
+                       PriceFormat.pesos(viewModel.deliveryFee))
+            if viewModel.envioEsEstimado {
+                avisoEnvioEstimado
+            }
             resumenRow("Propina", PriceFormat.pesos(viewModel.propinaEfectiva))
             HStack {
                 Text("Total")
@@ -385,6 +389,21 @@ struct CheckoutView: View {
                     .foregroundStyle(TreggaColors.text)
             }
             .padding(.top, 4)
+        }
+    }
+
+    /// El envío mostrado es el estimado, no la tarifa real del trayecto. Se dice
+    /// explícitamente porque es lo que se cobra, no solo lo que se ve.
+    private var avisoEnvioEstimado: some View {
+        HStack(alignment: .top, spacing: 6) {
+            TreggaIcon(.info, size: 12, color: TreggaColors.accent)
+            Text(viewModel.direccionSinPin
+                 ? "Tu dirección no tiene ubicación en el mapa. Edítala y marca el pin para calcular el envío real."
+                 : "No pudimos calcular el envío exacto. Se ajustará con la distancia real del viaje.")
+                .font(.system(size: 11.5, weight: .medium))
+                .foregroundStyle(TreggaColors.textSec)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
         }
     }
 

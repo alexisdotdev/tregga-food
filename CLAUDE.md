@@ -117,7 +117,7 @@ Shell autenticado: `ClientTabView` con 5 tabs keep-alive (inicio · live/mapa ·
 - ✅ **Gates remotos** mantenimiento/actualización forzada (`app_config`), fail-open.
 - ✅ **Pagos — decisión de producto (Opción C, `docs/stripe-plan.md`)**: SOLO efectivo y transferencia, liquidados directo al repartidor. `MetodoPago.seleccionables = [.efectivo, .transferencia]` (`Domain/Models/Pedido.swift:14`); **tarjeta NO seleccionable**. `Features/Checkout/PaymentGateway.swift` (StubStripeGateway) es **código muerto sin referencias** — no hay riesgo funcional; decidir borrar o cablear si se retoma Stripe (Opción B: Connect Express).
 - ⚠️ **Solo 7 `@Test` para 19k LOC** — la brecha principal para producción es verificación, no funcionalidad. Prioridad: `CheckoutViewModel`, `CartStore`, `PedidoStatus`, mapeos DTO. Los mocks y protocolos ya existen, están sin usar.
-- ⚠️ **`deliveryFee = 25` hardcodeado en el cliente** (`CheckoutViewModel.swift:42`) — un cliente modificado podría mandar otro monto a la RPC. Mover server-side.
+- ⚠️ **`deliveryFee` se calcula en el servidor** (`TarifaRepository`), pero **sigue viajando desde el cliente** a `crear_pedido_cliente`, que lo persiste sin validar → un cliente modificado puede mandar otro monto. **La defensa real es el *floor* server-side que web tiene pendiente.** El `25` ya no es el valor cobrado sino el estimado de arranque: si el cálculo falla (dirección sin pin, negocio sin coordenadas, API caída) el checkout **lo dice** en vez de cobrarlo en silencio (`envioEsEstimado`).
 - ⚠️ **Push sin deep-link**: `didReceive response` no navega al tracking del pedido.
 - ⚠️ **Carrito sin persistencia** (estado en memoria; matar la app lo vacía).
 

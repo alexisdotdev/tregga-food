@@ -81,26 +81,40 @@ final class CheckoutViewModel {
     }
 
     /// Pide al servidor el envío real del trayecto negocio → dirección elegida.
-    /// Silencioso a propósito: si algo falla se mantiene el estimado y el
-    /// usuario puede seguir comprando.
+    /// No bloquea el checkout si falla (la red no debe dejar sin pedir), pero
+    /// tampoco lo oculta: vuelve al estimado y lo marca para que la UI lo diga.
+    ///
+    /// Volver al estimado importa además por un caso concreto: si ya se había
+    /// calculado la tarifa de una dirección y el cliente cambia a otra que no se
+    /// puede calcular, sin este reset se quedaría cobrando la tarifa de la
+    /// dirección anterior.
     func recalcularEnvio() async {
         guard let tarifaRepo, let catalogRepo,
               let negocioId = cart.negocioId,
               let destino = direccionSeleccionada,
-              let dLat = destino.lat, let dLng = destino.lng
-        else { return }
-
-        guard let negocio = try? await catalogRepo.fetchNegociosDisponibles()
-            .first(where: { $0.id == negocioId }),
-              let oLat = negocio.lat, let oLng = negocio.lng
-        else { return }
-
-        guard let tarifa = try? await tarifaRepo.calcular(
-            pickupLat: oLat, pickupLng: oLng, deliveryLat: dLat, deliveryLng: dLng
-        ) else { return }
+              let dLat = destino.lat, let dLng = destino.lng,
+              let negocio = try? await catalogRepo.fetchNegociosDisponibles()
+                  .first(where: { $0.id == negocioId }),
+              let oLat = negocio.lat, let oLng = negocio.lng,
+              let tarifa = try? await tarifaRepo.calcular(
+                  pickupLat: oLat, pickupLng: oLng, deliveryLat: dLat, deliveryLng: dLng
+              )
+        else {
+            deliveryFee = CheckoutViewModel.envioEstimado
+            envioEsEstimado = true
+            return
+        }
 
         deliveryFee = tarifa.tarifa
         envioEsEstimado = false
+    }
+
+    /// La dirección elegida no tiene pin. Es la causa más común de que el envío
+    /// se quede en estimado y la única que el cliente puede resolver él mismo
+    /// (las direcciones viejas se guardaron sin coordenadas).
+    var direccionSinPin: Bool {
+        guard let d = direccionSeleccionada else { return false }
+        return d.lat == nil || d.lng == nil
     }
 
     /// Centro inicial del mapa al agregar dirección: la seleccionada (si tiene
