@@ -36,7 +36,17 @@ final class CheckoutViewModel {
     private(set) var aplicandoCodigo = false
 
     let opcionesPropina: [Decimal] = [0, 10, 20]
-    let deliveryFee: Decimal = 25
+
+    /// Envío. Arranca en el estimado y se sustituye por la tarifa real del
+    /// servidor (`tarifa_base + incremento_por_km × km`) en cuanto hay negocio
+    /// y dirección. Si el cálculo falla se queda el estimado: preferimos un
+    /// checkout que funcione a uno bloqueado por una llamada de red.
+    ///
+    /// OJO: `crear_pedido_cliente` persiste este valor sin validarlo, así que
+    /// esto no es solo lo que se muestra, es lo que se cobra.
+    private(set) var deliveryFee: Decimal = CheckoutViewModel.envioEstimado
+    private(set) var envioEsEstimado = true
+    static let envioEstimado: Decimal = 25
 
     private let cart: CartStore
     private let clienteId: UUID
@@ -45,6 +55,8 @@ final class CheckoutViewModel {
     private let storage: StorageService
     private let userId: UUID
     private let notasNegocio: String?
+    private let tarifaRepo: TarifaRepository?
+    private let catalogRepo: CatalogRepository?
 
     init(
         cart: CartStore,
@@ -53,7 +65,9 @@ final class CheckoutViewModel {
         direccionRepo: DireccionClienteRepository,
         storage: StorageService,
         userId: UUID,
-        notasNegocio: String? = nil
+        notasNegocio: String? = nil,
+        tarifaRepo: TarifaRepository? = nil,
+        catalogRepo: CatalogRepository? = nil
     ) {
         self.cart = cart
         self.clienteId = clienteId
@@ -62,6 +76,31 @@ final class CheckoutViewModel {
         self.storage = storage
         self.userId = userId
         self.notasNegocio = notasNegocio
+        self.tarifaRepo = tarifaRepo
+        self.catalogRepo = catalogRepo
+    }
+
+    /// Pide al servidor el envío real del trayecto negocio → dirección elegida.
+    /// Silencioso a propósito: si algo falla se mantiene el estimado y el
+    /// usuario puede seguir comprando.
+    func recalcularEnvio() async {
+        guard let tarifaRepo, let catalogRepo,
+              let negocioId = cart.negocioId,
+              let destino = direccionSeleccionada,
+              let dLat = destino.lat, let dLng = destino.lng
+        else { return }
+
+        guard let negocio = try? await catalogRepo.fetchNegociosDisponibles()
+            .first(where: { $0.id == negocioId }),
+              let oLat = negocio.lat, let oLng = negocio.lng
+        else { return }
+
+        guard let tarifa = try? await tarifaRepo.calcular(
+            pickupLat: oLat, pickupLng: oLng, deliveryLat: dLat, deliveryLng: dLng
+        ) else { return }
+
+        deliveryFee = tarifa.tarifa
+        envioEsEstimado = false
     }
 
     /// Centro inicial del mapa al agregar dirección: la seleccionada (si tiene
@@ -149,6 +188,7 @@ final class CheckoutViewModel {
         }
         cargandoDirecciones = false
         await cargarDescuento()
+        await recalcularEnvio()
     }
 
     /// Alta de dirección con mapa+pin (mismo flujo que el selector de Direcciones):

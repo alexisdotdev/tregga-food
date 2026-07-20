@@ -14,6 +14,7 @@ public final class AppDependencies {
     public let authSession: AuthSession
     public let clienteRepository: ClienteRepository
     public let catalogRepository: CatalogRepository
+    public let tarifaRepository: TarifaRepository
     public let pedidoRepository: PedidoRepository
     public let direccionRepository: DireccionClienteRepository
     public let trackingRepository: TrackingRepository
@@ -50,6 +51,7 @@ public final class AppDependencies {
             self.authStorage = KeychainAuthStorage()
             self.clienteRepository = SupabaseClienteRepository()
             self.catalogRepository = SupabaseCatalogRepository()
+            self.tarifaRepository = SupabaseTarifaRepository()
             self.pedidoRepository = SupabasePedidoRepository()
             self.direccionRepository = SupabaseDireccionClienteRepository()
             self.trackingRepository = SupabaseTrackingRepository()
@@ -69,6 +71,7 @@ public final class AppDependencies {
             self.authStorage = MockAuthStorage()
             self.clienteRepository = MockClienteRepository()
             self.catalogRepository = MockCatalogRepository()
+            self.tarifaRepository = MockTarifaRepository()
             self.pedidoRepository = MockPedidoRepository()
             self.direccionRepository = MockDireccionClienteRepository()
             self.trackingRepository = MockTrackingRepository()

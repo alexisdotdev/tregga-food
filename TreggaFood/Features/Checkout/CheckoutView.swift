@@ -145,6 +145,8 @@ struct CheckoutView: View {
         let selected = viewModel.direccionSeleccionada?.id == dir.id
         return Button {
             withAnimation { viewModel.direccionSeleccionada = dir }
+            // Otra dirección = otro trayecto = otro envío.
+            Task { await viewModel.recalcularEnvio() }
         } label: {
             HStack(alignment: .top, spacing: 12) {
                 TreggaIcon(.pin, size: 20, color: selected ? TreggaColors.primaryDark : TreggaColors.text)

@@ -174,7 +174,9 @@ struct CartTabView: View {
                         direccionRepo: deps?.direccionRepository ?? MockDireccionClienteRepository(),
                         storage: deps?.storageService ?? MockStorageService(),
                         userId: deps?.authSession.tokens?.userId ?? clienteId,
-                        notasNegocio: notaPedido
+                        notasNegocio: notaPedido,
+                        tarifaRepo: deps?.tarifaRepository,
+                        catalogRepo: deps?.catalogRepository
                     ),
                     onFinish: { resultado in
                         cart.clear()

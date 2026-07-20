@@ -18,7 +18,10 @@ struct CartView: View {
     }
 
     @State private var nota: String = ""
-    private let deliveryFeeEstimado: Decimal = 25
+    /// Aquí todavía no hay dirección, así que el envío es genuinamente un
+    /// estimado; el real se calcula en el checkout. Misma fuente para que no
+    /// se separen las dos cifras.
+    private let deliveryFeeEstimado: Decimal = CheckoutViewModel.envioEstimado
 
     var body: some View {
         ZStack(alignment: .bottom) {
