@@ -67,7 +67,9 @@ public struct WelcomeView: View {
                     Spacer().frame(height: 20)
                     divider
                     Spacer().frame(height: 16)
-                    googleButton
+                    appleButton
+                Spacer().frame(height: 12)
+                googleButton
                     Spacer().frame(height: 18)
                     createAccountLink
                     Spacer().frame(height: 22)
@@ -303,6 +305,31 @@ public struct WelcomeView: View {
         .padding(.horizontal, 20)
     }
 
+    /// Sign in with Apple. Va ARRIBA de Google y con el badge por la guía 4.8 de
+    /// App Store: exige una alternativa equivalente al login de terceros, y
+    /// "equivalente" incluye la prominencia. Business fue rechazada por esto
+    /// (submission 5caa8af7, 2026-07-21) con Google destacado y nada más.
+    private var appleButton: some View {
+        TreggaAppleSignInButton { idToken, nonce, fullName in
+            Task {
+                try? await viewModel.continuarConApple(
+                    idToken: idToken, nonce: nonce, fullName: fullName
+                )
+            }
+        } onError: { _ in }
+        .overlay(alignment: .topTrailing) {
+            Text("RECOMENDADO")
+                .font(.system(size: 10, weight: .heavy))
+                .tracking(0.4)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(TreggaColors.primary)
+                .clipShape(Capsule())
+                .offset(x: -14, y: -10)
+        }
+    }
+
     private var googleButton: some View {
         Button { runGoogle() } label: {
             HStack(spacing: 10) {
@@ -316,17 +343,6 @@ public struct WelcomeView: View {
             .background(TreggaColors.surface)
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(TreggaColors.primary, lineWidth: 1.5))
             .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(alignment: .topTrailing) {
-                Text("RECOMENDADO")
-                    .font(.system(size: 10, weight: .heavy))
-                    .tracking(0.4)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(TreggaColors.primary)
-                    .clipShape(Capsule())
-                    .offset(x: -14, y: -10)
-            }
         }
         .padding(.horizontal, 20)
     }

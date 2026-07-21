@@ -177,6 +177,29 @@ public final class WelcomeViewModel {
         }
     }
 
+    /// Sign in with Apple. Mismo camino que Google: el botón entrega el idToken y
+    /// aquí se canjea con Supabase.
+    ///
+    /// `fullName` solo llega en la PRIMERA autorización de Apple; si no se guarda
+    /// entonces, no vuelve nunca. El servicio lo persiste solo si el perfil no
+    /// tiene nombre.
+    public func continuarConApple(idToken: String, nonce: String, fullName: String?) async throws {
+        loading = true
+        defer { loading = false }
+        error = nil
+        do {
+            let tokens = try await authService.signInWithApple(
+                idToken: idToken, nonce: nonce, fullName: fullName
+            )
+            await coordinator?.completeAuth(tokens: tokens)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            self.error = "No se pudo iniciar sesión con Apple."
+            throw error
+        }
+    }
+
     public func irACrearCuenta() {
         coordinator?.goToSignup()
     }
