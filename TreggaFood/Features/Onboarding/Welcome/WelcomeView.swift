@@ -328,6 +328,7 @@ public struct WelcomeView: View {
                 .clipShape(Capsule())
                 .offset(x: -14, y: -10)
         }
+        .padding(.horizontal, 20)
     }
 
     private var googleButton: some View {
