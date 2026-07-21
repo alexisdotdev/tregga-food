@@ -8,6 +8,7 @@ import CoreLocation
 final class CurrentLocationProvider: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private var continuation: CheckedContinuation<TrackCoord?, Never>?
+    private var timeoutTask: Task<Void, Never>?
 
     override init() {
         super.init()
@@ -23,8 +24,22 @@ final class CurrentLocationProvider: NSObject, CLLocationManagerDelegate {
     func current() async -> TrackCoord? {
         let status = manager.authorizationStatus
         guard status != .denied, status != .restricted else { return nil }
+        // Una petición en curso no se pisa: sobrescribir la continuation dejaría la
+        // anterior sin reanudar y su `await` colgado para siempre.
+        if continuation != nil { finish(nil) }
         return await withCheckedContinuation { cont in
             self.continuation = cont
+            // CoreLocation puede no volver a llamar NUNCA: si el usuario descarta el
+            // diálogo de permiso sin elegir, el estado sigue en `.notDetermined` y no
+            // llega ningún callback (el `default: break` de abajo). Sin este límite
+            // `current()` no retorna jamás, y como el CTA se deshabilita mientras
+            // busca, se queda girando y sin forma de reintentar.
+            timeoutTask?.cancel()
+            timeoutTask = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(10))
+                guard !Task.isCancelled else { return }
+                self?.finish(nil)
+            }
             if status == .notDetermined {
                 manager.requestWhenInUseAuthorization()
             } else {
@@ -61,6 +76,8 @@ final class CurrentLocationProvider: NSObject, CLLocationManagerDelegate {
     }
 
     private func finish(_ coord: TrackCoord?) {
+        timeoutTask?.cancel()
+        timeoutTask = nil
         continuation?.resume(returning: coord)
         continuation = nil
     }

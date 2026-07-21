@@ -63,6 +63,10 @@ struct GeocodingService {
         guard !apiKey.isEmpty, !apiKey.hasPrefix("PLACEHOLDER"), let url = comps.url else { return [] }
         var request = URLRequest(url: url)
         request.setValue(bundleId, forHTTPHeaderField: "X-Ios-Bundle-Identifier")
+        // El default de URLRequest son 60 s. Esto corre en el alta y en el selector
+        // de direcciones bloqueando el CTA mientras espera: un minuto mirando un
+        // spinner es indistinguible de que la app se colgó.
+        request.timeoutInterval = 8
         do {
             let (data, _) = try await URLSession.shared.data(for: request)
             let resp = try JSONDecoder().decode(GeocodeResponse.self, from: data)
