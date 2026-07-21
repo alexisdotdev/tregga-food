@@ -1,0 +1,4 @@
+/* Declara español (es-MX) como idioma soportado para que los textos del sistema
+   —el botón de Sign in with Apple, los diálogos de permisos— salgan en español.
+   La app siempre fue es-MX (strings hardcodeadas), pero el proyecto solo declaraba
+   `en`, así que el sistema pintaba esas piezas en inglés. */
