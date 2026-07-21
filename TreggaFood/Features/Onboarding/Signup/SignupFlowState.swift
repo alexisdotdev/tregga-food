@@ -34,6 +34,12 @@ public final class SignupFlowState {
     public var municipio: String = ""
     public var estado: String = ""
     public var referencias: String = ""
+    /// Coordenadas del domicilio, si el alta las pudo obtener (hoy, del botón de
+    /// GPS). Sin ellas el pedido nace sin `delivery_lat/lng`: el checkout no puede
+    /// calcular el envío real y el dispatch no puede calcular la distancia, así que
+    /// la tarifa cae a la base y la diferencia la absorbe el repartidor.
+    public var lat: Double?
+    public var lng: Double?
 
     // Paso 5: password
     public var password: String = ""

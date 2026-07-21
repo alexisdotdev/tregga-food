@@ -667,6 +667,11 @@ public struct SignupAddressView: View {
             return
         }
         lookupError = nil
+        // Las coordenadas del GPS se CONSERVAN. Antes se usaban solo para
+        // resolver el texto de la dirección y se descartaban, así que el alta
+        // creaba siempre la dirección principal sin pin.
+        state.lat = coord.lat
+        state.lng = coord.lng
         if let calle = place.calle, !calle.isEmpty { state.direccionCalle = calle }
         if let muni = place.municipio, !muni.isEmpty { state.municipio = muni }
         if let edo = place.estado, !edo.isEmpty { state.estado = edo }
