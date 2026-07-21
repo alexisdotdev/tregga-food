@@ -46,6 +46,9 @@ final class CheckoutViewModel {
     /// esto no es solo lo que se muestra, es lo que se cobra.
     private(set) var deliveryFee: Decimal = CheckoutViewModel.envioEstimado
     private(set) var envioEsEstimado = true
+    /// Cómo se compone el envío ("base $15 + $6/km × 2.85 km"), con los parámetros
+    /// que da el servidor. `nil` si se está usando el estimado.
+    private(set) var desgloseEnvio: String?
     static let envioEstimado: Decimal = 25
 
     private let cart: CartStore
@@ -102,11 +105,13 @@ final class CheckoutViewModel {
         else {
             deliveryFee = CheckoutViewModel.envioEstimado
             envioEsEstimado = true
+            desgloseEnvio = nil
             return
         }
 
         deliveryFee = tarifa.tarifa
         envioEsEstimado = false
+        desgloseEnvio = tarifa.desglose
     }
 
     /// La dirección elegida no tiene pin. Es la causa más común de que el envío

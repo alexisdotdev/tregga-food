@@ -373,7 +373,9 @@ struct CheckoutView: View {
                         .foregroundStyle(TreggaColors.primary)
                 }
             }
-            resumenRow(viewModel.envioEsEstimado ? "Envío · estimado" : "Envío",
+            resumenRow(viewModel.envioEsEstimado
+                       ? "Envío · estimado"
+                       : (viewModel.desgloseEnvio.map { "Envío · \($0)" } ?? "Envío"),
                        PriceFormat.pesos(viewModel.deliveryFee))
             if viewModel.envioEsEstimado {
                 avisoEnvioEstimado
