@@ -187,7 +187,7 @@ enum LegalDocuments {
             .heading("9. \"Descargar mis datos\" y \"Eliminar cuenta\""),
             .bullets([
                 "**Descargar mis datos:** desde la app puedes solicitar una exportación de tu información, como mecanismo adicional para ejercer tu derecho de acceso y portabilidad.",
-                "**Eliminar cuenta:** desde la app puedes solicitar la eliminación de tu cuenta. Procederemos a suprimir o bloquear tus datos, salvo aquellos que debamos conservar por obligaciones legales o para la defensa de posibles reclamaciones.",
+                "**Eliminar cuenta:** desde la app puedes solicitar la eliminación de tu cuenta. El acceso se bloquea de inmediato y tus datos personales se conservan **30 días**, durante los cuales puedes pedirnos que restauremos la cuenta; transcurrido ese plazo se suprimen de forma definitiva, salvo aquellos que debamos conservar por obligaciones legales o para la defensa de posibles reclamaciones.",
             ]),
             .heading("10. Limitación de responsabilidad sobre el tratamiento"),
             .paragraph("Tregga actúa como facilitador tecnológico. No somos responsables del tratamiento que el Negocio o el Repartidor den a la información que se comparte con ellos para concretar tu pedido, más allá de lo necesario para la entrega. Te recomendamos compartir únicamente la información necesaria."),
