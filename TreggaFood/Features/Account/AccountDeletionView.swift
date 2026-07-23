@@ -46,7 +46,7 @@ struct AccountDeletionView: View {
                                 RoundedRectangle(cornerRadius: 6).stroke(TreggaColors.border, lineWidth: 2).frame(width: 22, height: 22)
                             }
                         }
-                        Text("Entiendo que no se puede deshacer")
+                        Text("Entiendo que perderé el acceso ahora mismo")
                             .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(TreggaColors.text)
                         Spacer()
@@ -104,10 +104,14 @@ struct AccountDeletionView: View {
                 RoundedRectangle(cornerRadius: 14).fill(TreggaColors.danger).frame(width: 56, height: 56)
                 TreggaIcon(.trash, size: 28, color: .white)
             }
-            Text("Esto es irreversible")
+            Text("Vas a eliminar tu cuenta")
                 .treggaStyle(.h2)
                 .foregroundStyle(TreggaColors.danger)
-            Text("Al eliminar tu cuenta perderás acceso inmediato. No la podemos recuperar después.")
+            // Decía "Esto es irreversible / No la podemos recuperar después".
+            // Con el borrado en dos fases (2026-07-22) eso es falso, y falso
+            // hacia el lado que hace daño: quien se borra por error lee que no
+            // hay vuelta atrás y nunca escribe a soporte.
+            Text("Perderás el acceso de inmediato. Tienes 30 días para recuperarla escribiéndonos; después se borra definitivamente.")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(TreggaColors.danger)
                 .fixedSize(horizontal: false, vertical: true)
