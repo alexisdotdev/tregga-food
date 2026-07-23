@@ -102,7 +102,7 @@ struct CuentaTab: View {
         case .notifications:
             NotificationsConfigView(viewModel: viewModel)
         case .privacy:
-            PrivacySettingsView(viewModel: viewModel, onDelete: { path.append(.accountDeletion) })
+            PrivacySettingsView(viewModel: viewModel)
         case .security:
             SecuritySettingsView()
         case .appPreferences:

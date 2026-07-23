@@ -3,10 +3,12 @@ import TreggaCore
 import TreggaDesignSystem
 
 /// Privacidad: control de ubicación y datos compartidos (sobre
-/// `preferencias_usuario`) + acceso a eliminar cuenta.
+/// `preferencias_usuario`).
+///
+/// El borrado de cuenta se movió a una fila directa en el menú de Cuenta
+/// (homologado con Delivery y Business); ya no cuelga de aquí.
 struct PrivacySettingsView: View {
     @Bindable var viewModel: AccountViewModel
-    let onDelete: () -> Void
 
     var body: some View {
         ScrollView {
@@ -36,15 +38,6 @@ struct PrivacySettingsView: View {
                                      isOn: bind(\.shareErrorReports))
                 }
                 .padding(.horizontal, 16)
-
-                SectionHeader("Seguridad de la cuenta").padding(.top, 8)
-                AccountCard {
-                    Button(action: onDelete) {
-                        AccountNavRow(icon: .trash, label: "Eliminar mi cuenta",
-                                      sub: "Acción irreversible", danger: true)
-                    }
-                    .buttonStyle(.plain)
-                }
 
                 Spacer(minLength: 24)
             }
