@@ -895,11 +895,9 @@ public struct SignupPasswordView: View {
     }
 
     private var requirements: some View {
-        let reqs: [(label: String, ok: Bool)] = [
-            ("8+ caracteres", state.password.count >= 8),
-            ("Una letra mayúscula", state.password.rangeOfCharacter(from: .uppercaseLetters) != nil),
-            ("Un número", state.password.rangeOfCharacter(from: .decimalDigits) != nil)
-        ]
+        // Misma fuente que el gate del botón (`passwordStepValid`) y que las otras
+        // dos apps: PasswordRules refleja lo que exige Supabase, ni más ni menos.
+        let reqs: [(label: String, ok: Bool)] = PasswordRules.requisitos(state.password)
         return VStack(alignment: .leading, spacing: 0) {
             fieldLabel("Requisitos")
                 .padding(.bottom, 8)

@@ -103,9 +103,7 @@ public final class SignupFlowState {
     }
 
     public var passwordStepValid: Bool {
-        password.count >= 8
-            && password.rangeOfCharacter(from: .uppercaseLetters) != nil
-            && password.rangeOfCharacter(from: .decimalDigits) != nil
+        PasswordRules.isValid(password)
     }
 
     public var termsStepValid: Bool {
