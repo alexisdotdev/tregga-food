@@ -208,6 +208,15 @@ struct AccountHubView: View {
                             AccountNavRow(icon: .share, label: "Descargar mis datos")
                         }
                         .buttonStyle(.plain)
+                        RowDivider()
+                        // Fila directa, homologada con Delivery y Business: antes el
+                        // borrado solo se alcanzaba anidado en Privacidad, cuando en
+                        // las otras dos apps es una fila propia junto a "Descargar
+                        // mis datos". El acceso desde Privacidad se conserva.
+                        NavigationLink(value: AccountRoute.accountDeletion) {
+                            AccountNavRow(icon: .trash, label: "Eliminar cuenta")
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
 
