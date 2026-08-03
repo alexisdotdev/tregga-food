@@ -87,8 +87,8 @@ public final class AppDependencies {
             self.favoritoRepository = MockFavoritoRepository()
             self.storageService = MockStorageService()
         }
-        // SEPOMEX es un servicio público (sin auth): se usa igual en ambos modos.
-        self.postalCodeRepository = SepomexPostalCodeRepository()
+        // Padrón SEPOMEX auto-hospedado en nuestro Supabase (RPC lookup_cp): igual en ambos modos.
+        self.postalCodeRepository = SupabasePostalCodeRepository()
         self.authSession = AuthSession(storage: self.authStorage)
     }
 }

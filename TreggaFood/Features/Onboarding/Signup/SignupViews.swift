@@ -624,7 +624,8 @@ public struct SignupAddressView: View {
         .background(TreggaColors.bg)
         .keyboardNavToolbar($foco, order: [.calle, .cp, .colonia, .referencias])
         .alert("Ubicación desactivada", isPresented: $ubicacionDenegada) {
-            Button("OK", role: .cancel) {}
+            Button("Abrir Ajustes") { abrirAjustesDelSistema() }
+            Button("Cancelar", role: .cancel) {}
         } message: {
             Text("Activa el permiso de ubicación en Ajustes para usar tu ubicación actual.")
         }

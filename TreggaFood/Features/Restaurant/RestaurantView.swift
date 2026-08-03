@@ -242,7 +242,8 @@ struct RestaurantView: View {
                         ForEach(section.productos) { producto in
                             let textoFranja = viewModel.textoFueraDeFranja(producto)
                             let puedePedir = disponibleAhora && textoFranja == nil
-                            ProductoRow(producto: producto, franjaTexto: textoFranja) {
+                            ProductoRow(producto: producto, franjaTexto: textoFranja,
+                                        fallbackImageURL: negocio.logoURL ?? negocio.coverImageURL) {
                                 // No se puede pedir si el negocio no recibe pedidos
                                 // o el platillo está fuera de su franja horaria.
                                 guard puedePedir else { return }
@@ -287,6 +288,8 @@ private struct ProductoRow: View {
     let producto: Producto
     /// Si el platillo está fuera de su franja, el texto "Disponible en la mañana…".
     var franjaTexto: String? = nil
+    /// Imagen de respaldo (logo del negocio, o su portada) cuando el platillo no tiene foto.
+    var fallbackImageURL: String? = nil
     let onTap: () -> Void
 
     var body: some View {
@@ -321,7 +324,11 @@ private struct ProductoRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 ZStack(alignment: .bottomTrailing) {
-                    CoverImage(url: producto.imageURL, seed: producto.nombre)
+                    // Sin foto del platillo: cae al respaldo del negocio (logo → portada);
+                    // el icono de CoverImage solo aparece si no hay ninguna de las tres.
+                    // Trata image_url = "" (no solo nil) como sin foto — el DTO no limpia vacíos.
+                    CoverImage(url: producto.imageURL.flatMap { $0.isEmpty ? nil : $0 } ?? fallbackImageURL,
+                               seed: producto.nombre)
                         .frame(width: 84, height: 84)
                         .clipShape(RoundedRectangle(cornerRadius: TreggaRadius.xl))
                     TreggaIcon(.plus, size: 16, color: TreggaColors.bg, weight: .bold)
