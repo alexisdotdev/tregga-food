@@ -10,6 +10,8 @@ struct NegociosMapView: UIViewRepresentable {
     /// Dirección activa del cliente (centro preferido del mapa).
     var center: TrackCoord? = nil
     let onSelect: (Negocio) -> Void
+    /// Tap en el mapa fuera de un pin (cierra la preview de negocio).
+    var onMapTap: () -> Void = {}
     let controller: MapController
 
     /// Fallback de cámara: centro de Zinapécuaro si aún no hay negocios.
@@ -32,15 +34,19 @@ struct NegociosMapView: UIViewRepresentable {
         return mapView
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(onSelect: onSelect) }
+    func makeCoordinator() -> Coordinator { Coordinator(onSelect: onSelect, onMapTap: onMapTap) }
 
     final class Coordinator: NSObject, GMSMapViewDelegate {
         var onSelect: (Negocio) -> Void
+        var onMapTap: () -> Void
         var byId: [String: Negocio] = [:]
         var markers: [String: GMSMarker] = [:]
         var fitted = false
 
-        init(onSelect: @escaping (Negocio) -> Void) { self.onSelect = onSelect }
+        init(onSelect: @escaping (Negocio) -> Void, onMapTap: @escaping () -> Void) {
+            self.onSelect = onSelect
+            self.onMapTap = onMapTap
+        }
 
         func mapView(_ mapView: GMSMapView, didTap marker: GMSMarker) -> Bool {
             if let key = marker.userData as? String, let negocio = byId[key] {
@@ -48,11 +54,16 @@ struct NegociosMapView: UIViewRepresentable {
             }
             return true
         }
+
+        func mapView(_ mapView: GMSMapView, didTapAt coordinate: CLLocationCoordinate2D) {
+            onMapTap()
+        }
     }
 
     func updateUIView(_ mapView: GMSMapView, context: Context) {
         let coord = context.coordinator
         coord.onSelect = onSelect
+        coord.onMapTap = onMapTap
 
         let conCoords = negocios.compactMap { n -> (Negocio, CLLocationCoordinate2D)? in
             guard let la = n.lat, let lo = n.lng else { return nil }

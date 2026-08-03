@@ -36,6 +36,8 @@ struct MapaNegociosView: View {
     @State private var path: [CatalogRoute] = []
     @State private var center: TrackCoord?
     @State private var expanded = false
+    /// Negocio con preview abierta (estilo Uber): oculta el drawer y muestra su card.
+    @State private var seleccionado: Negocio?
     @State private var query = ""
     @FocusState private var searchFocused: Bool
 
@@ -62,17 +64,23 @@ struct MapaNegociosView: View {
                     NegociosMapView(
                         negocios: viewModel.conCoords,
                         center: center,
-                        onSelect: { path.append(.restaurant($0)) },
+                        onSelect: seleccionar,
+                        onMapTap: { seleccionado = nil },
                         controller: mapController
                     )
                     .ignoresSafeArea()
                     .overlay(alignment: .bottomTrailing) { mapControls }
 
-                    drawer(maxHeight: geo.size.height)
+                    if let negocio = seleccionado {
+                        previewCard(negocio)
+                    } else {
+                        drawer(maxHeight: geo.size.height)
+                    }
                 }
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar(.hidden, for: .navigationBar)
                 .animation(.spring(response: 0.34, dampingFraction: 0.86), value: expanded)
+                .animation(.spring(response: 0.34, dampingFraction: 0.86), value: seleccionado)
                 .navigationDestination(for: CatalogRoute.self) { route in
                     destination(for: route)
                 }
@@ -93,6 +101,41 @@ struct MapaNegociosView: View {
               let activa = dirs.first(where: \.isDefault) ?? dirs.first,
               let la = activa.lat, let lo = activa.lng else { return }
         center = TrackCoord(lat: la, lng: lo)
+    }
+
+    // MARK: - Selección / preview (estilo Uber)
+
+    /// Tap en un pin: NO navega. Abre la preview, colapsa el drawer y centra la cámara
+    /// en el negocio sin cambiar el zoom.
+    private func seleccionar(_ negocio: Negocio) {
+        seleccionado = negocio
+        expanded = false
+        searchFocused = false
+        if let la = negocio.lat, let lo = negocio.lng {
+            mapController.pan(lat: la, lng: lo)
+        }
+    }
+
+    /// Card flotante del negocio seleccionado: misma `FoodCard` de la lista, tappable
+    /// para ir al menú, con una X para volver al drawer.
+    private func previewCard(_ negocio: Negocio) -> some View {
+        Button { path.append(.restaurant(negocio)) } label: {
+            FoodCard(negocio: negocio)
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .topTrailing) {
+            Button { seleccionado = nil } label: {
+                TreggaIcon(sfSymbol: "xmark", size: 12, color: TreggaColors.text)
+                    .frame(width: 30, height: 30)
+                    .background(TreggaColors.bg, in: Circle())
+                    .shadow(color: .black.opacity(0.16), radius: 6, y: 2)
+            }
+            .buttonStyle(.plain)
+            .padding(8)
+        }
+        .padding(.horizontal, 12)
+        .padding(.bottom, 96)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     // MARK: - Drawer

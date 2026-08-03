@@ -21,6 +21,12 @@ final class MapController {
         ))
     }
 
+    /// Centra la cámara en una coordenada SIN cambiar el zoom (equivalente a newLatLng).
+    func pan(lat: Double, lng: Double) {
+        guard let mapView else { return }
+        mapView.animate(toLocation: CLLocationCoordinate2D(latitude: lat, longitude: lng))
+    }
+
     func zoomOut() {
         guard let mapView else { return }
         mapView.animate(toZoom: mapView.camera.zoom - 1)
