@@ -67,8 +67,10 @@ struct NegociosMapView: UIViewRepresentable {
             coord.byId[key] = negocio
             let marker = coord.markers[key] ?? {
                 let m = GMSMarker()
-                m.icon = GMSMarker.markerImage(with: UIColor(red: 0.05, green: 0.71, blue: 0.36, alpha: 1))
                 m.userData = key
+                m.groundAnchor = CGPoint(x: 0.5, y: 1)   // la punta ancla en la coordenada
+                m.icon = NegocioPin.image(emoji: NegocioPin.emoji(for: negocio.tipo),
+                                          rating: negocio.rating)
                 m.map = mapView
                 return m
             }()
@@ -97,6 +99,104 @@ struct NegociosMapView: UIViewRepresentable {
                 mapView.animate(with: GMSCameraUpdate.fit(bounds, withPadding: 72))
             }
             coord.fitted = true
+        }
+    }
+}
+
+/// Pin de discovery estilo Uber: círculo blanco con sombra + punta inferior que
+/// ancla en la coordenada + emoji de la categoría, y una pastilla "⭐ x.x" encima
+/// cuando el negocio tiene rating. Paridad 1:1 con el mapa de Android.
+private enum NegocioPin {
+    /// Mapea el `tipo` del negocio a un emoji de categoría (mismo mapeo que Android).
+    static func emoji(for tipo: String?) -> String {
+        let t = (tipo ?? "").lowercased()
+        func has(_ keys: String...) -> Bool { keys.contains { t.contains($0) } }
+        switch true {
+        case has("café", "cafe", "coffee"):        return "☕"
+        case has("pizza"):                         return "🍕"
+        case has("parrilla", "carne", "asador"):   return "🥩"
+        case has("taco", "antojito"):              return "🌮"
+        case has("sushi", "japon"):                return "🍣"
+        case has("hamburguesa", "burger"):         return "🍔"
+        case has("pollo"):                         return "🍗"
+        case has("marisco", "aguachile"):          return "🦐"
+        case has("postre"):                        return "🧁"
+        case has("desayuno"):                      return "🍳"
+        case has("bebida"):                        return "🥤"
+        case has("panadería", "panaderia", "pan"): return "🥐"
+        default:                                   return "🍽️"
+        }
+    }
+
+    private static let textColor = UIColor(white: 0.13, alpha: 1)
+
+    static func image(emoji: String, rating: Double) -> UIImage {
+        let pinD: CGFloat = 46
+        let pointerH: CGFloat = 9
+        let pad: CGFloat = 6                       // margen para la sombra
+
+        let showPill = rating > 0
+        let pillText = showPill ? "⭐ \(String(format: "%.1f", rating))" : ""
+        let pillFont = UIFont.systemFont(ofSize: 12, weight: .semibold)
+        let pillH: CGFloat = showPill ? 22 : 0
+        let pillGap: CGFloat = showPill ? 4 : 0
+        let pillW: CGFloat = showPill
+            ? (pillText as NSString).size(withAttributes: [.font: pillFont]).width + 18
+            : 0
+
+        let contentW = max(pinD, pillW)
+        let width = contentW + pad * 2
+        let height = pad + pillH + pillGap + pinD + pointerH   // punta hasta el borde inferior
+
+        let format = UIGraphicsImageRendererFormat.default()
+        format.opaque = false
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format)
+        return renderer.image { ctx in
+            let cg = ctx.cgContext
+            let centerX = width / 2
+            let circleTop = pad + pillH + pillGap
+            let circleRect = CGRect(x: centerX - pinD / 2, y: circleTop, width: pinD, height: pinD)
+
+            // Pin (círculo + punta) como un solo path con sombra suave.
+            let path = UIBezierPath(ovalIn: circleRect)
+            let baseY = circleRect.maxY - 4
+            let tri = UIBezierPath()
+            tri.move(to: CGPoint(x: centerX - 8, y: baseY))
+            tri.addLine(to: CGPoint(x: centerX, y: height))
+            tri.addLine(to: CGPoint(x: centerX + 8, y: baseY))
+            tri.close()
+            path.append(tri)
+
+            cg.saveGState()
+            cg.setShadow(offset: CGSize(width: 0, height: 2), blur: 5,
+                         color: UIColor.black.withAlphaComponent(0.22).cgColor)
+            UIColor.white.setFill()
+            path.fill()
+            cg.restoreGState()
+
+            // Emoji centrado en el círculo.
+            let emojiFont = UIFont.systemFont(ofSize: 24)
+            let es = (emoji as NSString).size(withAttributes: [.font: emojiFont])
+            (emoji as NSString).draw(at: CGPoint(x: centerX - es.width / 2,
+                                                 y: circleRect.midY - es.height / 2),
+                                     withAttributes: [.font: emojiFont])
+
+            // Pastilla de rating encima (solo si rating > 0).
+            if showPill {
+                let pillRect = CGRect(x: centerX - pillW / 2, y: pad, width: pillW, height: pillH)
+                let pill = UIBezierPath(roundedRect: pillRect, cornerRadius: pillH / 2)
+                cg.saveGState()
+                cg.setShadow(offset: CGSize(width: 0, height: 1), blur: 4,
+                             color: UIColor.black.withAlphaComponent(0.18).cgColor)
+                UIColor.white.setFill()
+                pill.fill()
+                cg.restoreGState()
+
+                let ts = (pillText as NSString).size(withAttributes: [.font: pillFont])
+                (pillText as NSString).draw(at: CGPoint(x: centerX - ts.width / 2,
+                                                        y: pillRect.midY - ts.height / 2),
+                                            withAttributes: [.font: pillFont, .foregroundColor: textColor])
+            }
         }
     }
 }
