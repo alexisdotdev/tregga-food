@@ -1,5 +1,6 @@
 import SwiftUI
 import TreggaCore
+import TreggaDesignSystem
 import GoogleMaps
 
 /// Mapa de discovery: muestra los negocios disponibles como pines. Tap en un pin
@@ -30,8 +31,10 @@ struct NegociosMapView: UIViewRepresentable {
         mapView.settings.myLocationButton = false
         mapView.settings.tiltGestures = false
         mapView.settings.rotateGestures = false
-        mapView.mapStyle = try? GMSMapStyle(jsonString: MapStyle.light)
+        let dark = context.environment.colorScheme == .dark
+        mapView.mapStyle = try? GMSMapStyle(jsonString: dark ? MapStyle.dark : MapStyle.light)
         mapView.delegate = context.coordinator
+        context.coordinator.appliedDark = dark
         controller.mapView = mapView
         return mapView
     }
@@ -44,6 +47,7 @@ struct NegociosMapView: UIViewRepresentable {
         var byId: [String: Negocio] = [:]
         var markers: [String: GMSMarker] = [:]
         var highlightedKey: String?
+        var appliedDark: Bool?
         var fitted = false
 
         init(onSelect: @escaping (Negocio) -> Void, onMapTap: @escaping () -> Void) {
@@ -98,13 +102,27 @@ struct NegociosMapView: UIViewRepresentable {
             coord.byId.removeValue(forKey: key)
         }
 
+        // Estilo del mapa según el tema (dark/light) + color del anillo dinámico.
+        let dark = context.environment.colorScheme == .dark
+        let ringColor = UIColor(TreggaColors.primary).resolvedColor(
+            with: UITraitCollection(userInterfaceStyle: dark ? .dark : .light))
+        if coord.appliedDark != dark {
+            mapView.mapStyle = try? GMSMapStyle(jsonString: dark ? MapStyle.dark : MapStyle.light)
+            coord.appliedDark = dark
+            // Re-colorea el anillo del pin resaltado si el tema cambió en caliente.
+            if let hk = coord.highlightedKey, let m = coord.markers[hk], let n = coord.byId[hk] {
+                m.icon = NegocioPin.image(emoji: NegocioPin.emoji(for: n.tipo),
+                                          rating: n.rating, highlighted: true, ringColor: ringColor)
+            }
+        }
+
         // Resalta el pin seleccionado (re-renderiza solo el que cambió de estado).
         let selKey = selectedId?.uuidString
         if coord.highlightedKey != selKey {
             func redibuja(_ key: String?, highlighted: Bool) {
                 guard let key, let marker = coord.markers[key], let n = coord.byId[key] else { return }
                 marker.icon = NegocioPin.image(emoji: NegocioPin.emoji(for: n.tipo),
-                                               rating: n.rating, highlighted: highlighted)
+                                               rating: n.rating, highlighted: highlighted, ringColor: ringColor)
                 marker.zIndex = highlighted ? 1 : 0
             }
             redibuja(coord.highlightedKey, highlighted: false)
@@ -158,7 +176,8 @@ private enum NegocioPin {
 
     private static let textColor = UIColor(red: 26 / 255, green: 29 / 255, blue: 27 / 255, alpha: 1)  // #1A1D1B
 
-    static func image(emoji: String, rating: Double, highlighted: Bool = false) -> UIImage {
+    static func image(emoji: String, rating: Double, highlighted: Bool = false,
+                      ringColor: UIColor = .clear) -> UIImage {
         let s: CGFloat = highlighted ? 1.12 : 1    // el pin seleccionado crece ~12%
         let pinD: CGFloat = 46 * s
         let pointerH: CGFloat = 9 * s
@@ -203,11 +222,12 @@ private enum NegocioPin {
             path.fill()
             cg.restoreGState()
 
-            // Anillo primary en el pin seleccionado (justo dentro del borde blanco).
+            // Anillo primary (dinámico por tema) en el pin seleccionado, justo dentro
+            // del borde blanco.
             if highlighted {
                 let ring = UIBezierPath(ovalIn: circleRect.insetBy(dx: 1.5 * s, dy: 1.5 * s))
                 ring.lineWidth = 3 * s
-                UIColor(red: 13 / 255, green: 181 / 255, blue: 92 / 255, alpha: 1).setStroke()  // #0DB55C
+                ringColor.setStroke()
                 ring.stroke()
             }
 

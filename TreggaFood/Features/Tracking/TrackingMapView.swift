@@ -30,7 +30,9 @@ struct TrackingMapView: UIViewRepresentable {
         mapView.settings.scrollGestures = true
         mapView.settings.tiltGestures = false
         mapView.settings.rotateGestures = false
-        mapView.mapStyle = try? GMSMapStyle(jsonString: MapStyle.light)
+        let dark = context.environment.colorScheme == .dark
+        mapView.mapStyle = try? GMSMapStyle(jsonString: dark ? MapStyle.dark : MapStyle.light)
+        context.coordinator.appliedDark = dark
         controller.mapView = mapView
         return mapView
     }
@@ -44,10 +46,18 @@ struct TrackingMapView: UIViewRepresentable {
         var routePolyline: GMSPolyline?
         var fitted = false
         var lastRepartidor: TrackCoord?
+        var appliedDark: Bool?
     }
 
     func updateUIView(_ mapView: GMSMapView, context: Context) {
         let coord = context.coordinator
+
+        // Estilo del mapa según el tema (dark/light), reactivo en caliente.
+        let dark = context.environment.colorScheme == .dark
+        if coord.appliedDark != dark {
+            mapView.mapStyle = try? GMSMapStyle(jsonString: dark ? MapStyle.dark : MapStyle.light)
+            coord.appliedDark = dark
+        }
 
         if let pickup {
             let m = coord.pickupMarker ?? circleMarker(on: mapView, icon: pickupIcon(), title: "Negocio")
