@@ -128,7 +128,7 @@ private enum NegocioPin {
         }
     }
 
-    private static let textColor = UIColor(white: 0.13, alpha: 1)
+    private static let textColor = UIColor(red: 26 / 255, green: 29 / 255, blue: 27 / 255, alpha: 1)  // #1A1D1B
 
     static func image(emoji: String, rating: Double) -> UIImage {
         let pinD: CGFloat = 46
@@ -137,11 +137,11 @@ private enum NegocioPin {
 
         let showPill = rating > 0
         let pillText = showPill ? "⭐ \(String(format: "%.1f", rating))" : ""
-        let pillFont = UIFont.systemFont(ofSize: 12, weight: .semibold)
+        let pillFont = UIFont.systemFont(ofSize: 12, weight: .bold)
         let pillH: CGFloat = showPill ? 22 : 0
         let pillGap: CGFloat = showPill ? 4 : 0
         let pillW: CGFloat = showPill
-            ? (pillText as NSString).size(withAttributes: [.font: pillFont]).width + 18
+            ? (pillText as NSString).size(withAttributes: [.font: pillFont]).width + 14   // ~7pt por lado
             : 0
 
         let contentW = max(pinD, pillW)
