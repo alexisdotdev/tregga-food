@@ -12,6 +12,8 @@ struct NegociosMapView: UIViewRepresentable {
     let onSelect: (Negocio) -> Void
     /// Tap en el mapa fuera de un pin (cierra la preview de negocio).
     var onMapTap: () -> Void = {}
+    /// Negocio con preview abierta: su pin se resalta (crece + anillo primary).
+    var selectedId: UUID? = nil
     let controller: MapController
 
     /// Fallback de cámara: centro de Zinapécuaro si aún no hay negocios.
@@ -41,6 +43,7 @@ struct NegociosMapView: UIViewRepresentable {
         var onMapTap: () -> Void
         var byId: [String: Negocio] = [:]
         var markers: [String: GMSMarker] = [:]
+        var highlightedKey: String?
         var fitted = false
 
         init(onSelect: @escaping (Negocio) -> Void, onMapTap: @escaping () -> Void) {
@@ -95,6 +98,20 @@ struct NegociosMapView: UIViewRepresentable {
             coord.byId.removeValue(forKey: key)
         }
 
+        // Resalta el pin seleccionado (re-renderiza solo el que cambió de estado).
+        let selKey = selectedId?.uuidString
+        if coord.highlightedKey != selKey {
+            func redibuja(_ key: String?, highlighted: Bool) {
+                guard let key, let marker = coord.markers[key], let n = coord.byId[key] else { return }
+                marker.icon = NegocioPin.image(emoji: NegocioPin.emoji(for: n.tipo),
+                                               rating: n.rating, highlighted: highlighted)
+                marker.zIndex = highlighted ? 1 : 0
+            }
+            redibuja(coord.highlightedKey, highlighted: false)
+            redibuja(selKey, highlighted: true)
+            coord.highlightedKey = selKey
+        }
+
         // Encadre inicial: negocios + dirección del cliente (si la hay).
         if !coord.fitted, !conCoords.isEmpty {
             var puntos = conCoords.map { $0.1 }
@@ -141,18 +158,19 @@ private enum NegocioPin {
 
     private static let textColor = UIColor(red: 26 / 255, green: 29 / 255, blue: 27 / 255, alpha: 1)  // #1A1D1B
 
-    static func image(emoji: String, rating: Double) -> UIImage {
-        let pinD: CGFloat = 46
-        let pointerH: CGFloat = 9
+    static func image(emoji: String, rating: Double, highlighted: Bool = false) -> UIImage {
+        let s: CGFloat = highlighted ? 1.12 : 1    // el pin seleccionado crece ~12%
+        let pinD: CGFloat = 46 * s
+        let pointerH: CGFloat = 9 * s
         let pad: CGFloat = 6                       // margen para la sombra
 
         let showPill = rating > 0
         let pillText = showPill ? "⭐ \(String(format: "%.1f", rating))" : ""
-        let pillFont = UIFont.systemFont(ofSize: 12, weight: .bold)
-        let pillH: CGFloat = showPill ? 22 : 0
+        let pillFont = UIFont.systemFont(ofSize: 12 * s, weight: .bold)
+        let pillH: CGFloat = showPill ? 22 * s : 0
         let pillGap: CGFloat = showPill ? 4 : 0
         let pillW: CGFloat = showPill
-            ? (pillText as NSString).size(withAttributes: [.font: pillFont]).width + 14   // ~7pt por lado
+            ? (pillText as NSString).size(withAttributes: [.font: pillFont]).width + 14 * s   // ~7pt por lado
             : 0
 
         let contentW = max(pinD, pillW)
@@ -170,11 +188,11 @@ private enum NegocioPin {
 
             // Pin (círculo + punta) como un solo path con sombra suave.
             let path = UIBezierPath(ovalIn: circleRect)
-            let baseY = circleRect.maxY - 4
+            let baseY = circleRect.maxY - 4 * s
             let tri = UIBezierPath()
-            tri.move(to: CGPoint(x: centerX - 8, y: baseY))
+            tri.move(to: CGPoint(x: centerX - 8 * s, y: baseY))
             tri.addLine(to: CGPoint(x: centerX, y: height))
-            tri.addLine(to: CGPoint(x: centerX + 8, y: baseY))
+            tri.addLine(to: CGPoint(x: centerX + 8 * s, y: baseY))
             tri.close()
             path.append(tri)
 
@@ -185,8 +203,16 @@ private enum NegocioPin {
             path.fill()
             cg.restoreGState()
 
+            // Anillo primary en el pin seleccionado (justo dentro del borde blanco).
+            if highlighted {
+                let ring = UIBezierPath(ovalIn: circleRect.insetBy(dx: 1.5 * s, dy: 1.5 * s))
+                ring.lineWidth = 3 * s
+                UIColor(red: 13 / 255, green: 181 / 255, blue: 92 / 255, alpha: 1).setStroke()  // #0DB55C
+                ring.stroke()
+            }
+
             // Emoji centrado en el círculo.
-            let emojiFont = UIFont.systemFont(ofSize: 24)
+            let emojiFont = UIFont.systemFont(ofSize: 24 * s)
             let es = (emoji as NSString).size(withAttributes: [.font: emojiFont])
             (emoji as NSString).draw(at: CGPoint(x: centerX - es.width / 2,
                                                  y: circleRect.midY - es.height / 2),

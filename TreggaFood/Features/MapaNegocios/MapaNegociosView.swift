@@ -38,6 +38,8 @@ struct MapaNegociosView: View {
     @State private var expanded = false
     /// Negocio con preview abierta (estilo Uber): oculta el drawer y muestra su card.
     @State private var seleccionado: Negocio?
+    @State private var favoritos: Set<UUID> = []
+    @State private var favBusy = false
     @State private var query = ""
     @FocusState private var searchFocused: Bool
 
@@ -66,6 +68,7 @@ struct MapaNegociosView: View {
                         center: center,
                         onSelect: seleccionar,
                         onMapTap: { seleccionado = nil },
+                        selectedId: seleccionado?.id,
                         controller: mapController
                     )
                     .ignoresSafeArea()
@@ -90,6 +93,7 @@ struct MapaNegociosView: View {
         .task {
             await resolverCentro()
             await viewModel.cargar()
+            await cargarFavoritos()
         }
     }
 
@@ -116,26 +120,69 @@ struct MapaNegociosView: View {
         }
     }
 
-    /// Card flotante del negocio seleccionado: misma `FoodCard` de la lista, tappable
-    /// para ir al menú, con una X para volver al drawer.
+    /// Card flotante del negocio seleccionado: misma `FoodCard` de la lista sobre un
+    /// contenedor con fondo del tema, tappable para ir al menú, con corazón de favorito
+    /// y X para volver al drawer.
     private func previewCard(_ negocio: Negocio) -> some View {
-        Button { path.append(.restaurant(negocio)) } label: {
+        let esFav = favoritos.contains(negocio.id)
+        return Button { path.append(.restaurant(negocio)) } label: {
             FoodCard(negocio: negocio)
+                .padding(10)
+                .background(TreggaColors.card, in: RoundedRectangle(cornerRadius: TreggaRadius.lg))
+                .shadow(color: .black.opacity(0.16), radius: 16, y: 4)
         }
         .buttonStyle(.plain)
         .overlay(alignment: .topTrailing) {
-            Button { seleccionado = nil } label: {
-                TreggaIcon(sfSymbol: "xmark", size: 12, color: TreggaColors.text)
-                    .frame(width: 30, height: 30)
-                    .background(TreggaColors.bg, in: Circle())
-                    .shadow(color: .black.opacity(0.16), radius: 6, y: 2)
+            HStack(spacing: 8) {
+                Button { Task { await toggleFavorito(negocio) } } label: {
+                    TreggaIcon(.heart, size: 14, color: esFav ? TreggaColors.danger : TreggaColors.textSec)
+                        .frame(width: 30, height: 30)
+                        .background(TreggaColors.bg, in: Circle())
+                        .shadow(color: .black.opacity(0.16), radius: 6, y: 2)
+                        .scaleEffect(esFav ? 1.08 : 1)
+                }
+                .buttonStyle(.plain)
+                .disabled(favBusy)
+
+                Button { seleccionado = nil } label: {
+                    TreggaIcon(sfSymbol: "xmark", size: 12, color: TreggaColors.text)
+                        .frame(width: 30, height: 30)
+                        .background(TreggaColors.bg, in: Circle())
+                        .shadow(color: .black.opacity(0.16), radius: 6, y: 2)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
-            .padding(8)
+            .padding(16)
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 96)
         .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    // MARK: - Favoritos
+
+    private func cargarFavoritos() async {
+        guard let deps, let uid = deps.authSession.tokens?.userId else { return }
+        favoritos = (try? await deps.favoritoRepository.idsFavoritos(userId: uid)) ?? []
+    }
+
+    /// Toggle del corazón: escribe en el repo y actualiza el estado al confirmar
+    /// (mismo patrón que `RestaurantView`).
+    private func toggleFavorito(_ negocio: Negocio) async {
+        guard let deps, let uid = deps.authSession.tokens?.userId, !favBusy else { return }
+        favBusy = true
+        defer { favBusy = false }
+        let nuevo = !favoritos.contains(negocio.id)
+        do {
+            if nuevo {
+                try await deps.favoritoRepository.agregar(userId: uid, negocioId: negocio.id)
+            } else {
+                try await deps.favoritoRepository.quitar(userId: uid, negocioId: negocio.id)
+            }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                if nuevo { favoritos.insert(negocio.id) } else { favoritos.remove(negocio.id) }
+            }
+        } catch {}
     }
 
     // MARK: - Drawer
