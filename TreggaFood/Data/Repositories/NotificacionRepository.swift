@@ -52,7 +52,9 @@ public final class SupabaseNotificacionRepository: NotificacionRepository {
         let dtos: [NotificacionDTO] = try await client.from("notificaciones")
             .select("id,title,description,type,category,read,created_at,reference_type")
             .eq("user_id", value: userId.uuidString)
-            .eq("audience", value: "cliente")
+            // Dirigidas al cliente + las de sistema/broadcast (audience nulo);
+            // sigue ocultando las de otros roles.
+            .or("audience.eq.cliente,audience.is.null")
             .order("created_at", ascending: false)
             .limit(100)
             .execute()
@@ -71,7 +73,7 @@ public final class SupabaseNotificacionRepository: NotificacionRepository {
         try await client.from("notificaciones")
             .update(["read": true])
             .eq("user_id", value: userId.uuidString)
-            .eq("audience", value: "cliente")
+            .or("audience.eq.cliente,audience.is.null")
             .eq("read", value: false)
             .execute()
     }
