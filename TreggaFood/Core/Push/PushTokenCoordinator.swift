@@ -54,6 +54,10 @@ public final class PushTokenCoordinator {
     public static let shared = PushTokenCoordinator()
 
     public var repo: DeviceTokenRepository = SupabaseDeviceTokenRepository()
+    /// Proveedor del token FCM actual (lo inyecta el AppDelegate, que tiene
+    /// acceso a Firebase). Permite pedir el token en el login sin depender de
+    /// que el callback de Firebase se haya disparado en este arranque.
+    public var fetchToken: (@Sendable () async -> String?)?
     private var currentUserId: UUID?
     private var lastToken: String?
 
@@ -75,7 +79,13 @@ public final class PushTokenCoordinator {
     public func onLogin(userId: UUID) async {
         currentUserId = userId
         await requestAuthorization()
-        if let t = lastToken { await register(uid: userId, token: t) }
+        // Pide el token FCM directo: el callback de Firebase no se re-dispara de
+        // forma confiable en cada arranque, así que no basta con `lastToken`.
+        let token = await fetchToken?() ?? lastToken
+        if let token {
+            lastToken = token
+            await register(uid: userId, token: token)
+        }
     }
 
     private func register(uid: UUID, token: String) async {

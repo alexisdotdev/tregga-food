@@ -16,6 +16,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         FirebaseApp.configure()
         UNUserNotificationCenter.current().delegate = self
         Messaging.messaging().delegate = self
+        // Proveedor de token para que onLogin pueda pedirlo directo (sin depender
+        // de que el callback didReceiveRegistrationToken se dispare este arranque).
+        PushTokenCoordinator.shared.fetchToken = { try? await Messaging.messaging().token() }
         application.registerForRemoteNotifications()
         return true
     }
