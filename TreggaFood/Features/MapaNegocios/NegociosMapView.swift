@@ -153,25 +153,11 @@ struct NegociosMapView: UIViewRepresentable {
 /// ancla en la coordenada + emoji de la categoría, y una pastilla "⭐ x.x" encima
 /// cuando el negocio tiene rating. Paridad 1:1 con el mapa de Android.
 private enum NegocioPin {
-    /// Mapea el `tipo` del negocio a un emoji de categoría (mismo mapeo que Android).
+    /// Emoji de categoría del negocio, desde el catálogo canónico `BusinessCategory`
+    /// (match exacto por label → emoji oficial, con fallback por keyword para `tipo`
+    /// de texto libre). Cubre las 26 categorías 1:1 con Android; "🍽️" si no encaja.
     static func emoji(for tipo: String?) -> String {
-        let t = (tipo ?? "").lowercased()
-        func has(_ keys: String...) -> Bool { keys.contains { t.contains($0) } }
-        switch true {
-        case has("café", "cafe", "coffee"):        return "☕"
-        case has("pizza"):                         return "🍕"
-        case has("parrilla", "carne", "asador"):   return "🥩"
-        case has("taco", "antojito"):              return "🌮"
-        case has("sushi", "japon"):                return "🍣"
-        case has("hamburguesa", "burger"):         return "🍔"
-        case has("pollo"):                         return "🍗"
-        case has("marisco", "aguachile"):          return "🦐"
-        case has("postre"):                        return "🧁"
-        case has("desayuno"):                      return "🍳"
-        case has("bebida"):                        return "🥤"
-        case has("panadería", "panaderia", "pan"): return "🥐"
-        default:                                   return "🍽️"
-        }
+        BusinessCategory.resolve(tipo)?.emoji ?? "🍽️"
     }
 
     private static let textColor = UIColor(red: 26 / 255, green: 29 / 255, blue: 27 / 255, alpha: 1)  // #1A1D1B
