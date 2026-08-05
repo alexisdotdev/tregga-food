@@ -19,6 +19,12 @@ struct ClientTabView: View {
 
     @State private var shell = ClientShell()
     @State private var showSignOut = false
+    /// La barra colapsa "Buscar" a icono cuando el ancho no alcanza para el texto.
+    /// En iPad "Designed for iPhone" la app corre en un lienzo portrait fijo
+    /// (375×667) que iPadOS rota: en landscape el ancho usable baja (~325) y el
+    /// texto desborda. No hay señal de orientación (size classes/geo siempre dicen
+    /// portrait), así que decidimos por ancho medido.
+    @State private var barCompact = false
 
     var body: some View {
         ZStack {
@@ -59,7 +65,7 @@ struct ClientTabView: View {
             // así el contenido nunca queda debajo de la barra.
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if mostrarBarra {
-                    ClientBottomBar(tab: Bindable(shell).tab, cartCount: cartEnv?.count ?? 0)
+                    ClientBottomBar(tab: Bindable(shell).tab, cartCount: cartEnv?.count ?? 0, compact: barCompact)
                         // Cap de ancho + centrado: en pantallas anchas (iPad en
                         // landscape, donde la app rota sin poder bloquearse) la barra
                         // no se estira ni empuja los botones fuera de pantalla.
@@ -74,8 +80,17 @@ struct ClientTabView: View {
                 LogoutConfirmDialog(isPresented: $showSignOut, onConfirm: onSignOut)
             }
         }
+        .background(
+            GeometryReader { geo in
+                // Colapsa "Buscar" cuando no hay ancho para el texto (~360pt).
+                // iPhone (≥402) e iPad portrait (~375): expandido. iPad landscape
+                // (~325): colapsado a icono.
+                Color.clear.task(id: geo.size.width) { barCompact = geo.size.width < 360 }
+            }
+        )
         .environment(\.clientShell, shell)
         .animation(.easeInOut(duration: 0.22), value: mostrarBarra)
+        .animation(.easeInOut(duration: 0.22), value: barCompact)
         .onAppear {
             shell.isGuest = isGuest
             shell.requestLogin = onRequestLogin

@@ -8,9 +8,15 @@ import TreggaDesignSystem
 struct ClientBottomBar: View {
     @Binding var tab: ClientTab
     var cartCount: Int
+    /// `true` cuando el ancho disponible no alcanza para el texto "Buscar" (lo mide
+    /// `ClientTabView` por geometría; p.ej. iPad en landscape). Colapsa la píldora.
+    var compact: Bool = false
 
     private let size: CGFloat = 52
     private var searchActive: Bool { tab == .buscar }
+    /// La píldora "Buscar" se colapsa a un círculo (sin texto) cuando está activa
+    /// o cuando no hay ancho, para que los 5 botones queden parejos y no desborde.
+    private var collapsed: Bool { searchActive || compact }
 
     var body: some View {
         HStack(spacing: 6) {
@@ -32,7 +38,7 @@ struct ClientBottomBar: View {
     /// repartir los 5 botones de forma pareja; en estado normal es de ancho 0 y la
     /// píldora central ocupa el espacio sobrante.
     private var flexGap: some View {
-        Spacer(minLength: 0).frame(maxWidth: searchActive ? .infinity : 0)
+        Spacer(minLength: 0).frame(maxWidth: collapsed ? .infinity : 0)
     }
 
     private func circle(_ icon: TreggaIcon.Name, target: ClientTab, badge: Int = 0) -> some View {
@@ -67,7 +73,7 @@ struct ClientBottomBar: View {
         } label: {
             HStack(spacing: 8) {
                 TreggaIcon(.search, size: 20, color: searchActive ? TreggaColors.primary : TreggaColors.text)
-                if !searchActive {
+                if !collapsed {
                     Text("Buscar")
                         .font(.system(size: 15.5, weight: .bold))
                         .tracking(-0.1)
@@ -76,8 +82,8 @@ struct ClientBottomBar: View {
                         .transition(.opacity.combined(with: .scale(scale: 0.6)))
                 }
             }
-            .frame(minWidth: searchActive ? size : 0,
-                   maxWidth: searchActive ? size : .infinity)
+            .frame(minWidth: collapsed ? size : 0,
+                   maxWidth: collapsed ? size : .infinity)
             .frame(height: size)
             .background(TreggaColors.card, in: Capsule())
             .overlay(Capsule().stroke(TreggaColors.border, lineWidth: 1))
