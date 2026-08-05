@@ -23,6 +23,17 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         return true
     }
 
+    /// Bloquea la app a vertical en TODOS los dispositivos. La clave de Info.plist
+    /// `UISupportedInterfaceOrientations~ipad` NO se respeta cuando iPadOS corre la
+    /// app como "Designed for iPhone" (la app gira con el iPad y el layout vertical
+    /// se ve rotado/roto). Este método sí manda en runtime.
+    func application(
+        _ application: UIApplication,
+        supportedInterfaceOrientationsFor window: UIWindow?
+    ) -> UIInterfaceOrientationMask {
+        .portrait
+    }
+
     func application(
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
@@ -72,6 +83,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         return true
+    }
+
+    /// Bloquea la app a vertical en todos los dispositivos (ver rama FCM arriba).
+    func application(
+        _ application: UIApplication,
+        supportedInterfaceOrientationsFor window: UIWindow?
+    ) -> UIInterfaceOrientationMask {
+        .portrait
     }
 
     func userNotificationCenter(
