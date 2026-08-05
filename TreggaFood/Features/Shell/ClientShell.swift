@@ -23,6 +23,21 @@ final class ClientShell {
     func setDeep(_ tab: ClientTab, deep: Bool) {
         if deep { deepTabs.insert(tab) } else { deepTabs.remove(tab) }
     }
+
+    // MARK: - Modo invitado (browse sin sesión, App Store 5.1.1(v))
+
+    /// `true` cuando la app corre sin sesión: el usuario puede navegar Home, Mapa
+    /// y Buscar, pero las acciones "de cuenta" (agregar al carrito, ver carrito,
+    /// cuenta, favoritos) disparan el login.
+    var isGuest: Bool = false
+
+    /// Presenta el login (lo cablea `ClientTabView` desde `ContentView`).
+    var requestLogin: () -> Void = {}
+
+    /// Ejecuta `action` si hay sesión; si es invitado, dispara el login en su lugar.
+    func requireAuth(_ action: () -> Void) {
+        if isGuest { requestLogin() } else { action() }
+    }
 }
 
 private struct ClientShellKey: EnvironmentKey {

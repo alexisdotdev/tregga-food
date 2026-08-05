@@ -11,12 +11,14 @@ struct ContentView: View {
     @State private var cart = CartStore()
     @State private var showBiometricOffer = false
     @State private var appGate: AppGate = .none
+    /// Presenta el flujo de login como sheet sobre el shell en modo invitado.
+    @State private var showLogin = false
     @Environment(\.openURL) private var openURL
     private let remembered = RememberedUserStore()
     /// Apariencia elegida en Cuenta → Preferencias. Persistida local.
     @AppStorage("APPEARANCE_MODE") private var appearanceRaw: String = AppearanceMode.system.rawValue
 
-    enum Phase { case loading, unauthenticated, authenticated }
+    enum Phase { case loading, guest, authenticated }
 
     /// Gate de arranque por configuración remota (`app_config`).
     enum AppGate: Equatable { case none, maintenance, forceUpdate(String?) }
@@ -48,28 +50,37 @@ struct ContentView: View {
             switch phase {
             case .loading:
                 SplashScreen()
-            case .unauthenticated:
-                if let coordinator {
-                    OnboardingFlowView(
-                        coordinator: coordinator,
-                        // Si el dispositivo recuerda al usuario (Face ID activo),
-                        // ofrecemos re-login biométrico directo en el Welcome — así
-                        // no depende de que el arranque haya elegido `welcomeBack`.
-                        rememberedName: (remembered.hasRemembered && BiometricAuthService.shared.isAvailable)
-                            ? remembered.displayName : nil,
-                        onBiometricLogin: { await ingresarConBiometria() }
-                    )
-                } else {
-                    SplashScreen()
-                }
-            case .authenticated:
-                ClientTabView(onSignOut: signOut)
-                    .environment(\.cartStore, cart)
+            case .guest, .authenticated:
+                // Un solo shell para invitado y autenticado (flip de `isGuest`): al
+                // iniciar sesión el usuario conserva su navegación en vez de
+                // reiniciar. Sin sesión se navega libre; el login aparece como sheet
+                // al tocar algo "de cuenta" (App Store 5.1.1(v)).
+                ClientTabView(
+                    onSignOut: signOut,
+                    isGuest: phase == .guest,
+                    onRequestLogin: { showLogin = true }
+                )
+                .environment(\.cartStore, cart)
+            }
+        }
+        .sheet(isPresented: $showLogin) {
+            if let coordinator {
+                OnboardingFlowView(
+                    coordinator: coordinator,
+                    // Si el dispositivo recuerda al usuario (Face ID activo),
+                    // el Welcome ofrece el re-login biométrico directo.
+                    rememberedName: (remembered.hasRemembered && BiometricAuthService.shared.isAvailable)
+                        ? remembered.displayName : nil,
+                    onBiometricLogin: { await ingresarConBiometria() }
+                )
+            } else {
+                SplashScreen()
             }
         }
         .onAppear { KeyboardDismiss.install() }
         .onChange(of: phase) { _, newValue in
             if newValue == .authenticated {
+                showLogin = false          // cierra el sheet de login al autenticar
                 maybeOfferBiometric()
                 if let uid = deps?.authSession.tokens?.userId {
                     Task { await PushTokenCoordinator.shared.onLogin(userId: uid) }
@@ -136,7 +147,7 @@ struct ContentView: View {
                 // biometría, el Welcome muestra el CTA "Entrar con Face ID" (el tap
                 // valida el token y restaura la sesión). No auto-disparamos biometría
                 // ni mostramos una pantalla intermedia.
-                phase = .unauthenticated
+                phase = .guest
             }
         }
     }
@@ -252,14 +263,14 @@ struct ContentView: View {
                 try? await deps.authService.signOutLocal()
                 await deps.authSession.clear()
                 recreateCoordinator(deps)
-                phase = .unauthenticated
+                phase = .guest
             } else {
                 BiometricLockPreference.reset()
                 await remembered.clear()
                 try? await deps.authService.signOut()
                 await deps.authSession.clear()
                 recreateCoordinator(deps)
-                phase = .unauthenticated
+                phase = .guest
             }
         }
     }

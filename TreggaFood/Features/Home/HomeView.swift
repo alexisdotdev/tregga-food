@@ -26,6 +26,12 @@ struct HomeView: View {
 
     private var cart: CartStore { cartEnv ?? CartStore() }
 
+    /// Ejecuta `action` si hay sesión; si es invitado, abre el login. Se usa en las
+    /// acciones "de cuenta" del header (dirección, ofertas, notificaciones).
+    private func requireLogin(_ action: () -> Void) {
+        if shell?.isGuest == true { shell?.requestLogin() } else { action() }
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             ZStack(alignment: .bottom) {
@@ -38,6 +44,7 @@ struct HomeView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 8)
                 }
+                .clientBottomBarClearance()
                 .background(TreggaColors.bg)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar(.hidden, for: .navigationBar)
@@ -118,8 +125,12 @@ struct HomeView: View {
                 negocioName: negocioName,
                 catalog: catalog,
                 onAdd: { selection in
-                    cart.add(selection: selection, negocioId: producto.negocioId, negocioName: negocioName)
-                    path.removeLast()
+                    if shell?.isGuest == true {
+                        shell?.requestLogin()          // muro: invitado → login
+                    } else {
+                        cart.add(selection: selection, negocioId: producto.negocioId, negocioName: negocioName)
+                        path.removeLast()
+                    }
                 }
             )
         case .cart, .checkout, .tracking, .chat:
@@ -152,7 +163,7 @@ struct HomeView: View {
 
     private var header: some View {
         HStack(alignment: .top) {
-            Button { showDirecciones = true } label: {
+            Button { requireLogin { showDirecciones = true } } label: {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Entregar ahora")
                         .font(.system(size: 12, weight: .bold))
@@ -175,14 +186,14 @@ struct HomeView: View {
             .buttonStyle(.plain)
             Spacer()
             HStack(spacing: 10) {
-                Button { showOffers = true } label: {
+                Button { requireLogin { showOffers = true } } label: {
                     ZStack {
                         Circle().fill(TreggaColors.accentSoft).frame(width: 40, height: 40)
                         TreggaIcon(.gift, size: 20, color: TreggaColors.accent)
                     }
                 }
                 .buttonStyle(.plain)
-                Button { showNotifications = true } label: {
+                Button { requireLogin { showNotifications = true } } label: {
                     ZStack {
                         Circle().fill(TreggaColors.surface).frame(width: 40, height: 40)
                         TreggaIcon(.bell, size: 20, color: TreggaColors.text)

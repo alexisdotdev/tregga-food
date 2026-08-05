@@ -268,6 +268,7 @@ struct MapaNegociosView: View {
             .padding(.top, 6)
             .padding(.bottom, 28)
         }
+        .clientBottomBarClearance()
         .scrollDisabled(!expanded)
         .scrollDismissesKeyboard(.immediately)
     }
@@ -311,8 +312,12 @@ struct MapaNegociosView: View {
                 negocioName: negocioName,
                 catalog: catalog,
                 onAdd: { selection in
-                    cart.add(selection: selection, negocioId: producto.negocioId, negocioName: negocioName)
-                    if !path.isEmpty { path.removeLast() }
+                    if shell?.isGuest == true {
+                        shell?.requestLogin()          // muro: invitado → login
+                    } else {
+                        cart.add(selection: selection, negocioId: producto.negocioId, negocioName: negocioName)
+                        if !path.isEmpty { path.removeLast() }
+                    }
                 }
             )
         case .cart, .checkout, .tracking, .chat:

@@ -3,10 +3,10 @@ import TreggaCore
 import TreggaDesignSystem
 
 /// Eliminar cuenta: warning irreversible + confirmación. Al confirmar llama el
-/// RPC `delete_my_account` y, en éxito, cierra sesión (vuelve a unauthenticated).
+/// RPC `delete_my_account` y, en éxito, cierra sesión (vuelve a modo invitado).
 struct AccountDeletionView: View {
     @Bindable var viewModel: AccountViewModel
-    /// Tras borrar, ContentView vuelve la app a `.unauthenticated`.
+    /// Tras borrar, ContentView vuelve la app a modo invitado (`.guest`).
     let onDeleted: () -> Void
     @Environment(\.dismiss) private var dismiss
 

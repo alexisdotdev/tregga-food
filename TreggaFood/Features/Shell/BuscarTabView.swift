@@ -9,6 +9,7 @@ struct BuscarTabView: View {
     @Environment(\.appDependencies) private var deps
     @Environment(\.cartStore) private var cartEnv
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.clientShell) private var shell
     @State private var path: [CatalogRoute] = []
     @State private var query = ""
     @State private var negocios: [Negocio] = []
@@ -116,6 +117,7 @@ struct BuscarTabView: View {
                 .padding(.top, 14)
                 .padding(.bottom, 24)
             }
+            .clientBottomBarClearance()
             .scrollDismissesKeyboard(.immediately)
         }
     }
@@ -148,8 +150,12 @@ struct BuscarTabView: View {
                 negocioName: negocioName,
                 catalog: catalog,
                 onAdd: { selection in
-                    cart.add(selection: selection, negocioId: producto.negocioId, negocioName: negocioName)
-                    path.removeLast()
+                    if shell?.isGuest == true {
+                        shell?.requestLogin()          // muro: invitado → login
+                    } else {
+                        cart.add(selection: selection, negocioId: producto.negocioId, negocioName: negocioName)
+                        path.removeLast()
+                    }
                 }
             )
         case .cart, .checkout, .tracking, .chat:

@@ -9,8 +9,13 @@ import TreggaDesignSystem
 struct ClientTabView: View {
     @Environment(\.appDependencies) private var deps
     @Environment(\.cartStore) private var cartEnv
-    /// Callback hacia ContentView para volver la app a `.unauthenticated`.
+    /// Callback hacia ContentView para volver la app a modo invitado.
     var onSignOut: () -> Void = {}
+    /// `true` cuando no hay sesión: navegar es libre, pero carrito/cuenta y
+    /// "agregar al carrito" disparan el login (App Store 5.1.1(v)).
+    var isGuest: Bool = false
+    /// Abre el flujo de login (lo presenta `ContentView` como sheet).
+    var onRequestLogin: () -> Void = {}
 
     @State private var shell = ClientShell()
     @State private var showSignOut = false
@@ -21,12 +26,32 @@ struct ClientTabView: View {
                 tab(.inicio) { HomeView(catalog: catalog) }
                 tab(.live) { MapaNegociosView(catalog: catalog) }
                 tab(.buscar) { BuscarTabView() }
-                tab(.carrito) { CartTabView() }
+                tab(.carrito) {
+                    if isGuest {
+                        GuestGateView(
+                            icon: .bag,
+                            titulo: "Inicia sesión para tu carrito",
+                            mensaje: "Crea tu cuenta o entra para agregar productos y hacer tu pedido.",
+                            onLogin: onRequestLogin
+                        )
+                    } else {
+                        CartTabView()
+                    }
+                }
                 tab(.cuenta) {
-                    CuentaTab(
-                        onSignOut: onSignOut,
-                        onRequestSignOut: { withAnimation(.easeInOut(duration: 0.25)) { showSignOut = true } }
-                    )
+                    if isGuest {
+                        GuestGateView(
+                            icon: .user,
+                            titulo: "Inicia sesión en Tregga",
+                            mensaje: "Administra tus pedidos, direcciones y favoritos desde tu cuenta.",
+                            onLogin: onRequestLogin
+                        )
+                    } else {
+                        CuentaTab(
+                            onSignOut: onSignOut,
+                            onRequestSignOut: { withAnimation(.easeInOut(duration: 0.25)) { showSignOut = true } }
+                        )
+                    }
                 }
             }
             // La barra flotante se hospeda como safe-area inset: reserva su espacio
@@ -35,6 +60,11 @@ struct ClientTabView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if mostrarBarra {
                     ClientBottomBar(tab: Bindable(shell).tab, cartCount: cartEnv?.count ?? 0)
+                        // Cap de ancho + centrado: en pantallas anchas (iPad en
+                        // landscape, donde la app rota sin poder bloquearse) la barra
+                        // no se estira ni empuja los botones fuera de pantalla.
+                        .frame(maxWidth: 430)
+                        .frame(maxWidth: .infinity)
                         .padding(.top, 6)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
@@ -46,6 +76,11 @@ struct ClientTabView: View {
         }
         .environment(\.clientShell, shell)
         .animation(.easeInOut(duration: 0.22), value: mostrarBarra)
+        .onAppear {
+            shell.isGuest = isGuest
+            shell.requestLogin = onRequestLogin
+        }
+        .onChange(of: isGuest) { _, nuevo in shell.isGuest = nuevo }
     }
 
     /// La barra se oculta cuando la pestaña activa está en navegación profunda, y
