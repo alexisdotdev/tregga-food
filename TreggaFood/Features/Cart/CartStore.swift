@@ -44,6 +44,21 @@ final class CartStore {
         let nota: String?
     }
 
+    /// Selección que un **invitado** intentó agregar antes de que saltara el muro
+    /// de login. `ContentView` la ejecuta al cerrarse el login: si autenticó, agrega
+    /// y hace `dismiss` (pop del detalle, como el flujo normal); si canceló, la
+    /// descarta. Guarda datos (no un cierre sobre el carrito) para no crear ciclos;
+    /// `dismiss` captura el `Binding` del path, no el `@State`.
+    @ObservationIgnored var pendingGuestAdd: PendingGuestAdd?
+
+    struct PendingGuestAdd {
+        let selection: ProductSelection
+        let negocioId: UUID
+        let negocioName: String
+        let nota: String?
+        let dismiss: () -> Void
+    }
+
     var items: [CartLine] { lines }
     var count: Int { lines.reduce(0) { $0 + $1.cantidad } }
     var isEmpty: Bool { lines.isEmpty }

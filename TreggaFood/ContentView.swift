@@ -63,7 +63,7 @@ struct ContentView: View {
                 .environment(\.cartStore, cart)
             }
         }
-        .sheet(isPresented: $showLogin) {
+        .sheet(isPresented: $showLogin, onDismiss: completarAddPendiente) {
             if let coordinator {
                 OnboardingFlowView(
                     coordinator: coordinator,
@@ -150,6 +150,23 @@ struct ContentView: View {
                 phase = .guest
             }
         }
+    }
+
+    /// Al cerrarse el sheet de login: si el invitado intentó agregar algo antes del
+    /// muro, ahora lo agrega automáticamente (con cantidad + modificadores) y hace el
+    /// pop del detalle, como el flujo autenticado. Si canceló el login, lo descarta.
+    /// Cubre login por correo, biométrico y signup (todos terminan en `.authenticated`).
+    private func completarAddPendiente() {
+        guard let pending = cart.pendingGuestAdd else { return }
+        cart.pendingGuestAdd = nil
+        guard phase == .authenticated else { return }   // canceló el login → descartar
+        cart.add(
+            selection: pending.selection,
+            negocioId: pending.negocioId,
+            negocioName: pending.negocioName,
+            nota: pending.nota
+        )
+        pending.dismiss()
     }
 
     // MARK: - Gate de arranque (config remota)

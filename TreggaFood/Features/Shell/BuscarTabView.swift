@@ -151,7 +151,17 @@ struct BuscarTabView: View {
                 catalog: catalog,
                 onAdd: { selection in
                     if shell?.isGuest == true {
-                        shell?.requestLogin()          // muro: invitado → login
+                        // Muro: guarda la selección y abre el login; al autenticar se
+                        // agrega sola (ContentView.completarAddPendiente).
+                        let pathBinding = $path
+                        cart.pendingGuestAdd = .init(
+                            selection: selection,
+                            negocioId: producto.negocioId,
+                            negocioName: negocioName,
+                            nota: nil,
+                            dismiss: { if !pathBinding.wrappedValue.isEmpty { pathBinding.wrappedValue.removeLast() } }
+                        )
+                        shell?.requestLogin()
                     } else {
                         cart.add(selection: selection, negocioId: producto.negocioId, negocioName: negocioName)
                         path.removeLast()
