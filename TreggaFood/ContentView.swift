@@ -41,7 +41,9 @@ struct ContentView: View {
                 content
             }
         }
-        .preferredColorScheme(appearance.colorScheme)
+        .treggaSplashOverlay(tagline: SplashScreen.tagline,
+                             isReady: phase != .loading || appGate != .none)
+        .treggaPreferredColorScheme(appearance.colorScheme)
     }
 
     @ViewBuilder
@@ -49,7 +51,8 @@ struct ContentView: View {
         Group {
             switch phase {
             case .loading:
-                SplashScreen()
+                // El splash animado va encima (`treggaSplashOverlay`); debajo solo el fondo.
+                Color(uiColor: UIColor(hex: 0x079247)).ignoresSafeArea()
             case .guest, .authenticated:
                 // Un solo shell para invitado y autenticado (flip de `isGuest`): al
                 // iniciar sesión el usuario conserva su navegación en vez de
@@ -305,61 +308,13 @@ struct ContentView: View {
     }
 }
 
-/// Pantalla 00 — Splash. Mismo diseño que Tregga Delivery: gradiente vertical
-/// `primaryDeep → primaryDark → primary`, logo con sombra, tagline de cliente y
-/// spinner animado abajo (sin motion stripes).
+/// Pantalla 00 — Splash v2 (compartido en `TreggaDesignSystem`). Aquí solo como
+/// relleno estático; el de arranque es `treggaSplashOverlay` en el root.
 struct SplashScreen: View {
-    @State private var rotating = false
+    static let tagline = "Tu antojo, al instante"
 
     var body: some View {
-        ZStack {
-            LinearGradient(
-                stops: [
-                    .init(color: TreggaColors.primaryDeep, location: 0.0),
-                    .init(color: TreggaColors.primaryDark, location: 0.5),
-                    .init(color: TreggaColors.primary,     location: 1.0)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-
-            VStack(spacing: 0) {
-                Image("logo-tregga")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 220)
-                    .shadow(color: .black.opacity(0.30), radius: 16, x: 0, y: 12)
-
-                Text("Tu antojo, al instante")
-                    .font(.system(size: 17, weight: .semibold))
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(17 * 0.35)
-                    .opacity(0.95)
-                    .padding(.top, 14)
-            }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 32)
-
-            VStack {
-                Spacer()
-                Circle()
-                    .trim(from: 0, to: 0.25)
-                    .stroke(Color.white, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                    .frame(width: 32, height: 32)
-                    .rotationEffect(.degrees(rotating ? 360 : 0))
-                    .background(
-                        Circle().stroke(Color.white.opacity(0.32), lineWidth: 3)
-                    )
-                    .padding(.bottom, 96)
-            }
-        }
-        .ignoresSafeArea()
-        .preferredColorScheme(.dark)
-        .onAppear {
-            withAnimation(.linear(duration: 1.0).repeatForever(autoreverses: false)) {
-                rotating = true
-            }
-        }
+        TreggaSplashView(tagline: Self.tagline)
     }
 }
 
