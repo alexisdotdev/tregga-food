@@ -12,12 +12,14 @@ struct HomeView: View {
     @State private var showOffers = false
     @State private var showDirecciones = false
     @State private var noLeidas = 0
+    @State private var costco: CostcoFlowModel?
     private let catalog: CatalogRepository
 
     @Environment(\.cartStore) private var cartEnv
     @Environment(\.appDependencies) private var deps
     @Environment(\.clientShell) private var shell
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.costcoCart) private var costcoCart
 
     init(catalog: CatalogRepository) {
         self.catalog = catalog
@@ -38,6 +40,10 @@ struct HomeView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         header
+                        if let costco {
+                            CostcoHomeCard(model: costco) { path.append(.costco) }
+                                .padding(.top, 16)
+                        }
                         content
                             .padding(.top, 18)
                     }
@@ -64,11 +70,18 @@ struct HomeView: View {
             viewModel.observarCambios()
         }
         .task { await resolveCliente() }
+        .task {
+            if costco == nil, let repo = deps?.costcoRepository { costco = CostcoFlowModel(repo: repo) }
+            await costco?.cargar(cart: costcoCart)
+        }
         .task { await cargarNoLeidas() }
         .onChange(of: scenePhase) { _, phase in
             // Al volver al frente recargamos por si se perdieron eventos de
             // realtime mientras la app estaba en segundo plano.
-            if phase == .active { Task { await viewModel.load() } }
+            if phase == .active {
+                Task { await viewModel.load() }
+                Task { await costco?.cargar(cart: costcoCart) }
+            }
         }
         .onChange(of: showNotifications) { _, abierto in
             // Al cerrar el inbox, las que se marcaron leídas bajan el contador.
@@ -143,11 +156,36 @@ struct HomeView: View {
                     }
                 }
             )
+        case .costco:
+            if let costco {
+                CostcoCatalogView(model: costco, onCarrito: { path.append(.costcoCarrito) }, onBack: { volver() })
+            }
+        case .costcoCarrito:
+            if let costco {
+                CostcoCartView(model: costco, onContinuar: { path.append(.costcoCheckout) }, onBack: { volver() })
+            }
+        case .costcoCheckout:
+            if let costco {
+                CostcoCheckoutView(
+                    model: costco,
+                    // Reemplaza el flujo: "atrás" desde el detalle vuelve al Home.
+                    onCreado: { pedido in path = [.costcoPedido(pedido.id)] },
+                    onBack: { volver() }
+                )
+            }
+        case .costcoPedido(let id):
+            if let repo = deps?.costcoRepository {
+                CostcoPedidoDetailView(model: CostcoPedidoDetailModel(pedidoId: id, repo: repo), onBack: { volver() })
+            }
         case .cart, .checkout, .tracking, .chat:
             // El flujo de carrito (carrito → checkout → tracking → chat) vive
             // ahora en la pestaña Carrito (CartTabView). Home solo descubre.
             EmptyView()
         }
+    }
+
+    private func volver() {
+        if !path.isEmpty { path.removeLast() }
     }
 
     /// Cuenta las notificaciones no leídas (ya sin las de admin, que el repo

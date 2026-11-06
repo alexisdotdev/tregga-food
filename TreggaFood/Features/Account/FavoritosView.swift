@@ -99,7 +99,7 @@ struct FavoritosView: View {
                     path.removeLast()
                 }
             )
-        case .cart, .checkout, .tracking, .chat:
+        case .cart, .checkout, .tracking, .chat, .costco, .costcoCarrito, .costcoCheckout, .costcoPedido:
             EmptyView()
         }
     }

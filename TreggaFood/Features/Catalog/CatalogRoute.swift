@@ -8,4 +8,9 @@ enum CatalogRoute: Hashable {
     case checkout
     case tracking(pedidoId: UUID)
     case chat(pedidoId: UUID, repartidorName: String)
+    // Pedidos Costco: flujo propio apilado sobre Inicio.
+    case costco
+    case costcoCarrito
+    case costcoCheckout
+    case costcoPedido(UUID)
 }

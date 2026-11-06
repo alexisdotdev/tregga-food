@@ -8,6 +8,10 @@ struct MyOrdersView: View {
     let onTap: (PedidoResumen) -> Void
     /// Si se presenta de forma modal (p.ej. desde Cuenta), muestra un botón atrás.
     var onClose: (() -> Void)? = nil
+    /// Pedidos Costco (sección propia arriba; abren su detalle).
+    var costco: [CostcoPedido] = []
+    var onTapCostco: (CostcoPedido) -> Void = { _ in }
+    var onRefreshCostco: () async -> Void = {}
 
     var body: some View {
         Group {
@@ -15,7 +19,7 @@ struct MyOrdersView: View {
             case .cargando:
                 estadoCentral { ProgressView() } texto: { Text("Buscando tus pedidos…") }
             case .vacio:
-                vacio
+                if costco.isEmpty { vacio } else { lista }
             case .error(let msg):
                 errorView(msg)
             case .cargado:
@@ -23,7 +27,10 @@ struct MyOrdersView: View {
             }
         }
         .background(TreggaColors.bg)
-        .refreshable { await viewModel.cargar() }
+        .refreshable {
+            await viewModel.cargar()
+            await onRefreshCostco()
+        }
         .swipeToGoBack { onClose?() }
     }
 
@@ -31,6 +38,16 @@ struct MyOrdersView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 header
+                if !costco.isEmpty {
+                    SectionHeader(CostcoCopy.seccionCostco).padding(.top, 4)
+                    VStack(spacing: 12) {
+                        ForEach(costco) { pedido in
+                            Button { onTapCostco(pedido) } label: { CostcoOrderRow(pedido: pedido) }
+                                .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
                 if !viewModel.enCurso.isEmpty {
                     SectionHeader("En curso").padding(.top, 4)
                     VStack(spacing: 12) {

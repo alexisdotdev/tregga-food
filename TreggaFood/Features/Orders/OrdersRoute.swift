@@ -5,4 +5,5 @@ enum OrdersRoute: Hashable {
     case detalle(pedidoId: UUID)
     case tracking(pedidoId: UUID)
     case chat(pedidoId: UUID, repartidorName: String)
+    case costco(pedidoId: UUID)
 }

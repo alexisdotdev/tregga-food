@@ -9,6 +9,9 @@ struct ContentView: View {
     @State private var phase: Phase = .loading
     @State private var coordinator: OnboardingCoordinator?
     @State private var cart = CartStore()
+    /// Carrito Costco persistente por usuario: se activa al autenticar y se borra al
+    /// salir de la sesión (cubre logout, borrado de cuenta y sesión expirada).
+    @State private var costcoCart = CostcoCartStore()
     @State private var showBiometricOffer = false
     @State private var appGate: AppGate = .none
     /// Presenta el flujo de login como sheet sobre el shell en modo invitado.
@@ -64,6 +67,7 @@ struct ContentView: View {
                     onRequestLogin: { showLogin = true }
                 )
                 .environment(\.cartStore, cart)
+                .environment(\.costcoCart, costcoCart)
             }
         }
         .sheet(isPresented: $showLogin, onDismiss: completarAddPendiente) {
@@ -81,6 +85,13 @@ struct ContentView: View {
             }
         }
         .onAppear { KeyboardDismiss.install() }
+        .onChange(of: phase, initial: true) { _, newValue in
+            switch newValue {
+            case .authenticated: costcoCart.activar(userId: deps?.authSession.tokens?.userId)
+            case .guest: costcoCart.cerrarSesion()
+            case .loading: break
+            }
+        }
         .onChange(of: phase) { _, newValue in
             if newValue == .authenticated {
                 showLogin = false          // cierra el sheet de login al autenticar
@@ -113,6 +124,16 @@ struct ContentView: View {
             // Gate remoto (mantenimiento / versión mínima). Fail-open: si no se
             // puede leer, no bloquea.
             await revisarGate(deps: deps)
+            #if DEBUG
+            // Atajo de desarrollo (igual que Business): con -USE_MOCK YES -MOCK_AUTO_LOGIN YES
+            // entra como el cliente mock sin pasar por el login, para revisar pantallas.
+            if UserDefaults.standard.bool(forKey: "USE_MOCK"), UserDefaults.standard.bool(forKey: "MOCK_AUTO_LOGIN"),
+               let tokens = try? await deps.authService.verifyEmailOTP(email: "cliente@tregga.app", code: "1234") {
+                await deps.authSession.persist(tokens)
+                phase = .authenticated
+                return
+            }
+            #endif
             await deps.authSession.restore()
             // Validamos la sesión persistida ANTES de conceder acceso: un token del
             // Keychain podría estar caducado/revocado (sesión "fantasma"). Hacemos un

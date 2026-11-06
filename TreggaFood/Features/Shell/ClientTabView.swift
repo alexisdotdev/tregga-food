@@ -96,6 +96,16 @@ struct ClientTabView: View {
             shell.requestLogin = onRequestLogin
         }
         .onChange(of: isGuest) { _, nuevo in shell.isGuest = nuevo }
+        // Push de Costco: abre el detalle del pedido encima de la pestaña activa.
+        .fullScreenCover(item: Bindable(CostcoPushRouter.shared).pendiente) { destino in
+            if let repo = deps?.costcoRepository {
+                CostcoPedidoDetailView(
+                    model: CostcoPedidoDetailModel(pedidoId: destino.pedidoId, repo: repo),
+                    abrirNoEncontrado: destino.abrirNoEncontrado,
+                    onBack: { CostcoPushRouter.shared.pendiente = nil }
+                )
+            }
+        }
     }
 
     /// La barra se oculta cuando la pestaña activa está en navegación profunda, y

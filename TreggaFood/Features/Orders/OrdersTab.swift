@@ -13,6 +13,7 @@ struct OrdersTab: View {
     @State private var viewModel: MyOrdersViewModel?
     @State private var pedidoParaCalificar: PedidoTracking?
     @State private var clienteId: UUID?
+    @State private var costco: [CostcoPedido] = []
 
     private var pedidoRepo: PedidoRepository { deps?.pedidoRepository ?? MockPedidoRepository() }
     private var tracking: TrackingRepository { deps?.trackingRepository ?? MockTrackingRepository() }
@@ -23,7 +24,9 @@ struct OrdersTab: View {
                 if let viewModel {
                     MyOrdersView(viewModel: viewModel, onTap: { resumen in
                         path.append(.detalle(pedidoId: resumen.id))
-                    }, onClose: onClose)
+                    }, onClose: onClose, costco: costco, onTapCostco: { pedido in
+                        path.append(.costco(pedidoId: pedido.id))
+                    }, onRefreshCostco: { await cargarCostco() })
                 } else {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
@@ -69,6 +72,16 @@ struct OrdersTab: View {
                 onCompleted: { pedido in pedidoParaCalificar = pedido },
                 onBack: { if !path.isEmpty { path.removeLast() } }
             )
+        case .costco(let pedidoId):
+            if let repo = deps?.costcoRepository {
+                CostcoPedidoDetailView(
+                    model: CostcoPedidoDetailModel(pedidoId: pedidoId, repo: repo),
+                    onBack: {
+                        if !path.isEmpty { path.removeLast() }
+                        Task { await cargarCostco() }
+                    }
+                )
+            }
         case .chat(let pedidoId, let repartidorName):
             ChatView(
                 viewModel: ChatViewModel(
@@ -110,5 +123,10 @@ struct OrdersTab: View {
             clienteId = try? await deps.clienteRepository.fetchByUserId(userId)?.id
         }
         await viewModel?.cargar()
+        await cargarCostco()
+    }
+
+    private func cargarCostco() async {
+        if let repo = deps?.costcoRepository, let lista = try? await repo.misPedidos() { costco = lista }
     }
 }

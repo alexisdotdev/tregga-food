@@ -330,7 +330,7 @@ struct MapaNegociosView: View {
                     }
                 }
             )
-        case .cart, .checkout, .tracking, .chat:
+        case .cart, .checkout, .tracking, .chat, .costco, .costcoCarrito, .costcoCheckout, .costcoPedido:
             // El carrito vive en la pestaña Carrito (CartTabView).
             EmptyView()
         }

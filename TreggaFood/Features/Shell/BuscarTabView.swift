@@ -168,7 +168,7 @@ struct BuscarTabView: View {
                     }
                 }
             )
-        case .cart, .checkout, .tracking, .chat:
+        case .cart, .checkout, .tracking, .chat, .costco, .costcoCarrito, .costcoCheckout, .costcoPedido:
             EmptyView()
         }
     }

@@ -29,6 +29,7 @@ public final class AppDependencies {
     public let feedbackRepository: FeedbackRepository
     public let favoritoRepository: FavoritoRepository
     public let storageService: StorageService
+    public let costcoRepository: CostcoRepository
     /// Lookup de CP (SEPOMEX, servicio público) → estado/municipio/colonias.
     public let postalCodeRepository: PostalCodeRepository
 
@@ -66,6 +67,7 @@ public final class AppDependencies {
             self.feedbackRepository = SupabaseFeedbackRepository()
             self.favoritoRepository = SupabaseFavoritoRepository()
             self.storageService = SupabaseStorageService()
+            self.costcoRepository = SupabaseCostcoRepository()
         } else {
             self.authService = MockAuthService()
             self.authStorage = MockAuthStorage()
@@ -86,6 +88,7 @@ public final class AppDependencies {
             self.feedbackRepository = MockFeedbackRepository()
             self.favoritoRepository = MockFavoritoRepository()
             self.storageService = MockStorageService()
+            self.costcoRepository = MockCostcoRepository.demo()
         }
         // Padrón SEPOMEX auto-hospedado en nuestro Supabase (RPC lookup_cp): igual en ambos modos.
         self.postalCodeRepository = SupabasePostalCodeRepository()

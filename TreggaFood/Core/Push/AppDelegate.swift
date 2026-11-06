@@ -59,6 +59,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        if CostcoPushRouter.esCostco(notification.request.content.userInfo) {
+            NotificationCenter.default.post(name: .costcoPushRecibido, object: nil)
+        }
         completionHandler([.banner, .sound, .badge])
     }
 
@@ -67,6 +70,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        if let destino = CostcoPushRouter.destino(from: response.notification.request.content.userInfo) {
+            Task { @MainActor in CostcoPushRouter.shared.pendiente = destino }
+        }
         completionHandler()
     }
 }
@@ -98,6 +104,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        if CostcoPushRouter.esCostco(notification.request.content.userInfo) {
+            NotificationCenter.default.post(name: .costcoPushRecibido, object: nil)
+        }
         completionHandler([.banner, .sound, .badge])
     }
 
@@ -106,6 +115,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        if let destino = CostcoPushRouter.destino(from: response.notification.request.content.userInfo) {
+            Task { @MainActor in CostcoPushRouter.shared.pendiente = destino }
+        }
         completionHandler()
     }
 }
