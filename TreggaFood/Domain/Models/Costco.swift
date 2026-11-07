@@ -64,6 +64,8 @@ public struct CostcoDireccion: Decodable, Equatable, Hashable, Sendable {
     public let label: String?
     public let address: String?
     public let referencias: String?
+    public var lat: Double? = nil
+    public var lng: Double? = nil
 }
 
 public struct CostcoItem: Decodable, Identifiable, Equatable, Hashable, Sendable {
@@ -131,6 +133,16 @@ public struct CostcoPedido: Decodable, Identifiable, Equatable, Hashable, Sendab
     public let limiteCancelacion: Date?
     public let puedeCancelar: Bool
     public let items: [CostcoItem]
+    // Ruta de entrega (§9). Opcionales: el servidor puede no mandarlos.
+    public var rutaOrden: Int? = nil
+    public var rutaTotal: Int? = nil
+    public var enRutaAt: Date? = nil
+    public var entregaFallidaAt: Date? = nil
+    public var entregaFallidaNota: String? = nil
+    public var restoCobrado: Decimal? = nil
+    public var restoMetodo: String? = nil
+    /// Solo no es `nil` si el servidor deja ver la ubicación (privacidad §9.1).
+    public var ruta: CostcoRutaEnVivo? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, estado, direccion, comision, anticipo, resto, items
@@ -150,11 +162,36 @@ public struct CostcoPedido: Decodable, Identifiable, Equatable, Hashable, Sendab
         case createdAt = "created_at"
         case limiteCancelacion = "limite_cancelacion"
         case puedeCancelar = "puede_cancelar"
+        case ruta
+        case rutaOrden = "ruta_orden"
+        case rutaTotal = "ruta_total"
+        case enRutaAt = "en_ruta_at"
+        case entregaFallidaAt = "entrega_fallida_at"
+        case entregaFallidaNota = "entrega_fallida_nota"
+        case restoCobrado = "resto_cobrado"
+        case restoMetodo = "resto_metodo"
     }
+
+    /// En camino: comprado, en ruta y sin entrega fallida.
+    public var enCamino: Bool { estado == .comprado && enRutaAt != nil && entregaFallidaAt == nil }
 
     /// Renglones que esperan decisión del cliente.
     public var pendientesDeDecision: [CostcoItem] { items.filter { $0.estado == .noEncontrado } }
     public var enCurso: Bool { estado != .entregado && estado != .cancelado }
+}
+
+public struct CostcoRutaEnVivo: Decodable, Equatable, Hashable, Sendable {
+    /// `nil` hasta el primer `costco_ruta_ubicacion`.
+    public let lat: Double?
+    public let lng: Double?
+    public let ubicacionAt: Date?
+    public let paradasAntes: Int
+
+    enum CodingKeys: String, CodingKey {
+        case lat, lng
+        case ubicacionAt = "ubicacion_at"
+        case paradasAntes = "paradas_antes"
+    }
 }
 
 /// Renglón que se manda a `crear_pedido_costco`. Nunca lleva precio de catálogo.

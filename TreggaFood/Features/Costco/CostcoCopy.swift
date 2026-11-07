@@ -130,6 +130,21 @@ enum CostcoCopy {
     static let cancelarConfirmSi = "Sí, cancelar"
     static let cancelarConfirmNo = "No"
 
+    // MARK: Ruta de entrega (§9)
+    static func enCamino(parada: Int, de total: Int) -> String { "En camino · parada \(parada) de \(total)" }
+    static let vamosParaTuCasa = "¡Vamos para tu casa!"
+    static func paradasAntes(_ n: Int) -> String { n == 1 ? "Antes de ti hay 1 entrega." : "Antes de ti hay \(n) entregas." }
+    static func llegadaAprox(_ minutos: Int) -> String { "Llegamos en aprox. \(minutos) min" }
+    static let ubicacionPendiente = "En cuanto salgamos verás aquí nuestra ubicación."
+    static func entregaFallida(nota: String) -> String { "No pudimos entregarte: \(nota)" }
+    static func cobrado(monto: String, metodo: String?) -> String {
+        switch metodo {
+        case "efectivo": return "Pagaste \(monto) en efectivo al recibir."
+        case "transferencia": return "Pagaste \(monto) por transferencia al recibir."
+        default: return "Pagaste \(monto) al recibir."
+        }
+    }
+
     // MARK: Producto no encontrado
     static func noEncontradoTitulo(_ producto: String) -> String { "No encontramos \(producto)" }
     static let noEncontradoPregunta = "¿Qué prefieres?"

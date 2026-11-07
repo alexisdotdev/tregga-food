@@ -92,6 +92,14 @@ struct CostcoPedidoDetailView: View {
             if abrirNoEncontrado { itemDecision = model.pedido?.pendientesDeDecision.first }
         }
         .onChange(of: scenePhase) { _, fase in if fase == .active { Task { await model.cargar() } } }
+        // Excepción a §5.1 (spec §9.4): en ruta y con la pantalla abierta, recarga cada ~10 s.
+        .task(id: model.pedido?.enCamino == true) {
+            while model.pedido?.enCamino == true, !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(10))
+                if Task.isCancelled { break }
+                await model.cargar()
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .costcoPushRecibido)) { _ in
             Task { await model.cargar() }
         }
@@ -134,6 +142,10 @@ struct CostcoPedidoDetailView: View {
     @ViewBuilder
     private func contenido(_ p: CostcoPedido) -> some View {
         estadoCard(p)
+        if p.enCamino { CostcoRutaCard(pedido: p) }
+        if let nota = p.entregaFallidaNota, p.entregaFallidaAt != nil, p.estado == .comprado {
+            CostcoUI.banner(CostcoCopy.entregaFallida(nota: nota), icon: .warning, tono: TreggaColors.accent)
+        }
         if !p.pendientesDeDecision.isEmpty {
             Button { itemDecision = p.pendientesDeDecision.first } label: {
                 CostcoUI.banner(CostcoCopy.noEncontradoBanner, icon: .warning, tono: TreggaColors.accent)
@@ -162,6 +174,10 @@ struct CostcoPedidoDetailView: View {
             if let fecha = p.entregaAcordadaAt {
                 Text(CostcoCopy.entregaAcordada(fecha: CostcoFormat.fechaHora(fecha)))
                     .font(.system(size: 14, weight: .heavy)).foregroundStyle(TreggaColors.primaryDark)
+            }
+            if let cobrado = p.restoCobrado, cobrado > 0, p.estado == .entregado {
+                Text(CostcoCopy.cobrado(monto: PriceFormat.pesos(cobrado), metodo: p.restoMetodo))
+                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(TreggaColors.text)
             }
             if let monto = p.reembolsoMonto, monto > 0 {
                 Text(p.reembolsoPendiente

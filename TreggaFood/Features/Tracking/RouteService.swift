@@ -22,6 +22,11 @@ struct RouteService {
     }
 
     func fetchEncodedPolyline(from: TrackCoord, to: TrackCoord) async -> String? {
+        await fetchRoute(from: from, to: to)?.polyline
+    }
+
+    /// Polyline + duración en segundos (para la ETA de la Ruta Costco).
+    func fetchRoute(from: TrackCoord, to: TrackCoord) async -> (polyline: String, segundos: Int?)? {
         guard !apiKey.isEmpty, !apiKey.hasPrefix("PLACEHOLDER"),
               let url = URL(string: "https://routes.googleapis.com/directions/v2:computeRoutes")
         else { return nil }
@@ -31,7 +36,7 @@ struct RouteService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(apiKey, forHTTPHeaderField: "X-Goog-Api-Key")
         request.setValue(bundleId, forHTTPHeaderField: "X-Ios-Bundle-Identifier")
-        request.setValue("routes.polyline.encodedPolyline", forHTTPHeaderField: "X-Goog-FieldMask")
+        request.setValue("routes.polyline.encodedPolyline,routes.duration", forHTTPHeaderField: "X-Goog-FieldMask")
 
         let body = ComputeRoutesRequest(
             origin: .init(location: .init(latLng: .init(latitude: from.lat, longitude: from.lng))),
@@ -44,7 +49,10 @@ struct RouteService {
         do {
             let (respData, _) = try await URLSession.shared.data(for: request)
             let resp = try JSONDecoder().decode(ComputeRoutesResponse.self, from: respData)
-            return resp.routes?.first?.polyline.encodedPolyline
+            guard let route = resp.routes?.first else { return nil }
+            // Routes API manda la duración como "123s".
+            let segundos = route.duration.flatMap { Int($0.replacingOccurrences(of: "s", with: "")) }
+            return (route.polyline.encodedPolyline, segundos)
         } catch {
             return nil
         }
@@ -64,7 +72,7 @@ struct RouteService {
 
     private struct ComputeRoutesResponse: Decodable {
         let routes: [Route]?
-        struct Route: Decodable { let polyline: Polyline }
+        struct Route: Decodable { let polyline: Polyline; let duration: String? }
         struct Polyline: Decodable { let encodedPolyline: String }
     }
 }

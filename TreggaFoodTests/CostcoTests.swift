@@ -180,3 +180,42 @@ struct CostcoFormatTests {
         #expect(CostcoFormat.fechaHora(d) == "jue 12 nov, 11:59 p.m.")
     }
 }
+
+@Suite("Costco: ruta de entrega (§9)")
+struct CostcoRutaTests {
+    static func pedido(_ extra: String) -> String {
+        CostcoContratoTests.pedidoJSON
+            .replacingOccurrences(of: "\"estado\":\"esperando_anticipo\"", with: "\"estado\":\"comprado\"")
+            .replacingOccurrences(of: "\"items\":[", with: extra + ",\"items\":[")
+    }
+
+    @Test func pedidoEnRutaConUbicacion() throws {
+        let json = Self.pedido("""
+        "ruta_orden":3,"ruta_total":5,"en_ruta_at":"2026-11-14T22:00:00+00:00","entrega_fallida_at":null,
+        "entrega_fallida_nota":null,"resto_cobrado":null,"resto_metodo":null,
+        "ruta":{"lat":19.8,"lng":-100.8,"ubicacion_at":"2026-11-14T22:05:00.123456+00:00","paradas_antes":0}
+        """)
+        let p = try CostcoJSON.decoder.decode(CostcoPedido.self, from: Data(json.utf8))
+        #expect(p.enCamino)
+        #expect(p.rutaOrden == 3 && p.rutaTotal == 5)
+        #expect(p.ruta?.paradasAntes == 0)
+        #expect(p.direccion?.lat == 19.8)
+    }
+
+    @Test func rutaSinUbicacionTodaviaYEntregaFallida() throws {
+        let json = Self.pedido("""
+        "ruta_orden":1,"ruta_total":2,"en_ruta_at":"2026-11-14T22:00:00+00:00",
+        "entrega_fallida_at":"2026-11-14T22:30:00+00:00","entrega_fallida_nota":"No había nadie",
+        "ruta":null
+        """)
+        let p = try CostcoJSON.decoder.decode(CostcoPedido.self, from: Data(json.utf8))
+        #expect(p.enCamino == false)
+        #expect(p.ruta == nil)
+        #expect(p.entregaFallidaNota == "No había nadie")
+    }
+
+    @Test func pedidoViejoSinCamposDeRutaSigueDecodificando() throws {
+        let p = try CostcoJSON.decoder.decode(CostcoPedido.self, from: Data(CostcoContratoTests.pedidoJSON.utf8))
+        #expect(p.rutaOrden == nil && p.ruta == nil && p.enCamino == false)
+    }
+}

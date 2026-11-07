@@ -11,7 +11,9 @@ struct CostcoOrderRow: View {
                 .frame(width: 44, height: 44)
                 .background(TreggaColors.primarySoft, in: RoundedRectangle(cornerRadius: TreggaRadius.md))
             VStack(alignment: .leading, spacing: 3) {
-                Text(CostcoCopy.estado(pedido.estado).titulo)
+                Text(pedido.enCamino && pedido.rutaOrden != nil && pedido.rutaTotal != nil
+                     ? CostcoCopy.enCamino(parada: pedido.rutaOrden!, de: pedido.rutaTotal!)
+                     : CostcoCopy.estado(pedido.estado).titulo)
                     .font(.system(size: 15, weight: .heavy))
                     .foregroundStyle(TreggaColors.text)
                 Text("\(CostcoCopy.viajeDel(CostcoFormat.fechaCorta(dia: pedido.fechaViaje))) · \(CostcoCopy.filaCostco(productos: pedido.items.filter { $0.sustitutoDe == nil }.count))")
