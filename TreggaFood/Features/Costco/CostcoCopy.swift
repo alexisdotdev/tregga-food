@@ -48,12 +48,14 @@ enum CostcoCopy {
     static let elegirDireccion = "Elegir dirección"
     static func anticipoAhora(pct: String) -> String { "Anticipo a pagar ahora (\(pct)%)" }
     static let restoAlRecibir = "Resto al recibir"
-    static func condiciones(cancelarHasta: String) -> [String] {
+    /// `cancelarHasta == nil`: el límite de cancelación de este viaje ya pasó.
+    static func condiciones(cancelarHasta: String?) -> [String] {
         [
             "Tu pedido se confirma cuando verifiquemos tu depósito. El resto lo pagas al recibir.",
             "El envío va incluido.",
             "El viaje está sujeto a juntar pedidos; si se cancela te devolvemos tu anticipo.",
-            "Puedes cancelar hasta el \(cancelarHasta); después no hay cancelaciones.",
+            cancelarHasta.map { "Puedes cancelar hasta el \($0); después no hay cancelaciones." }
+                ?? "Este viaje ya no admite cancelaciones.",
             "El día del viaje mantente atento a tu teléfono por si algún producto no está disponible.",
         ]
     }
@@ -107,6 +109,7 @@ enum CostcoCopy {
     static let totalReal = "Total según ticket"
     static let anticipoPagado = "Anticipo pagado"
     static let restoAPagar = "Resto a pagar al recibir"
+    static let pagadoAlRecibir = "Pagado al recibir"
     static func reembolsoPendiente(monto: String) -> String { "Te devolveremos \(monto) a tu cuenta." }
     static func reembolsoHecho(monto: String) -> String { "Te devolvimos \(monto)." }
     static func entregaAcordada(fecha: String) -> String { "Entrega acordada: \(fecha)" }
@@ -117,7 +120,7 @@ enum CostcoCopy {
         case .comprado: return "Comprado"
         case .noEncontrado: return "No lo encontramos"
         case .sustituido: return "Cambiado"
-        case .quitado: return "Quitado · se reembolsa"
+        case .quitado: return "Quitado"
         }
     }
     /// Sin punto final: `fechaHora` ya termina en "p.m."/"a.m.".

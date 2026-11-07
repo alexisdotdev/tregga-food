@@ -178,6 +178,8 @@ public struct CostcoPedido: Decodable, Identifiable, Equatable, Hashable, Sendab
     /// Renglones que esperan decisión del cliente.
     public var pendientesDeDecision: [CostcoItem] { items.filter { $0.estado == .noEncontrado } }
     public var enCurso: Bool { estado != .entregado && estado != .cancelado }
+    /// Renglones que siguen en el pedido (sin los cambiados ni los quitados).
+    public var lineasActivas: Int { items.filter { $0.estado != .sustituido && $0.estado != .quitado }.count }
 }
 
 public struct CostcoRutaEnVivo: Decodable, Equatable, Hashable, Sendable {

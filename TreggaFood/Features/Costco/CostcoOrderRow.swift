@@ -16,7 +16,7 @@ struct CostcoOrderRow: View {
                      : CostcoCopy.estado(pedido.estado).titulo)
                     .font(.system(size: 15, weight: .heavy))
                     .foregroundStyle(TreggaColors.text)
-                Text("\(CostcoCopy.viajeDel(CostcoFormat.fechaCorta(dia: pedido.fechaViaje))) · \(CostcoCopy.filaCostco(productos: pedido.items.filter { $0.sustitutoDe == nil }.count))")
+                Text("\(CostcoCopy.viajeDel(CostcoFormat.fechaCorta(dia: pedido.fechaViaje))) · \(CostcoCopy.filaCostco(productos: pedido.lineasActivas))")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(TreggaColors.textSec)
                 if !pedido.pendientesDeDecision.isEmpty {

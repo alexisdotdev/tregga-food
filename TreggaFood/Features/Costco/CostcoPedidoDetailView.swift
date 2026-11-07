@@ -258,14 +258,20 @@ struct CostcoPedidoDetailView: View {
                 CostcoUI.row(CostcoCopy.totalReal, PriceFormat.pesos(total))
                 CostcoUI.row(CostcoCopy.anticipoPagado, "− \(PriceFormat.pesos(p.anticipo))")
                 if let resto = p.resto, resto > 0 {
-                    CostcoUI.row(CostcoCopy.restoAPagar, PriceFormat.pesos(resto), fuerte: true)
+                    if p.estado == .entregado {
+                        CostcoUI.row(CostcoCopy.pagadoAlRecibir, PriceFormat.pesos(resto))
+                    } else {
+                        CostcoUI.row(CostcoCopy.restoAPagar, PriceFormat.pesos(resto), fuerte: true)
+                    }
                 }
             } else {
                 CostcoUI.row(CostcoCopy.subtotal, PriceFormat.pesos(p.subtotalEstimado))
                 CostcoUI.row(CostcoCopy.comision(pct: CostcoFormat.pct(model.config?.comisionPct ?? 10)), PriceFormat.pesos(p.comision))
                 CostcoUI.row(CostcoCopy.envio, CostcoCopy.envioIncluido)
                 CostcoUI.row(CostcoCopy.totalEstimado, PriceFormat.pesos(p.totalEstimado), fuerte: true)
-                CostcoUI.row(CostcoCopy.anticipoAhora(pct: CostcoFormat.pct(model.config?.anticipoPct ?? 50)), PriceFormat.pesos(p.anticipo))
+                if p.estado != .cancelado {
+                    CostcoUI.row(CostcoCopy.anticipoAhora(pct: CostcoFormat.pct(model.config?.anticipoPct ?? 50)), PriceFormat.pesos(p.anticipo))
+                }
             }
         }
     }
@@ -327,7 +333,7 @@ struct CostcoNoEncontradoSheet: View {
                 }
                 Section(CostcoCopy.elegirOtro) {
                     Button(CostcoCopy.catalogoPedirLibre) { showLibre = true }
-                    ForEach(catalogo) { p in
+                    ForEach(catalogo.filter { $0.id != item.productoId }) { p in
                         Button {
                             decidir(.catalogo(productoId: p.id, cantidad: item.cantidad))
                         } label: {

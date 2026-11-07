@@ -219,3 +219,36 @@ struct CostcoRutaTests {
         #expect(p.rutaOrden == nil && p.ruta == nil && p.enCamino == false)
     }
 }
+
+@Suite("Costco: renglones activos y copy de estados")
+struct CostcoLineasActivasTests {
+    @Test func cuentaSoloLosRenglonesQueSiguenEnElPedido() throws {
+        let json = CostcoContratoTests.pedidoJSON
+            .replacingOccurrences(of: "\"estado\":\"no_encontrado\"", with: "\"estado\":\"quitado\"")
+        let p = try CostcoJSON.decoder.decode(CostcoPedido.self, from: Data(json.utf8))
+        #expect(p.items.count == 2)
+        #expect(p.lineasActivas == 1)
+    }
+
+    @Test func noEncontradoSigueContando() throws {
+        let p = try CostcoJSON.decoder.decode(CostcoPedido.self, from: Data(CostcoContratoTests.pedidoJSON.utf8))
+        #expect(p.lineasActivas == 2)
+    }
+
+    @Test func quitadoNoPrometeReembolsoAparte() {
+        #expect(CostcoCopy.itemEstado(.quitado) == "Quitado")
+    }
+}
+
+@Suite("Costco: condiciones del checkout")
+struct CostcoCondicionesTests {
+    @Test func conLimiteVigenteMuestraLaFecha() {
+        #expect(CostcoCopy.condiciones(cancelarHasta: "vie 6 nov").contains("Puedes cancelar hasta el vie 6 nov; después no hay cancelaciones."))
+    }
+
+    @Test func conLimiteVencidoNoPrometeCancelar() {
+        let c = CostcoCopy.condiciones(cancelarHasta: nil)
+        #expect(c.contains("Este viaje ya no admite cancelaciones."))
+        #expect(!c.contains { $0.hasPrefix("Puedes cancelar") })
+    }
+}

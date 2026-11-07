@@ -123,7 +123,7 @@ struct CostcoCheckoutView: View {
 
     /// Antes de crear el pedido aún no hay `limite_cancelacion` del servidor; se muestra el día
     /// (`fecha_viaje − dias_limite_cancelacion`) solo como texto. El pedido creado trae el valor real.
-    private var limiteCancelacion: String {
+    private var limiteCancelacion: String? {
         guard let viaje = model.estado?.viaje, let config = model.config else { return "" }
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
@@ -133,6 +133,8 @@ struct CostcoCheckoutView: View {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = CostcoFormat.zona
         let limite = cal.date(byAdding: .day, value: -config.diasLimiteCancelacion, to: dia) ?? dia
+        // El límite vence al terminar ese día (23:59:59 CDMX).
+        guard let finDelDia = cal.date(byAdding: .day, value: 1, to: limite), Date() < finDelDia else { return nil }
         return CostcoFormat.fechaCorta(limite.addingTimeInterval(12 * 3600))
     }
 
