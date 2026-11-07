@@ -252,3 +252,25 @@ struct CostcoCondicionesTests {
         #expect(!c.contains { $0.hasPrefix("Puedes cancelar") })
     }
 }
+
+@Suite("Costco: tarjeta de estado en ruta")
+struct CostcoEstadoEnCaminoTests {
+    @Test func enRutaDiceEnCamino() throws {
+        let json = CostcoRutaTests.pedido("""
+        "ruta_orden":1,"ruta_total":2,"en_ruta_at":"2026-11-14T22:00:00+00:00","entrega_fallida_at":null,
+        "entrega_fallida_nota":null,"resto_cobrado":null,"resto_metodo":null,"ruta":null
+        """)
+        let p = try CostcoJSON.decoder.decode(CostcoPedido.self, from: Data(json.utf8))
+        #expect(CostcoCopy.estado(de: p).titulo == "En camino")
+        #expect(CostcoCopy.estado(de: p).detalle == "Tu pedido va en camino.")
+    }
+
+    @Test func compradoSinRutaSigueIgual() throws {
+        let json = CostcoRutaTests.pedido("""
+        "ruta_orden":null,"ruta_total":null,"en_ruta_at":null,"entrega_fallida_at":null,
+        "entrega_fallida_nota":null,"resto_cobrado":null,"resto_metodo":null,"ruta":null
+        """)
+        let p = try CostcoJSON.decoder.decode(CostcoPedido.self, from: Data(json.utf8))
+        #expect(CostcoCopy.estado(de: p).titulo == "Compra realizada")
+    }
+}

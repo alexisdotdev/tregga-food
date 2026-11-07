@@ -159,7 +159,7 @@ struct CostcoPedidoDetailView: View {
     }
 
     private func estadoCard(_ p: CostcoPedido) -> some View {
-        let e = CostcoCopy.estado(p.estado)
+        let e = CostcoCopy.estado(de: p)
         let detalle = p.estado == .cancelado
             ? CostcoCopy.motivoCancelacion(p.cancelMotivo)
             : e.detalle.replacingOccurrences(of: "{viaje}", with: CostcoFormat.fechaCorta(dia: p.fechaViaje))

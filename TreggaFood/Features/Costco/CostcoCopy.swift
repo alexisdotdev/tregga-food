@@ -79,6 +79,10 @@ enum CostcoCopy {
             return ("Pedido cancelado", "")
         }
     }
+    /// Como `estado(_:)`, pero un pedido comprado que va en la ruta dice que va en camino.
+    static func estado(de p: CostcoPedido) -> (titulo: String, detalle: String) {
+        p.enCamino ? ("En camino", "Tu pedido va en camino.") : estado(p.estado)
+    }
     static func motivoCancelacion(_ m: CostcoPedido.CancelMotivo?) -> String {
         switch m {
         case .cliente: return "Cancelaste este pedido."
